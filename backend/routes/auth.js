@@ -1,36 +1,45 @@
+import express from 'express';
+import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import User from '../models/User.js';
 
-// The function name is 'auth' but we will export it as 'authMiddleware'
-const auth = async (req, res, next) => {
+const router = express.Router();
+
+// --- Register a new user ---
+router.post('/register', async (req, res) => {
     try {
-        const token = req.header('Authorization')?.replace('Bearer ', '');
-        
-        if (!token) {
-            return res.status(401).json({ message: 'No token, authorization denied' });
-        }
+        const { name, email, password } = req.body;
+        let user = await User.findOne({ email });
+        if (user) return res.status(400).json({ message: 'User already exists.' });
 
-        const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your_default_secret_key');
-        
-        const user = await User.findById(decoded.id || decoded.userId).select('-password');
-        
-        if (!user) {
-            return res.status(401).json({ message: 'Token is not valid, user not found' });
-        }
-
-        req.user = {
-            id: user._id,
-            name: user.name,
-            email: user.email,
-            role: user.role
-        };
-        
-        next();
+        user = new User({ name, email, password });
+        await user.save();
+        res.status(201).json({ message: 'User registered successfully.' });
     } catch (error) {
-        console.error('Auth middleware error:', error);
-        res.status(401).json({ message: 'Token is not valid' });
+        res.status(500).json({ message: 'Server error' });
     }
-};
+});
 
-// This is the critical fix: Exporting the function with the correct name.
-export { auth as authMiddleware };
+// --- Login a user ---
+router.post('/login', async (req, res) => {
+    try {
+        const { email, password } = req.body;
+        const user = await User.findOne({ email });
+        if (!user) return res.status(400).json({ message: 'Invalid credentials.' });
+
+        const isMatch = await bcrypt.compare(password, user.password);
+        if (!isMatch) return res.status(400).json({ message: 'Invalid credentials.' });
+
+        // The token is created with 'userId'
+        const payload = { userId: user.id };
+        const token = jwt.sign(payload, process.env.JWT_SECRET || 'your_default_secret_key', {
+            expiresIn: '7d',
+        });
+
+        res.json({ token, user: { id: user.id, name: user.name, email: user.email } });
+    } catch (error) {
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
+export default router;
