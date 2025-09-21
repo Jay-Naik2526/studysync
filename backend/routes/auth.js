@@ -30,6 +30,7 @@ router.post('/login', async (req, res) => {
         const isMatch = await bcrypt.compare(password, user.password);
         if (!isMatch) return res.status(400).json({ message: 'Invalid credentials.' });
 
+        // The token is created with 'userId'
         const payload = { userId: user.id };
         const token = jwt.sign(payload, process.env.JWT_SECRET || 'your_default_secret_key', {
             expiresIn: '7d',
