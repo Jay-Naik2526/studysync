@@ -32,7 +32,7 @@ Fully Responsive Design: A polished and professional UI that works seamlessly on
 
 ## 🚀 Live Demo
 
-Live Site: https://your-vercel-deployment-url.vercel.app
+Live Site: https://studysync-inky.vercel.app/
 
 
 ## 🛠️ Tech Stack
