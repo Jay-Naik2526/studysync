@@ -15,18 +15,31 @@ dotenv.config();
 const app = express();
 
 // Middleware
-// ⚠️ CORS is enabled so your Vercel Frontend can talk to this Backend
 app.use(cors({
-    origin: "*", // Allow all origins (easiest for Vercel)
+    origin: "*", 
     credentials: true
 }));
 app.use(express.json());
 
-// Connect to MongoDB
-// (Vercel "Serverless Functions" connect on every request, which is fine for this scale)
-mongoose.connect(process.env.MONGODB_URI)
-    .then(() => console.log('MongoDB connected successfully.'))
-    .catch(err => console.error('MongoDB connection error:', err));
+// --- DATABASE CONNECTION (Optimized for Serverless) ---
+let isConnected = false;
+const connectDB = async () => {
+    if (isConnected) return;
+    try {
+        const db = await mongoose.connect(process.env.MONGODB_URI);
+        isConnected = db.connections[0].readyState;
+        console.log('MongoDB connected successfully.');
+    } catch (err) {
+        console.error('MongoDB connection error:', err);
+        // Do not throw here, let the route handler catch it
+    }
+};
+
+// Middleware to ensure DB is connected before handling any request
+app.use(async (req, res, next) => {
+    await connectDB();
+    next();
+});
 
 // --- API ROUTES ---
 app.use('/api/auth', authRoutes);
@@ -35,18 +48,14 @@ app.use('/api/subjects', authMiddleware, subjectsRoutes);
 app.use('/api/grades', authMiddleware, gradesRoutes);
 app.use('/api/todos', authMiddleware, todosRoutes);
 
-// Root Route (Health Check)
 app.get('/', (req, res) => {
     res.send('StudySync Backend is Live on Vercel! 🚀');
 });
 
 // --- VERCEL SETUP ---
 const PORT = process.env.PORT || 5000;
-
-// 1. Local Development: Start the server normally
 if (process.env.NODE_ENV !== 'production') {
     app.listen(PORT, () => console.log(`Server is running on port: ${PORT}`));
 }
 
-// 2. Vercel Production: Export the app (Vercel handles the listening)
 export default app;
