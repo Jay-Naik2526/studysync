@@ -15,7 +15,8 @@ dotenv.config();
 const app = express();
 
 // Middleware
-app.use(cors());
+// ⚠️ IMPORTANT: cors() allows your Vercel frontend to access this backend
+app.use(cors()); 
 app.use(express.json());
 
 // Connect to MongoDB
@@ -23,14 +24,18 @@ mongoose.connect(process.env.MONGODB_URI)
     .then(() => console.log('MongoDB connected successfully.'))
     .catch(err => console.error('MongoDB connection error:', err));
 
-// Public routes for login/register
+// API Routes
 app.use('/api/auth', authRoutes);
-
-// Protected routes that require a logged-in user
 app.use('/api/dashboard', authMiddleware, dashboardRoutes);
 app.use('/api/subjects', authMiddleware, subjectsRoutes);
 app.use('/api/grades', authMiddleware, gradesRoutes);
 app.use('/api/todos', authMiddleware, todosRoutes);
 
-const PORT = process.env.PORT || 5000;
+// Root Route (Health Check)
+app.get('/', (req, res) => {
+    res.send('StudySync Backend is Running! 🚀');
+});
+
+// Hugging Face Spaces uses port 7860
+const PORT = process.env.PORT || 7860;
 app.listen(PORT, () => console.log(`Server is running on port: ${PORT}`));
