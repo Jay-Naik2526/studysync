@@ -15,16 +15,20 @@ dotenv.config();
 const app = express();
 
 // Middleware
-// ⚠️ IMPORTANT: cors() allows your Vercel frontend to access this backend
-app.use(cors()); 
+// ⚠️ CORS is enabled so your Vercel Frontend can talk to this Backend
+app.use(cors({
+    origin: "*", // Allow all origins (easiest for Vercel)
+    credentials: true
+}));
 app.use(express.json());
 
 // Connect to MongoDB
+// (Vercel "Serverless Functions" connect on every request, which is fine for this scale)
 mongoose.connect(process.env.MONGODB_URI)
     .then(() => console.log('MongoDB connected successfully.'))
     .catch(err => console.error('MongoDB connection error:', err));
 
-// API Routes
+// --- API ROUTES ---
 app.use('/api/auth', authRoutes);
 app.use('/api/dashboard', authMiddleware, dashboardRoutes);
 app.use('/api/subjects', authMiddleware, subjectsRoutes);
@@ -33,9 +37,16 @@ app.use('/api/todos', authMiddleware, todosRoutes);
 
 // Root Route (Health Check)
 app.get('/', (req, res) => {
-    res.send('StudySync Backend is Running! 🚀');
+    res.send('StudySync Backend is Live on Vercel! 🚀');
 });
 
-// Hugging Face Spaces uses port 7860
-const PORT = process.env.PORT || 7860;
-app.listen(PORT, () => console.log(`Server is running on port: ${PORT}`));
+// --- VERCEL SETUP ---
+const PORT = process.env.PORT || 5000;
+
+// 1. Local Development: Start the server normally
+if (process.env.NODE_ENV !== 'production') {
+    app.listen(PORT, () => console.log(`Server is running on port: ${PORT}`));
+}
+
+// 2. Vercel Production: Export the app (Vercel handles the listening)
+export default app;
