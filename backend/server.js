@@ -10,7 +10,7 @@ import subjectsRoutes from './routes/subjects.js';
 import gradesRoutes from './routes/grades.js';
 import todosRoutes from './routes/todos.js';
 import dashboardRoutes from './routes/dashboard.js';
-
+import notesRoutes from './routes/notes.js';
 dotenv.config();
 const app = express();
 
@@ -47,7 +47,7 @@ app.use('/api/dashboard', authMiddleware, dashboardRoutes);
 app.use('/api/subjects', authMiddleware, subjectsRoutes);
 app.use('/api/grades', authMiddleware, gradesRoutes);
 app.use('/api/todos', authMiddleware, todosRoutes);
-
+app.use('/api/notes', authMiddleware, notesRoutes);
 app.get('/', (req, res) => {
     res.send('StudySync Backend is Live on Vercel! 🚀');
 });

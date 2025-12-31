@@ -1,3 +1,23 @@
+@import 'katex/dist/katex.min.css';
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Smooth scrolling & hardware acceleration */
+.custom-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: #3b82f6 #1f2937;
+  will-change: transform;
+}
+
+/* Print-optimized styles for Sexy PDF Export */
+.pdf-export-container {
+  font-family: 'Inter', 'Segoe UI', sans-serif;
+  line-height: 1.6;
+}
+
+.pdf-export-container h1 { font-size: 24pt; margin-bottom: 20pt; border-bottom: 2pt solid #3b82f6; padding-bottom: 10pt; }
+.pdf-export-container h2 { font-size: 18pt; margin-top: 20pt; color: #1e40af; }
+.pdf-export-container table { border-collapse: collapse; width: 100%; margin: 15pt 0; }
+.pdf-export-container th, .pdf-export-container td { border: 1pt solid #ddd; padding: 8pt; text-align: left; }
+.pdf-export-container th { background-color: #f8fafc; font-weight: bold; }

@@ -1,53 +1,58 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import AuthPage from './components/AuthPage';
 import DashboardPage from './components/DashboardPage';
 import AttendancePage from './components/AttendancePage';
 import MarksPage from './components/MarksPage';
 import SubjectsPage from './components/SubjectsPage';
+import NotesPage from './components/NotesPage'; // [NEW] Import the AI Notes Page
 
-// This component holds the main app navigation and must be defined OUTSIDE of App
-const AppContainer = () => {
-    const [currentPage, setCurrentPage] = useState('dashboard');
-    const navigateTo = (page) => setCurrentPage(page);
+function App() {
+  const [user, setUser] = useState(null);
+  const [view, setView] = useState('dashboard');
 
-    const handleLogout = () => {
-        localStorage.removeItem('token');
-        window.location.reload(); // The simplest way to reset all states
-    };
+  // Check for existing session on load
+  useEffect(() => {
+    const savedUser = localStorage.getItem('user');
+    if (savedUser) setUser(JSON.parse(savedUser));
+  }, []);
 
-    const renderPage = () => {
-        switch (currentPage) {
-            case 'subjects': return <SubjectsPage onNavigate={navigateTo} />;
-            case 'attendance': return <AttendancePage onNavigate={navigateTo} />;
-            case 'marks': return <MarksPage onNavigate={navigateTo} />;
-            default: return <DashboardPage onNavigate={navigateTo} />;
-        }
-    };
-
-    return (
-        <div>
-            <button 
-                onClick={handleLogout} 
-                className="absolute top-4 right-28 z-50 bg-red-600 text-white px-3 py-1 rounded-lg text-sm hover:bg-red-700 transition-transform hover:scale-105"
-            >
-                Logout
-            </button>
-            {renderPage()}
-        </div>
-    );
-};
-
-export default function App() {
-  const [token, setToken] = useState(() => localStorage.getItem('token'));
-
-  const handleAuthSuccess = () => {
-      setToken(localStorage.getItem('token'));
+  const handleLogin = (userData) => {
+    setUser(userData);
+    localStorage.setItem('user', JSON.stringify(userData));
+    setView('dashboard');
   };
 
-  if (!token) {
-      return <AuthPage onAuthSuccess={handleAuthSuccess} />;
+  const handleLogout = () => {
+    setUser(null);
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    setView('dashboard');
+  };
+
+  const onNavigate = (newView) => {
+    setView(newView);
+    window.scrollTo(0, 0); // Reset scroll on navigation
+  };
+
+  // Auth Guard: Show login if no user/token is present
+  if (!user && !localStorage.getItem('token')) {
+    return <AuthPage onLogin={handleLogin} />;
   }
 
-  return <AppContainer />;
+  return (
+    <div className="min-h-screen bg-[#0d1524]">
+      {/* Navigation Logic for StudySync */}
+      {view === 'dashboard' && (
+        <DashboardPage onNavigate={onNavigate} onLogout={handleLogout} />
+      )}
+      {view === 'attendance' && <AttendancePage onNavigate={onNavigate} />}
+      {view === 'marks' && <MarksPage onNavigate={onNavigate} />}
+      {view === 'subjects' && <SubjectsPage onNavigate={onNavigate} />}
+      
+      {/* [NEW] Render NotesPage when view is 'notes' */}
+      {view === 'notes' && <NotesPage onNavigate={onNavigate} />}
+    </div>
+  );
 }
 
+export default App;

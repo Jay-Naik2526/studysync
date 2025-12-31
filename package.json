@@ -12,13 +12,20 @@
   "dependencies": {
     "axios": "^1.12.2",
     "bcryptjs": "^3.0.2",
-    "jspdf": "^3.0.3",
+    "html2canvas": "^1.4.1",
+    "html2pdf.js": "^0.12.1",
+    "jspdf": "^3.0.4",
     "jspdf-autotable": "^5.0.2",
     "react": "^19.1.1",
-    "react-dom": "^19.1.1"
+    "react-dom": "^19.1.1",
+    "react-markdown": "^10.1.0",
+    "rehype-katex": "^7.0.1",
+    "remark-gfm": "^4.0.1",
+    "remark-math": "^6.0.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.35.0",
+    "@tailwindcss/typography": "^0.5.19",
     "@types/react": "^19.1.13",
     "@types/react-dom": "^19.1.9",
     "@vitejs/plugin-react": "^5.0.2",

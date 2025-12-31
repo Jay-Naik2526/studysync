@@ -50,4 +50,10 @@ export const todosAPI = {
   delete: (id) => api.delete(`/todos/${id}`),
 };
 
+export const notesAPI = {
+  generate: (formData) => api.post('/notes/generate', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' }
+  }),
+  getBySubject: (subjectId) => api.get(`/notes/${subjectId}`),
+};
 export default api;
