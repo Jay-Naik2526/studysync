@@ -1,12 +1,6 @@
 {
     "version": 2,
     "rewrites": [
-      { "source": "/api/(.*)", "destination": "/backend/server.js" }
-    ],
-    "functions": {
-      "backend/server.js": {
-        "maxDuration": 60,
-        "memory": 1024
-      }
-    }
+      { "source": "/api/(.*)", "destination": "https://studysync.zeabur.app/api/$1" }
+    ]
   }
