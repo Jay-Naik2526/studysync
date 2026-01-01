@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { authAPI } from '../api';
 
-export default function AuthPage({ onAuthSuccess }) {
+export default function AuthPage({ onLogin }) {
   const [isLogin, setIsLogin] = useState(true);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -16,15 +16,15 @@ export default function AuthPage({ onAuthSuccess }) {
     try {
       if (isLogin) {
         const response = await authAPI.login({ email, password });
-        localStorage.setItem('token', response.data.token);
-        onAuthSuccess();
+        // Pass the full {token, user} object to App.jsx
+        onLogin(response.data);
       } else {
         await authAPI.register({ name, email, password });
         setMessage('Registration successful! Please log in.');
         setIsLogin(true);
       }
     } catch (err) {
-      setError(err.response?.data?.message || 'An error occurred. Please try again.');
+      setError(err.response?.data?.message || 'Login failed. Check your credentials.');
     }
   };
 
@@ -42,12 +42,9 @@ export default function AuthPage({ onAuthSuccess }) {
           {error && <p className="text-red-500 text-center text-sm">{error}</p>}
           {message && <p className="text-green-500 text-center text-sm">{message}</p>}
         </form>
-        <p className="text-center text-sm text-gray-400 mt-6">
-          {isLogin ? "Don't have an account?" : "Already have an account?"}
-          <button onClick={() => setIsLogin(!isLogin)} className="font-bold text-blue-400 hover:underline ml-2">
-            {isLogin ? 'Sign Up' : 'Login'}
-          </button>
-        </p>
+        <button onClick={() => setIsLogin(!isLogin)} className="w-full text-center text-sm text-blue-400 mt-6 hover:underline">
+          {isLogin ? "Don't have an account? Sign Up" : "Already have an account? Login"}
+        </button>
       </div>
     </div>
   );

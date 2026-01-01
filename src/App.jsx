@@ -4,21 +4,27 @@ import DashboardPage from './components/DashboardPage';
 import AttendancePage from './components/AttendancePage';
 import MarksPage from './components/MarksPage';
 import SubjectsPage from './components/SubjectsPage';
-import NotesPage from './components/NotesPage'; // [NEW] Import the AI Notes Page
+import NotesPage from './components/NotesPage';
 
 function App() {
   const [user, setUser] = useState(null);
   const [view, setView] = useState('dashboard');
+  const [loading, setLoading] = useState(true);
 
-  // Check for existing session on load
   useEffect(() => {
     const savedUser = localStorage.getItem('user');
-    if (savedUser) setUser(JSON.parse(savedUser));
+    const token = localStorage.getItem('token');
+    if (savedUser && token) {
+      setUser(JSON.parse(savedUser));
+    }
+    setLoading(false);
   }, []);
 
-  const handleLogin = (userData) => {
-    setUser(userData);
-    localStorage.setItem('user', JSON.stringify(userData));
+  const handleLogin = (data) => {
+    // Data contains { token, user } from backend
+    setUser(data.user);
+    localStorage.setItem('user', JSON.stringify(data.user));
+    localStorage.setItem('token', data.token);
     setView('dashboard');
   };
 
@@ -31,25 +37,21 @@ function App() {
 
   const onNavigate = (newView) => {
     setView(newView);
-    window.scrollTo(0, 0); // Reset scroll on navigation
+    window.scrollTo(0, 0);
   };
 
-  // Auth Guard: Show login if no user/token is present
+  if (loading) return <div className="min-h-screen bg-[#0d1524] text-white flex items-center justify-center">Loading StudySync...</div>;
+
   if (!user && !localStorage.getItem('token')) {
     return <AuthPage onLogin={handleLogin} />;
   }
 
   return (
     <div className="min-h-screen bg-[#0d1524]">
-      {/* Navigation Logic for StudySync */}
-      {view === 'dashboard' && (
-        <DashboardPage onNavigate={onNavigate} onLogout={handleLogout} />
-      )}
+      {view === 'dashboard' && <DashboardPage onNavigate={onNavigate} onLogout={handleLogout} />}
       {view === 'attendance' && <AttendancePage onNavigate={onNavigate} />}
       {view === 'marks' && <MarksPage onNavigate={onNavigate} />}
       {view === 'subjects' && <SubjectsPage onNavigate={onNavigate} />}
-      
-      {/* [NEW] Render NotesPage when view is 'notes' */}
       {view === 'notes' && <NotesPage onNavigate={onNavigate} />}
     </div>
   );
