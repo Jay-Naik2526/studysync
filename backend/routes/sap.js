@@ -35,12 +35,15 @@ router.get('/status', authMiddleware, async (req, res) => {
   if (!creds) return res.json({ connected: false });
 
   res.json({
-    connected:          true,
-    lastSync:           creds.lastSync,
-    lastSyncStatus:     creds.lastSyncStatus,
-    lastSyncMessage:    creds.lastSyncMessage,
-    lastSyncDetails:    creds.lastSyncDetails || [],
-    lastAttendanceDate: creds.lastAttendanceDate,
+    connected:               true,
+    lastSync:                creds.lastSync,
+    lastSyncStatus:          creds.lastSyncStatus,
+    lastSyncMessage:         creds.lastSyncMessage,
+    lastSyncDetails:         creds.lastSyncDetails || [],
+    lastAttendanceDate:      creds.lastAttendanceDate,
+    microsoftCalendarUrl:    creds.microsoftCalendarUrl,
+    lastCalendarSync:        creds.lastCalendarSync,
+    lastCalendarSyncMessage: creds.lastCalendarSyncMessage,
   });
 });
 
@@ -155,6 +158,61 @@ router.post('/sync', authMiddleware, async (req, res) => {
 router.delete('/credentials', authMiddleware, async (req, res) => {
   await SapCredentials.deleteOne({ userId: req.user.id });
   res.json({ message: 'SAP credentials removed.' });
+});
+
+// ── POST /api/sap/calendar — save/update Microsoft Calendar feed URL ─
+router.post('/calendar', authMiddleware, async (req, res) => {
+  const { calendarUrl } = req.body;
+  if (!calendarUrl) {
+    return res.status(400).json({ message: 'Calendar Feed URL is required.' });
+  }
+
+  try {
+    // Basic validation to check if it's a valid webcal/https url
+    if (!calendarUrl.startsWith('http://') && !calendarUrl.startsWith('https://') && !calendarUrl.startsWith('webcal://')) {
+      return res.status(400).json({ message: 'Invalid URL format. Must start with https:// or webcal://' });
+    }
+
+    // Convert webcal to https so node-fetch can request it directly
+    const formattedUrl = calendarUrl.replace(/^webcal:\/\//i, 'https://');
+
+    await SapCredentials.findOneAndUpdate(
+      { userId: req.user.id },
+      { microsoftCalendarUrl: formattedUrl },
+      { upsert: true, new: true }
+    );
+
+    res.json({ message: 'Microsoft Teams calendar feed connected successfully.' });
+  } catch (err) {
+    console.error('Save calendar feed error:', err);
+    res.status(500).json({ message: 'Failed to connect calendar feed.' });
+  }
+});
+
+// ── GET /api/sap/deadlines — fetch and parse Microsoft Teams deadlines ─
+router.get('/deadlines', authMiddleware, async (req, res) => {
+  const creds = await SapCredentials.findOne({ userId: req.user.id });
+  if (!creds || !creds.microsoftCalendarUrl) {
+    return res.json([]); // Return empty list if not connected
+  }
+
+  try {
+    const { fetchMicrosoftDeadlines } = await import('../services/microsoftCalendar.js');
+    const deadlines = await fetchMicrosoftDeadlines(creds.microsoftCalendarUrl);
+
+    // Save success sync state
+    creds.lastCalendarSync = new Date();
+    creds.lastCalendarSyncMessage = 'success';
+    await creds.save();
+
+    res.json(deadlines);
+  } catch (err) {
+    console.error('Calendar sync error:', err.message);
+    creds.lastCalendarSyncMessage = err.message;
+    await creds.save();
+    
+    res.status(500).json({ message: `Calendar sync failed: ${err.message}` });
+  }
 });
 
 export default router;

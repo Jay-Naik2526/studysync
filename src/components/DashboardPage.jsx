@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { TrendingUp, CalendarCheck, CalendarX, BookOpen, AlertTriangle, CheckCircle, ArrowUpRight } from 'lucide-react';
-import { dashboardAPI } from '../api';
+import { TrendingUp, CalendarCheck, CalendarX, BookOpen, AlertTriangle, CheckCircle, ArrowUpRight, Microsoft, Link, Unlink, RefreshCw, Loader2, X, Clock, HelpCircle } from 'lucide-react';
+import { dashboardAPI, sapAPI } from '../api';
 
 function Ring({ pct, size = 110, stroke = 10, color }) {
   const r = size / 2 - stroke / 2;
@@ -71,15 +71,146 @@ function BarChart({ data, color, valueKey = 'value', nameKey = 'name', unitSuffi
   );
 }
 
+// ── Microsoft Calendar Link Help Modal ──
+function MicrosoftHelpModal({ onClose }) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
+      <div className="bg-[#0d0c17] border border-white/[0.1] rounded-2xl p-6 w-full max-w-md shadow-2xl">
+        <div className="flex items-center justify-between mb-5">
+          <h3 className="text-base font-bold text-white flex items-center gap-2">
+            <Clock size={16} className="text-fuchsia-400" /> How to find Calendar Feed URL
+          </h3>
+          <button onClick={onClose} className="text-zinc-600 hover:text-zinc-300 transition-colors"><X size={18} /></button>
+        </div>
+        <div className="space-y-4 text-xs text-zinc-400 leading-relaxed">
+          <p>Since your Teams assignment deadlines are hosted securely on your college Outlook account, follow these simple steps to sync them to StudySync in real-time:</p>
+          <ol className="list-decimal pl-4 space-y-2">
+            <li>Open official <a href="https://outlook.office.com" target="_blank" rel="noreferrer" className="text-violet-400 underline">Outlook Web Web-App</a> and log in with your college credentials.</li>
+            <li>Click the ⚙️ **Settings Gear Icon** at the top right.</li>
+            <li>Navigate to **Calendar** ➡️ **Shared Calendars**.</li>
+            <li>Go to the **Publish a Calendar** section.</li>
+            <li>Select **Calendar** and set permissions to **Can view all details**.</li>
+            <li>Click **Publish**, copy the **ICS link** (starts with `https://` or `webcal://`) and paste it inside StudySync!</li>
+          </ol>
+          <div className="bg-violet-500/10 border border-violet-500/20 p-3 rounded-xl mt-2 text-violet-300">
+            💡 <strong>Why ICS?</strong> Bypasses campus firewalls securely and keeps all Teams & Outlook assignment deadlines auto-updating dynamically!
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Connect Microsoft Calendar Modal ──
+function CalendarModal({ onClose, onSaved }) {
+  const [calUrl, setCalUrl] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [err, setErr] = useState('');
+  const [showHelp, setShowHelp] = useState(false);
+
+  const handleSave = async (e) => {
+    e.preventDefault();
+    setSaving(true); setErr('');
+    try {
+      await sapAPI.saveCalendarUrl({ calendarUrl: calUrl });
+      onSaved();
+    } catch (e) {
+      setErr(e.response?.data?.message || 'Failed to save.');
+    } finally { setSaving(false); }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
+      <div className="bg-[#0d0c17] border border-white/[0.1] rounded-2xl p-6 w-full max-w-sm shadow-2xl">
+        <div className="flex items-center justify-between mb-5">
+          <div>
+            <h3 className="text-base font-bold text-white flex items-center gap-1.5">
+              <Clock size={16} className="text-fuchsia-400" /> Connect Teams
+            </h3>
+            <p className="text-xs text-zinc-500 mt-0.5">Sync upcoming assignment deadlines.</p>
+          </div>
+          <button onClick={onClose} className="text-zinc-600 hover:text-zinc-300 transition-colors"><X size={18} /></button>
+        </div>
+        <form onSubmit={handleSave} className="space-y-3">
+          <div>
+            <div className="flex justify-between items-center mb-1.5">
+              <label className="block text-[10px] font-bold text-zinc-600 uppercase tracking-widest leading-none">Outlook ICS Calendar URL</label>
+              <button type="button" onClick={() => setShowHelp(true)} className="text-[10px] font-bold text-violet-400 flex items-center gap-0.5 leading-none">
+                <HelpCircle size={10} /> Find URL
+              </button>
+            </div>
+            <input type="url" placeholder="Paste webcal:// or https:// ICS link..." value={calUrl} onChange={e => setCalUrl(e.target.value)}
+              className="w-full bg-white/[0.05] border border-white/[0.08] text-white placeholder-zinc-600 rounded-xl px-3 py-2.5 text-xs focus:outline-none focus:border-violet-500/50" required />
+          </div>
+          {err && <p className="text-xs text-red-400">{err}</p>}
+          <button type="submit" disabled={saving}
+            className="w-full py-2.5 bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 disabled:opacity-50 text-white font-semibold rounded-xl text-xs transition-all shadow-lg shadow-violet-500/20">
+            {saving ? 'Connecting…' : 'Connect Teams Feed'}
+          </button>
+        </form>
+      </div>
+      {showHelp && <MicrosoftHelpModal onClose={() => setShowHelp(false)} />}
+    </div>
+  );
+}
+
 export default function DashboardPage({ onNavigate }) {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
+
+  // Microsoft Calendar State
+  const [sapStatus, setSapStatus] = useState(null);
+  const [deadlines, setDeadlines] = useState([]);
+  const [syncingCal, setSyncingCal] = useState(false);
+  const [showCalModal, setShowCalModal] = useState(false);
+  const [calError, setCalError] = useState('');
+
+  const fetchSapStatus = async () => {
+    try {
+      const resp = await sapAPI.getStatus();
+      setSapStatus(resp.data);
+      if (resp.data.microsoftCalendarUrl) {
+        fetchDeadlines();
+      }
+    } catch (e) { console.error('Status fetch failed:', e); }
+  };
+
+  const fetchDeadlines = async () => {
+    try {
+      const resp = await sapAPI.getDeadlines();
+      setDeadlines(resp.data);
+    } catch (e) {
+      console.warn('Deadlines retrieval failed:', e);
+    }
+  };
+
+  const handleCalSync = async () => {
+    setSyncingCal(true); setCalError('');
+    try {
+      await fetchDeadlines();
+      await fetchSapStatus();
+    } catch (e) {
+      setCalError('Deadlines sync failed. Please check feed URL.');
+    } finally { setSyncingCal(false); }
+  };
+
+  const handleCalDisconnect = async () => {
+    if (!window.confirm('Disconnect Microsoft Teams feed?')) return;
+    try {
+      // Disconnect by clearing url parameter inside Mongoose
+      await sapAPI.saveCalendarUrl({ calendarUrl: '' });
+      setDeadlines([]);
+      fetchSapStatus();
+    } catch {}
+  };
 
   useEffect(() => {
     dashboardAPI.getDashboard()
       .then(res => setData(res.data))
       .catch(console.error)
       .finally(() => setLoading(false));
+
+    fetchSapStatus();
   }, []);
 
   if (loading) {
@@ -121,6 +252,90 @@ export default function DashboardPage({ onNavigate }) {
         <StatCard icon={CalendarX} label="Absences" value={stats.absences} accent="#f87171" />
         <StatCard icon={BookOpen} label="Subjects" value={stats.subjects} accent="#a78bfa" />
         <StatCard icon={TrendingUp} label="Total Marks" value={stats.totalMarks} accent="#fbbf24" />
+      </div>
+
+      {/* Microsoft Teams Deadlines Alert Strip */}
+      <div className="bg-white/[0.04] border border-white/[0.08] rounded-2xl p-4 sm:p-5 mb-3">
+        <div className="flex items-center justify-between gap-3 flex-wrap">
+          <div className="flex items-center gap-3">
+            <div className={`w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 ${sapStatus?.microsoftCalendarUrl ? 'bg-fuchsia-500/15' : 'bg-zinc-800'}`}>
+              <Clock size={15} className={sapStatus?.microsoftCalendarUrl ? 'text-fuchsia-400' : 'text-zinc-600'} />
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-white flex items-center gap-2">
+                Microsoft Teams Integration
+                {sapStatus?.microsoftCalendarUrl && <span className="text-[10px] font-bold text-fuchsia-400 bg-fuchsia-500/10 px-2 py-0.5 rounded-full">Connected</span>}
+              </p>
+              <p className="text-xs text-zinc-600 mt-0.5">
+                {sapStatus?.microsoftCalendarUrl 
+                  ? sapStatus.lastCalendarSync
+                    ? `Synced successfully. Tracking ${deadlines.length} active deadline(s).`
+                    : 'Feed linked — Syncing assignment deadlines...'
+                  : 'Sync your university Teams & Outlook assignment deadlines in real-time.'}
+              </p>
+            </div>
+          </div>
+          <div className="flex gap-2 flex-shrink-0">
+            {sapStatus?.microsoftCalendarUrl ? (
+              <>
+                <button
+                  onClick={handleCalSync} disabled={syncingCal}
+                  className="flex items-center gap-1.5 px-4 py-2 bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 disabled:opacity-50 text-white rounded-xl text-xs font-semibold transition-all">
+                  {syncingCal ? <Loader2 size={13} className="animate-spin" /> : <RefreshCw size={13} />}
+                  {syncingCal ? 'Syncing…' : 'Sync'}
+                </button>
+                <button onClick={handleCalDisconnect} className="px-3 py-2 bg-white/[0.05] hover:bg-red-500/10 border border-white/[0.08] hover:border-red-500/20 rounded-xl transition-all">
+                  <Unlink size={13} className="text-zinc-500 hover:text-red-400" />
+                </button>
+              </>
+            ) : (
+              <button onClick={() => setShowCalModal(true)}
+                className="flex items-center gap-1.5 px-4 py-2 bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 text-white rounded-xl text-xs font-semibold transition-all">
+                <Link size={13} /> Link Teams
+              </button>
+            )}
+          </div>
+        </div>
+        
+        {/* Deadlines Checklist Box */}
+        {sapStatus?.microsoftCalendarUrl && deadlines.length > 0 && (
+          <div className="mt-4 border-t border-white/[0.06] pt-4">
+            <h4 className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-3">Upcoming Assignment Deadlines</h4>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-60 overflow-y-auto pr-1">
+              {deadlines.map((dl, idx) => {
+                const hoursLeft = Math.round(dl.remainingMs / (1000 * 60 * 60));
+                const daysLeft = Math.round(hoursLeft / 24);
+                const isOverdue = dl.remainingMs < 0;
+                
+                let colorClass = 'border-emerald-500/25 bg-emerald-500/5 text-emerald-400';
+                let timeText = `${daysLeft} days left`;
+                
+                if (isOverdue) {
+                  colorClass = 'border-zinc-500/20 bg-white/[0.02] text-zinc-500';
+                  timeText = 'Overdue';
+                } else if (hoursLeft <= 24) {
+                  colorClass = 'border-red-500/25 bg-red-500/5 text-red-400 animate-pulse';
+                  timeText = `${hoursLeft} hours left!`;
+                } else if (daysLeft <= 3) {
+                  colorClass = 'border-amber-500/25 bg-amber-500/5 text-amber-400';
+                  timeText = `${daysLeft} days left`;
+                }
+
+                return (
+                  <div key={idx} className={`flex items-center justify-between gap-3 border rounded-xl p-3 hover:border-white/[0.1] transition-all`}>
+                    <div className="min-w-0">
+                      <p className="text-xs font-bold text-white truncate max-w-[200px]">{dl.title}</p>
+                      <p className="text-[10px] text-zinc-500 mt-0.5">{new Date(dl.dueDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</p>
+                    </div>
+                    <span className={`inline-flex items-center gap-1 text-[10px] font-bold border rounded-full px-2.5 py-0.5 ${colorClass}`}>
+                      {timeText}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Row 2: Two charts side by side */}
@@ -194,6 +409,13 @@ export default function DashboardPage({ onNavigate }) {
           ))}
         </div>
       </div>
+
+      {showCalModal && (
+        <CalendarModal
+          onClose={() => setShowCalModal(false)}
+          onSaved={() => { setShowCalModal(false); fetchSapStatus(); }}
+        />
+      )}
     </div>
   );
 }

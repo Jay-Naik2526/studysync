@@ -17,6 +17,11 @@ const sapCredentialsSchema = new mongoose.Schema({
   lastSyncMessage:    { type: String, default: '' },
   lastSyncDetails:    { type: Array,  default: [] },
   lastAttendanceDate: { type: Date,   default: null },
+
+  // Microsoft Calendar Feed Sync state
+  microsoftCalendarUrl:    { type: String, default: null },
+  lastCalendarSync:        { type: Date,   default: null },
+  lastCalendarSyncMessage: { type: String, default: '' },
 }, { timestamps: true });
 
 export default mongoose.model('SapCredentials', sapCredentialsSchema);

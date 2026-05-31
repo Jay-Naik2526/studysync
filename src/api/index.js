@@ -66,6 +66,8 @@ export const sapAPI = {
   getStatus:       ()      => api.get('/sap/status'),
   sync:            ()      => api.post('/sap/sync'),
   disconnect:      ()      => api.delete('/sap/credentials'),
+  saveCalendarUrl: (data)  => api.post('/sap/calendar', data),
+  getDeadlines:    ()      => api.get('/sap/deadlines'),
 };
 
 export default api;
