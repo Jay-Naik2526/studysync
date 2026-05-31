@@ -347,6 +347,60 @@ export default function AttendancePage() {
             {syncMsg}
           </p>
         )}
+
+        {/* Sync Mapping Details Breakdown */}
+        {sapStatus?.lastSyncDetails && sapStatus.lastSyncDetails.length > 0 && (
+          <div className="mt-4 border-t border-white/[0.06] pt-4">
+            <h4 className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-3">Sync Mapping Status</h4>
+            <div className="overflow-x-auto max-h-60 overflow-y-auto rounded-xl border border-white/[0.05]">
+              <table className="w-full text-left border-collapse text-xs">
+                <thead>
+                  <tr className="bg-white/[0.02] border-b border-white/[0.06] text-zinc-400">
+                    <th className="p-3 font-semibold">SAP Course Name</th>
+                    <th className="p-3 font-semibold">StudySync Match</th>
+                    <th className="p-3 font-semibold">Attendance</th>
+                    <th className="p-3 font-semibold text-right">Status</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-white/[0.04]">
+                  {sapStatus.lastSyncDetails.map((detail, idx) => {
+                    const isMatched = detail.status === 'synced';
+                    return (
+                      <tr key={idx} className="hover:bg-white/[0.01] transition-colors text-zinc-300">
+                        <td className="p-3 font-medium truncate max-w-[200px]" title={detail.pdfName}>
+                          {detail.pdfName}
+                        </td>
+                        <td className="p-3">
+                          {isMatched ? (
+                            <span className="text-emerald-400 font-medium">{detail.subjectName}</span>
+                          ) : (
+                            <span className="text-zinc-600 italic">No matching subject</span>
+                          )}
+                        </td>
+                        <td className="p-3">
+                          <span className="text-zinc-400">
+                            {detail.conducted - detail.absent}/{detail.conducted} ({detail.conducted > 0 ? (((detail.conducted - detail.absent) / detail.conducted) * 100).toFixed(0) : 0}%)
+                          </span>
+                        </td>
+                        <td className="p-3 text-right">
+                          {isMatched ? (
+                            <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full">
+                              <CheckCircle size={10} /> Synced
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 text-[10px] font-bold text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-full" title="To match this, add a subject with this name or acronym">
+                              <AlertTriangle size={10} /> Unmatched
+                            </span>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
       </div>
 
       {showSapModal && (

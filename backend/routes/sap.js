@@ -39,6 +39,7 @@ router.get('/status', authMiddleware, async (req, res) => {
     lastSync:        creds.lastSync,
     lastSyncStatus:  creds.lastSyncStatus,
     lastSyncMessage: creds.lastSyncMessage,
+    lastSyncDetails: creds.lastSyncDetails || [],
   });
 });
 
@@ -73,6 +74,8 @@ router.post('/sync', authMiddleware, async (req, res) => {
 
       // Update matched subjects
       let updated = 0, skipped = 0;
+      const details = [];
+
       for (const r of results) {
         if (r.autoMatched && r.subjectId) {
           await Subject.findByIdAndUpdate(r.subjectId, {
@@ -80,14 +83,31 @@ router.post('/sync', authMiddleware, async (req, res) => {
             absentClasses:    r.absent,
           });
           updated++;
+          details.push({
+            pdfName: r.pdfName,
+            subjectName: r.subjectName,
+            status: 'synced',
+            conducted: r.conducted,
+            absent: r.absent,
+            confidence: r.confidence
+          });
         } else {
           skipped++;
+          details.push({
+            pdfName: r.pdfName,
+            subjectName: r.subjectName || '(Unmatched)',
+            status: 'unmatched',
+            conducted: r.conducted,
+            absent: r.absent,
+            confidence: r.confidence
+          });
         }
       }
 
       creds.lastSync        = syncedAt;
       creds.lastSyncStatus  = 'success';
       creds.lastSyncMessage = `Updated ${updated} subject(s). ${skipped} course(s) from SAP could not be matched — add more subjects with matching names.`;
+      creds.lastSyncDetails = details;
       await creds.save();
 
       console.log(`✅ SAP sync complete: ${updated} updated, ${skipped} unmatched`);

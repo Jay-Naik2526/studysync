@@ -15,6 +15,7 @@ const sapCredentialsSchema = new mongoose.Schema({
   lastSync:        { type: Date,   default: null },
   lastSyncStatus:  { type: String, enum: ['success', 'failed', 'running', null], default: null },
   lastSyncMessage: { type: String, default: '' },
+  lastSyncDetails: { type: Array,  default: [] },
 }, { timestamps: true });
 
 export default mongoose.model('SapCredentials', sapCredentialsSchema);
