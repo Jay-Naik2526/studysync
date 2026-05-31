@@ -20,19 +20,34 @@ function Ring({ pct, color, size = 52, stroke = 5 }) {
 
 function SubjectCard({ subject, onUpdate, onDelete }) {
   const { name, conductedClasses = 0, absentClasses = 0, totalPlannedClasses = 0, _id } = subject;
-  const present = Math.max(conductedClasses - absentClasses, 0);
-  const pct = conductedClasses > 0 ? (present / conductedClasses) * 100 : 0;
+  
+  // Interactive Simulation State
+  const [simAttended, setSimAttended] = useState(0);
+  const [simAbsent, setSimAbsent] = useState(0);
+  const isSimulating = simAttended > 0 || simAbsent > 0;
+
+  // Recalculated values based on simulation inputs
+  const simulatedConducted = conductedClasses + simAttended + simAbsent;
+  const simulatedAbsent = absentClasses + simAbsent;
+  const present = Math.max(simulatedConducted - simulatedAbsent, 0);
+  
+  const pct = simulatedConducted > 0 ? (present / simulatedConducted) * 100 : 0;
   const onTrack = pct >= 80;
   const maxSkip = Math.floor(totalPlannedClasses * 0.2);
-  const canSkip = Math.max(maxSkip - absentClasses, 0);
+  const canSkip = Math.max(maxSkip - simulatedAbsent, 0);
 
   const set = (field, val) => {
     const n = parseInt(val, 10);
     if (!isNaN(n) && n >= 0) onUpdate(_id, { [field]: n });
   };
 
+  const resetSimulation = () => {
+    setSimAttended(0);
+    setSimAbsent(0);
+  };
+
   return (
-    <div className="bg-white/[0.04] border border-white/[0.08] rounded-2xl p-4 sm:p-5 hover:border-white/[0.13] transition-all">
+    <div className={`border rounded-2xl p-4 sm:p-5 transition-all ${isSimulating ? 'bg-violet-950/10 border-violet-500/40 shadow-lg shadow-violet-500/5' : 'bg-white/[0.04] border-white/[0.08] hover:border-white/[0.13]'}`}>
       {/* Header */}
       <div className="flex items-start justify-between mb-4">
         <div className="flex items-center gap-3 min-w-0">
@@ -45,11 +60,14 @@ function SubjectCard({ subject, onUpdate, onDelete }) {
           </div>
           <div className="min-w-0">
             <h3 className="font-bold text-white text-sm leading-tight truncate">{name}</h3>
-            <div className="flex items-center gap-1 mt-0.5">
+            <div className="flex items-center gap-1.5 mt-0.5">
               {onTrack
                 ? <><CheckCircle size={10} className="text-emerald-400 flex-shrink-0" /><span className="text-[11px] text-emerald-400">On track</span></>
                 : <><AlertTriangle size={10} className="text-amber-400 flex-shrink-0" /><span className="text-[11px] text-amber-400">Below 80%</span></>
               }
+              {isSimulating && (
+                <span className="text-[9px] font-bold text-violet-400 bg-violet-500/10 px-1.5 py-0.5 rounded uppercase tracking-wider">Simulating</span>
+              )}
             </div>
           </div>
         </div>
@@ -77,6 +95,34 @@ function SubjectCard({ subject, onUpdate, onDelete }) {
             />
           </div>
         ))}
+      </div>
+
+      {/* Interactive Simulation Controls */}
+      <div className="bg-white/[0.02] border border-white/[0.05] rounded-xl p-2.5 mb-3">
+        <div className="flex items-center justify-between mb-1.5">
+          <p className="text-[10px] font-bold text-violet-400 uppercase tracking-wider">What-If Predictor</p>
+          {isSimulating && (
+            <button onClick={resetSimulation} className="text-[10px] font-medium text-zinc-500 hover:text-white transition-colors">Reset</button>
+          )}
+        </div>
+        <div className="grid grid-cols-2 gap-2 text-xs">
+          <div className="flex items-center justify-between bg-emerald-500/5 hover:bg-emerald-500/10 border border-emerald-500/10 rounded-lg p-1.5 px-2">
+            <span className="text-[11px] text-emerald-400">Attend next:</span>
+            <div className="flex items-center gap-1.5 font-bold text-white">
+              <button disabled={simAttended <= 0} onClick={() => setSimAttended(prev => Math.max(0, prev - 1))} className="w-5 h-5 bg-white/5 border border-white/10 hover:bg-white/10 rounded flex items-center justify-center disabled:opacity-30">-</button>
+              <span className="w-4 text-center text-xs">{simAttended}</span>
+              <button onClick={() => setSimAttended(prev => prev + 1)} className="w-5 h-5 bg-white/5 border border-white/10 hover:bg-white/10 rounded flex items-center justify-center">+</button>
+            </div>
+          </div>
+          <div className="flex items-center justify-between bg-red-500/5 hover:bg-red-500/10 border border-red-500/10 rounded-lg p-1.5 px-2">
+            <span className="text-[11px] text-red-400">Skip next:</span>
+            <div className="flex items-center gap-1.5 font-bold text-white">
+              <button disabled={simAbsent <= 0} onClick={() => setSimAbsent(prev => Math.max(0, prev - 1))} className="w-5 h-5 bg-white/5 border border-white/10 hover:bg-white/10 rounded flex items-center justify-center disabled:opacity-30">-</button>
+              <span className="w-4 text-center text-xs">{simAbsent}</span>
+              <button onClick={() => setSimAbsent(prev => prev + 1)} className="w-5 h-5 bg-white/5 border border-white/10 hover:bg-white/10 rounded flex items-center justify-center">+</button>
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Read-only stats */}
