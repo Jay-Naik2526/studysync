@@ -1,5 +1,5 @@
 import React from 'react';
-import { LayoutDashboard, CalendarDays, BarChart2, BookOpen, Sparkles, LogOut } from 'lucide-react';
+import { LayoutDashboard, CalendarDays, BarChart2, BookOpen, Sparkles, CalendarCheck, LogOut } from 'lucide-react';
 
 const navItems = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -7,6 +7,7 @@ const navItems = [
   { id: 'marks', label: 'Marks', icon: BarChart2 },
   { id: 'subjects', label: 'Subjects', icon: BookOpen },
   { id: 'notes', label: 'AI Notes', icon: Sparkles },
+  { id: 'planner', label: 'AI Planner', icon: CalendarCheck },
 ];
 
 export default function Layout({ currentView, onNavigate, onLogout, user, children }) {

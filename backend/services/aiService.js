@@ -156,3 +156,93 @@ Return ONLY the JSON array. No code fences, no preamble, no explanation.
   }
   throw new Error("CRITICAL: All Gemini models and keys failed.");
 };
+
+// ── Contextual Notes Q&A Chatbot service ──
+export const chatAboutNotes = async (noteContent, chatHistory, userMessage) => {
+  const systemInstruction = "You are a helpful university teaching assistant. You are answering a student's questions about the provided study notes. Reference the provided notes to answer their question clearly, accurately, and thoroughly. If they ask about equations, render them in inline math ($...$) or block math ($$...$$) just like standard textbook style. Keep your tone supportive, academic, and encouraging.";
+  
+  const formattedHistory = chatHistory && chatHistory.length > 0 
+    ? chatHistory.map(m => `${m.sender === 'user' ? 'Student' : 'Assistant'}: ${m.text}`).join('\n')
+    : 'No prior chat history.';
+
+  const promptText = `
+STUDY NOTES CONTEXT:
+${noteContent}
+
+CHAT HISTORY:
+${formattedHistory}
+
+Student's New Question: ${userMessage}
+`;
+
+  for (let i = 0; i < API_KEYS.length; i++) {
+    for (const modelName of MODELS) {
+      try {
+        console.log(`📡 [Chatbot] Attempting ${modelName} with Key #${i + 1}...`);
+        const genAI = new GoogleGenerativeAI(API_KEYS[i]);
+        const model = genAI.getGenerativeModel({ model: modelName, systemInstruction });
+        
+        const result = await model.generateContent({
+          contents: [{ role: "user", parts: [{ text: promptText }] }],
+          generationConfig: { temperature: 0.7, maxOutputTokens: 2048 }
+        });
+        
+        console.log(`✅ [Chatbot] SUCCESS: [Model ${modelName}]`);
+        return result.response.text().trim();
+      } catch (err) {
+        console.error(`❌ [Chatbot] FAILED: ${modelName} | Error: ${err.message}`);
+        if (err.message.includes("429") || err.message.includes("quota")) continue;
+        throw err;
+      }
+    }
+  }
+  throw new Error("CRITICAL: All Gemini models failed to process Chatbot request.");
+};
+
+// ── Smart Adaptive AI Study Planner service ──
+export const generateStudyPlanner = async (policyText, weakTopics, analyticsData, commitHours) => {
+  const systemInstruction = "You are an elite academic counselor and study architect. Analyze the student's syllabus/course policy along with their current grade performance and attendance records. Create a highly personalized, week-by-week study roadmap that prioritizes their weak topics and keeps them on track to hit an 80% attendance target and optimal grades. STRICT HTML RULE: Do NOT use raw HTML tags (like <h1>, <h2>, etc.); strictly use standard Markdown.";
+
+  const promptText = `
+COURSE SYLLABUS / POLICY TEXT:
+${policyText || 'No specific course policy document provided.'}
+
+STUDENT PERFORMANCE METRICS (DATABASE):
+- Subject: ${analyticsData.subjectName}
+- Conducted Classes: ${analyticsData.conductedClasses}
+- Absent Classes: ${analyticsData.absentClasses}
+- Current Attendance Percentage: ${analyticsData.attendanceRate}%
+- Total Target Planned Classes: ${analyticsData.totalPlannedClasses}
+- Weak Topics List: ${weakTopics || 'None specified. Standard syllabus progression recommended.'}
+- Target Grade / Marks Metric: ${analyticsData.marksList}
+- Weekly Study Commitment: ${commitHours} hours/week
+
+You must produce a highly structured textbook-style study plan in Markdown containing:
+1. **Academic Standings Diagnostic**: Detailed assessment of attendance risk (especially if close to or below 80%) and grades risk, calculating what they need to stay safe.
+2. **Weak Topics Strategy**: Detailed roadmap on how to study each of their weak topics using the course policy timeline.
+3. **Structured Weekly Plan**: A week-by-week roadmap (covering 4 to 8 weeks depending on the policy) allocating their weekly commit hours. For each week, provide specific learning goals, active recall questions, and practical tasks.
+`;
+
+  for (let i = 0; i < API_KEYS.length; i++) {
+    for (const modelName of MODELS) {
+      try {
+        console.log(`📡 [Planner] Attempting ${modelName} with Key #${i + 1}...`);
+        const genAI = new GoogleGenerativeAI(API_KEYS[i]);
+        const model = genAI.getGenerativeModel({ model: modelName, systemInstruction });
+        
+        const result = await model.generateContent({
+          contents: [{ role: "user", parts: [{ text: promptText }] }],
+          generationConfig: { temperature: 0.7, maxOutputTokens: 8192 }
+        });
+        
+        console.log(`✅ [Planner] SUCCESS: [Model ${modelName}]`);
+        return result.response.text().trim();
+      } catch (err) {
+        console.error(`❌ [Planner] FAILED: ${modelName} | Error: ${err.message}`);
+        if (err.message.includes("429") || err.message.includes("quota")) continue;
+        throw err;
+      }
+    }
+  }
+  throw new Error("CRITICAL: All Gemini models failed to process Planner request.");
+};

@@ -130,3 +130,59 @@
   font-family: 'Inter', 'Segoe UI', sans-serif;
   line-height: 1.6;
 }
+
+/* ── Premium Glassmorphism & Micro-animations ────────────────── */
+
+.glass-panel {
+  background: rgba(13, 12, 23, 0.45);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 
+    0 4px 30px rgba(0, 0, 0, 0.4),
+    inset 0 1px 1px rgba(255, 255, 255, 0.05);
+}
+
+.glass-panel-interactive {
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+.glass-panel-interactive:hover {
+  transform: translateY(-2px);
+  border-color: rgba(124, 58, 237, 0.3);
+  box-shadow: 
+    0 12px 30px rgba(0, 0, 0, 0.5),
+    0 0 15px rgba(124, 58, 237, 0.15),
+    inset 0 1px 1px rgba(255, 255, 255, 0.1);
+}
+
+/* Shimmer Animation for Skeleton Loaders */
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.animate-shimmer {
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.03) 25%,
+    rgba(255, 255, 255, 0.08) 50%,
+    rgba(255, 255, 255, 0.03) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.6s infinite linear;
+}
+
+/* Neon Active State Glows */
+.neon-glow-violet {
+  box-shadow: 0 0 15px rgba(124, 58, 237, 0.35);
+}
+
+.neon-glow-fuchsia {
+  box-shadow: 0 0 15px rgba(217, 70, 239, 0.35);
+}
+

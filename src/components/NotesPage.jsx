@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Sparkles, Download, FileText, BookOpen, Brain,
   ClipboardList, HelpCircle, ChevronDown, ChevronLeft, ChevronRight,
-  RotateCcw, CheckCircle, XCircle, Trophy, Eye, EyeOff
+  RotateCcw, CheckCircle, XCircle, Trophy, Eye, EyeOff, MessageSquare, Send, Loader2
 } from 'lucide-react';
 import { notesAPI, subjectsAPI } from '../api';
 import ReactMarkdown from 'react-markdown';
@@ -10,6 +10,7 @@ import remarkMath from 'remark-math';
 import remarkGfm from 'remark-gfm';
 import rehypeKatex from 'rehype-katex';
 import html2pdf from 'html2pdf.js';
+import { SkeletonNotes } from './SkeletonLoader';
 
 /* ─────────────────────────── helpers ─────────────────────────── */
 
@@ -390,6 +391,37 @@ export default function NotesPage() {
   const [progress, setProgress] = useState(0);
   const [showForm, setShowForm] = useState(true);
 
+  // Chatbot Q&A States
+  const [chatOpen, setChatOpen] = useState(false);
+  const [chatMessage, setChatMessage] = useState('');
+  const [chatHistory, setChatHistory] = useState([]);
+  const [chatLoading, setChatLoading] = useState(false);
+
+  const handleSendChat = async (e) => {
+    e.preventDefault();
+    if (!chatMessage.trim() || chatLoading) return;
+
+    const userMsg = chatMessage.trim();
+    setChatMessage('');
+    setChatLoading(true);
+
+    const updatedHistory = [...chatHistory, { sender: 'user', text: userMsg }];
+    setChatHistory(updatedHistory);
+
+    try {
+      const res = await notesAPI.chatAboutNote({
+        noteContent: currentNote.content,
+        chatHistory: chatHistory,
+        message: userMsg
+      });
+
+      setChatHistory([...updatedHistory, { sender: 'ai', text: res.data.response }]);
+    } catch (err) {
+      alert(err.response?.data?.message || 'AI Chatbot failed to respond. Try again.');
+    }
+    setChatLoading(false);
+  };
+
   useEffect(() => {
     subjectsAPI.getAll().then(r => setSubjects(r.data)).catch(console.error);
   }, []);
@@ -507,7 +539,7 @@ export default function NotesPage() {
   );
 
   const OutputPanel = (
-    <div className="bg-white/[0.04] border border-white/[0.08] rounded-2xl flex flex-col"
+    <div className="relative bg-white/[0.04] border border-white/[0.08] rounded-2xl flex flex-col"
       style={{ height: 'clamp(400px, calc(100vh - 180px), 900px)' }}>
       <div className="flex items-center justify-between px-5 py-3.5 border-b border-white/[0.07] flex-shrink-0 gap-3">
         <div className="flex items-center gap-2 min-w-0">
@@ -531,7 +563,9 @@ export default function NotesPage() {
       </div>
 
       <div className="flex-1 overflow-y-auto custom-scrollbar p-5 sm:p-7">
-        {currentNote ? (
+        {loading ? (
+          <SkeletonNotes />
+        ) : currentNote ? (
           <div>
             {/* Title for notes only */}
             {!isInteractive && (
@@ -578,6 +612,90 @@ export default function NotesPage() {
           </div>
         )}
       </div>
+
+      {/* Floating AI Chatbot overlay inside the OutputPanel */}
+      {currentNote && !isInteractive && (
+        <>
+          {/* Glowing chat toggle button */}
+          <div className="absolute bottom-5 right-5 z-40">
+            <button
+              onClick={() => setChatOpen(prev => !prev)}
+              aria-label="Ask AI Assistant"
+              className={`w-12 h-12 rounded-full text-white shadow-lg flex items-center justify-center transition-all duration-300 transform hover:scale-110 active:scale-95 neon-glow-violet
+                ${chatOpen 
+                  ? 'bg-gradient-to-r from-red-500 to-rose-600 hover:from-red-400 hover:to-rose-500 rotate-90' 
+                  : 'bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500'
+                }`}
+            >
+              {chatOpen ? <XCircle size={20} /> : <MessageSquare size={18} className="animate-pulse" />}
+            </button>
+          </div>
+
+          {/* Floating Slide-in chat window */}
+          {chatOpen && (
+            <div className="absolute bottom-20 right-5 w-80 sm:w-[380px] h-[450px] rounded-2xl glass-panel border border-violet-500/20 shadow-2xl flex flex-col z-50 overflow-hidden transition-all duration-300">
+              {/* Chat Header */}
+              <div className="px-4 py-3 border-b border-white/[0.08] bg-white/[0.02] flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Sparkles size={14} className="text-violet-400 animate-pulse" />
+                  <span className="text-[10px] font-bold text-white uppercase tracking-wider">AI Study Assistant</span>
+                </div>
+                <button onClick={() => setChatOpen(false)} className="text-zinc-500 hover:text-zinc-300 text-xs">Close</button>
+              </div>
+              
+              {/* Chat History */}
+              <div className="flex-1 overflow-y-auto custom-scrollbar p-4 space-y-3">
+                {chatHistory.length === 0 ? (
+                  <div className="text-center text-zinc-500 text-xs mt-20 space-y-2.5">
+                    <Brain size={24} className="mx-auto text-zinc-600 animate-bounce" />
+                    <p>Ask me anything about these study notes!</p>
+                  </div>
+                ) : (
+                  chatHistory.map((m, idx) => (
+                    <div key={idx} className={`flex ${m.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
+                      <div className={`max-w-[85%] rounded-2xl px-3.5 py-2 text-xs leading-relaxed ${
+                        m.sender === 'user' 
+                          ? 'bg-gradient-to-r from-violet-600 to-violet-700 text-white rounded-br-none' 
+                          : 'bg-white/[0.05] border border-white/[0.08] text-zinc-200 rounded-bl-none markdown-dark'
+                      }`}>
+                        {m.sender === 'user' ? m.text : <ReactMarkdown>{m.text}</ReactMarkdown>}
+                      </div>
+                    </div>
+                  ))
+                )}
+                {chatLoading && (
+                  <div className="flex justify-start">
+                    <div className="bg-white/[0.04] border border-white/[0.06] text-zinc-500 rounded-2xl rounded-bl-none px-4 py-2.5 text-xs flex items-center gap-2">
+                      <Loader2 size={12} className="animate-spin text-violet-400" />
+                      <span>Thinking...</span>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Input Form */}
+              <form onSubmit={handleSendChat} className="p-3 border-t border-white/[0.08] bg-white/[0.01] flex gap-2">
+                <input
+                  type="text"
+                  value={chatMessage}
+                  onChange={e => setChatMessage(e.target.value)}
+                  placeholder="Ask a question..."
+                  required
+                  disabled={chatLoading}
+                  className="flex-1 bg-white/[0.05] border border-white/[0.08] text-zinc-200 placeholder-zinc-700 rounded-xl px-3 py-2 text-xs focus:outline-none focus:border-violet-500/50 transition-all disabled:opacity-50"
+                />
+                <button
+                  type="submit"
+                  disabled={chatLoading}
+                  className="p-2 bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 rounded-xl text-white transition-all transform hover:scale-105 active:scale-95 disabled:opacity-50"
+                >
+                  <Send size={13} />
+                </button>
+              </form>
+            </div>
+          )}
+        </>
+      )}
     </div>
   );
 

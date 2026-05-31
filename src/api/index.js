@@ -55,5 +55,10 @@ export const notesAPI = {
     headers: { 'Content-Type': 'multipart/form-data' }
   }),
   getBySubject: (subjectId) => api.get(`/notes/${subjectId}`),
+  chatAboutNote: (chatData) => api.post('/notes/chat', chatData),
+  generatePlanner: (formData) => api.post('/notes/planner', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' }
+  }),
 };
+
 export default api;

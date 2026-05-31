@@ -6,6 +6,7 @@ import AttendancePage from './components/AttendancePage';
 import MarksPage from './components/MarksPage';
 import SubjectsPage from './components/SubjectsPage';
 import NotesPage from './components/NotesPage';
+import PlannerPage from './components/PlannerPage';
 
 function App() {
   const [user, setUser] = useState(null);
@@ -59,6 +60,7 @@ function App() {
       {view === 'marks' && <MarksPage onNavigate={onNavigate} />}
       {view === 'subjects' && <SubjectsPage onNavigate={onNavigate} />}
       {view === 'notes' && <NotesPage onNavigate={onNavigate} />}
+      {view === 'planner' && <PlannerPage onNavigate={onNavigate} />}
     </Layout>
   );
 }

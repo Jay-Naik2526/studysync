@@ -28,7 +28,8 @@
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.0.3",
     "multer": "^2.0.2",
-    "officeparser": "^5.2.2"
+    "officeparser": "^5.2.2",
+    "pdf-parse": "^2.4.5"
   },
   "devDependencies": {
     "nodemon": "^3.0.2"
