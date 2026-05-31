@@ -47,25 +47,51 @@ function matchSubject(pdfName, subjects) {
     .filter(w => w.length > 0 && !['and','the','for','with','through','in','of','to','by'].includes(w))
     .map(w => dictionary[w] || w);
 
-  // Generates multiple acronym candidates to match dynamic abbreviation short-forms (e.g. DAIoT, TCS, DM)
+  // Generates standard and compound acronym candidates
   const getAcronyms = words => {
     if (words.length === 0) return [];
     
-    // Standard acronym (first letters: ['discrete', 'mathematics'] -> 'dm')
+    // 1. Standard acronym (first letters: ['discrete', 'mathematics'] -> 'dm')
     const std = words.map(w => w[0]).join('');
     
-    // Compound acronym (checks if a word is 'iot' or 'cs' and preserves it)
+    // 2. Compound acronym (checks if a word is 'iot', 'cs' etc and preserves it)
     const compound = words.map(w => {
       if (['iot', 'cs', 'it', 'ai', 'ml'].includes(w)) return w;
       return w[0];
     }).join('');
 
-    // Handle IoT specific edge case: if standard is 'dait', also register 'daiot' as a valid acronym
-    const list = [std, compound];
-    if (std === 'dait' || compound === 'dait') list.push('daiot');
-    if (std === 'daiot' || compound === 'daiot') list.push('dait');
+    return Array.from(new Set([std, compound]));
+  };
 
-    return Array.from(new Set(list));
+  // Helper function to check if an acronym matches another acronym dynamically (allows for skipped vowel letters like 'o' in IoT)
+  const isAcronymMatch = (ac1, ac2) => {
+    if (ac1 === ac2) return true;
+    
+    // Clean vowels (except first letter) to see if they are structural consonant matches (e.g. 'daiot' -> 'dait')
+    const dropVowels = s => s[0] + s.substring(1).replace(/[aeiou]/g, '');
+    if (dropVowels(ac1) === dropVowels(ac2)) return true;
+
+    // Check if one is a subsequence of the other with high similarity (e.g. 'dait' matches 'daiot')
+    const cleanStr = s => s.replace(/[^a-z0-9]/g, '');
+    const s1 = cleanStr(ac1), s2 = cleanStr(ac2);
+    if (s1.length < 2 || s2.length < 2) return false;
+
+    // Is one completely contained within the other in order?
+    let i = 0, j = 0;
+    const shorter = s1.length < s2.length ? s1 : s2;
+    const longer = s1.length < s2.length ? s2 : s1;
+
+    while (i < shorter.length && j < longer.length) {
+      if (shorter[i] === longer[j]) i++;
+      j++;
+    }
+
+    // If all characters of the shorter acronym are in the longer one in order (and difference is minimal)
+    if (i === shorter.length && (longer.length - shorter.length) <= 2) {
+      return true;
+    }
+
+    return false;
   };
 
   const pdfW = getWords(pdfName);
@@ -77,9 +103,12 @@ function matchSubject(pdfName, subjects) {
     const subW = getWords(sub.name);
     const subAcronyms = getAcronyms(subW);
 
-    // 1. Check acronym intersection (e.g., "DAIoT" -> "Des and App Int Thin" / "Design and Applied Integrative Thinking [IoT]")
-    const hasAcronymMatch = pdfAcronyms.some(pa => subAcronyms.includes(pa) || subW.includes(pa)) ||
-                           subAcronyms.some(sa => pdfAcronyms.includes(sa) || pdfW.includes(sa));
+    // 1. Check acronym intersection dynamically using the sub-sequence builder (DAIoT matching dait / Des and App Int Thin)
+    const hasAcronymMatch = pdfAcronyms.some(pa => 
+      subAcronyms.some(sa => isAcronymMatch(pa, sa)) || subW.some(sw => isAcronymMatch(pa, sw))
+    ) || subAcronyms.some(sa => 
+      pdfAcronyms.some(pa => isAcronymMatch(sa, pa)) || pdfW.some(pw => isAcronymMatch(sa, pw))
+    );
     
     if (hasAcronymMatch) {
       best = sub;
