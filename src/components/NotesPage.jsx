@@ -22,7 +22,10 @@ const typeOptions = [
 
 const MarkdownRenderer = React.memo(({ content, isPrint = false }) => (
   <div className={isPrint ? 'prose prose-slate max-w-none bg-white p-10' : 'markdown-dark'}>
-    <ReactMarkdown remarkPlugins={[remarkMath, remarkGfm]} rehypePlugins={[rehypeKatex]}>
+    <ReactMarkdown
+      remarkPlugins={[remarkMath, remarkGfm]}
+      rehypePlugins={[[rehypeKatex, { throwOnError: false, strict: false, output: 'html' }]]}
+    >
       {content}
     </ReactMarkdown>
   </div>

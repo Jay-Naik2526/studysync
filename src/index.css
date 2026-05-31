@@ -81,6 +81,10 @@
   font-size: 0.85rem;
 }
 
+/* KaTeX — suppress red error color, show gracefully */
+.markdown-dark .katex-error { color: #a78bfa !important; }
+.markdown-dark .katex { font-size: 1em; }
+
 /* Tables */
 .markdown-dark table {
   width: 100%;
