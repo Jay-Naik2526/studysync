@@ -1,169 +1,199 @@
-// src/components/DashboardPage.jsx
 import React, { useState, useEffect } from 'react';
+import { TrendingUp, CalendarCheck, CalendarX, BookOpen, AlertTriangle, CheckCircle, ArrowUpRight } from 'lucide-react';
 import { dashboardAPI } from '../api';
 
-const HeaderIcon = ({ onClick, children }) => (
-  <button onClick={onClick} className="p-2 bg-gray-800 rounded-full hover:bg-gray-700 transition-colors duration-200">
-    {children}
-  </button>
-);
-
-const CircularProgress = ({ percentage, label }) => { 
-  const radius = 55; 
-  const stroke = 12; 
-  const normalizedRadius = radius - stroke / 2; 
-  const circumference = normalizedRadius * 2 * Math.PI; 
-  const strokeDashoffset = circumference - (percentage / 100) * circumference; 
-  const color = label === "Attendance" ? "#22c55e" : "#3b82f6"; 
+function Ring({ pct, size = 110, stroke = 10, color }) {
+  const r = size / 2 - stroke / 2;
+  const circ = 2 * Math.PI * r;
+  const offset = circ - (Math.min(pct, 100) / 100) * circ;
   return (
-    <div className="flex flex-col items-center justify-center bg-gray-800 rounded-xl p-6 h-full transition-transform duration-300 hover:scale-105">
+    <svg width={size} height={size} className="-rotate-90" style={{ minWidth: size }}>
+      <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth={stroke} />
+      <circle
+        cx={size / 2} cy={size / 2} r={r} fill="none"
+        stroke={color} strokeWidth={stroke} strokeLinecap="round"
+        strokeDasharray={`${circ} ${circ}`}
+        style={{ strokeDashoffset: offset, transition: 'stroke-dashoffset 0.8s cubic-bezier(.4,0,.2,1)' }}
+      />
+    </svg>
+  );
+}
+
+function GaugeCard({ label, pct, color, glow }) {
+  return (
+    <div className="relative bg-white/[0.04] border border-white/[0.08] rounded-2xl p-5 flex flex-col items-center gap-3 hover:border-white/[0.14] transition-all overflow-hidden group">
+      <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity"
+        style={{ background: `radial-gradient(ellipse at center, ${glow} 0%, transparent 70%)` }} />
       <div className="relative">
-        <svg height={radius * 2} width={radius * 2} className="-rotate-90">
-          <circle stroke="#374151" fill="transparent" strokeWidth={stroke} r={normalizedRadius} cx={radius} cy={radius} />
-          <circle stroke={color} fill="transparent" strokeWidth={stroke} strokeDasharray={circumference + " " + circumference} style={{ strokeDashoffset, transition: "stroke-dashoffset 0.5s" }} strokeLinecap="round" r={normalizedRadius} cx={radius} cy={radius} />
-        </svg>
-        <span className="absolute inset-0 flex items-center justify-center text-3xl font-bold text-white">{percentage}%</span>
+        <Ring pct={pct} color={color} />
+        <span className="absolute inset-0 flex items-center justify-center text-xl font-black text-white">{pct}%</span>
       </div>
-      <span className="mt-4 text-lg font-medium text-gray-300">{label}</span>
+      <p className="text-xs font-medium text-zinc-400 relative">{label}</p>
     </div>
-  ); 
-};
+  );
+}
 
-const InfoCard = ({ icon, label, value }) => (
-  <div className="bg-gray-800 rounded-lg p-4 flex items-center space-x-4 transition-transform duration-300 hover:scale-105">
-    <div className="text-2xl">{icon}</div>
-    <div>
-      <div className="text-gray-400 text-sm">{label}</div>
-      <div className="text-xl font-bold text-white">{value}</div>
+function StatCard({ icon: Icon, label, value, accent }) {
+  return (
+    <div className="bg-white/[0.04] border border-white/[0.08] rounded-2xl p-4 flex items-center gap-3 hover:border-white/[0.14] transition-all">
+      <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: accent + '18' }}>
+        <Icon size={16} style={{ color: accent }} />
+      </div>
+      <div className="min-w-0">
+        <p className="text-[10px] text-zinc-600 font-medium uppercase tracking-wide leading-none">{label}</p>
+        <p className="text-xl font-black text-white leading-tight mt-0.5">{value}</p>
+      </div>
     </div>
-  </div>
-);
+  );
+}
 
-const LowAttendanceSubjects = ({ subjects }) => (
-  <div className="bg-gray-800 rounded-xl p-6 h-full">
-    <h2 className="text-lg font-semibold text-white mb-4">Low Attendance Subjects</h2>
-    <div className="space-y-4">
-      {subjects && subjects.length > 0 ? (
-        subjects.map((subject, i) => (
-          <div key={i} className="flex items-center justify-between">
-            <div className="flex items-center">
-              <span className="text-red-500 mr-3">⚠️</span>
-              <div>
-                <p className="text-white font-medium">{subject.name}</p>
-                <p className="text-sm text-red-400">{subject.percentage.toFixed(1)}% Attendance</p>
-              </div>
-            </div>
-            <div className="text-right">
-              <p className="text-white font-medium">{subject.remainingSkippable}</p>
-              <p className="text-xs text-gray-400">Classes to Skip</p>
-            </div>
+function BarChart({ data, color, valueKey = 'value', nameKey = 'name', unitSuffix = '' }) {
+  if (!data?.length) return <div className="flex items-center justify-center h-full text-zinc-700 text-xs">No data yet</div>;
+  const max = Math.max(...data.map(d => d[valueKey] ?? 0), 1);
+  return (
+    <div className="flex items-end gap-1.5 h-full px-1 pt-2">
+      {data.map((item, i) => {
+        const pct = ((item[valueKey] ?? 0) / max) * 100;
+        return (
+          <div key={i} className="flex flex-col items-center gap-1 flex-1 h-full justify-end group min-w-0">
+            <span className="text-[9px] text-zinc-600 font-semibold opacity-0 group-hover:opacity-100 transition-opacity truncate">
+              {item[valueKey]}{unitSuffix}
+            </span>
+            <div className="w-full max-w-[28px] mx-auto rounded-t-md transition-all duration-700"
+              style={{ height: `${Math.max(pct, 4)}%`, background: `linear-gradient(180deg, ${color} 0%, ${color}88 100%)` }} />
+            <span className="text-[9px] text-zinc-700 truncate w-full text-center">
+              {(item[nameKey] || '').substring(0, 5)}
+            </span>
           </div>
-        ))
-      ) : (
-        <div className="text-center text-gray-400 py-8">
-          <p>Great job!</p>
-          <p>No subjects are below 80%.</p>
-        </div>
-      )}
+        );
+      })}
     </div>
-  </div>
-);
-
-const MarksBySubjectChart = ({ data }) => { 
-  if (!data || data.length === 0) return <div className="h-full flex items-center justify-center text-gray-500">No marks recorded</div>; 
-  return (
-    <div className="flex justify-around items-end w-full h-full pt-4 px-1">
-      {data.map((item) => (
-        <div key={item.subject} className="flex flex-col items-center flex-grow h-full justify-end">
-          <div className="w-3/5 bg-blue-500 rounded-t-md transition-all duration-500" style={{ height: `${item.percentage}%` }}></div>
-          <div className="text-xs text-gray-400 mt-2 truncate w-full text-center">{item.subject.substring(0, 4)}</div>
-        </div>
-      ))}
-    </div>
-  ); 
-};
-
-const SkippableClassesChart = ({ data }) => { 
-  if (!data || data.length === 0) return <div className="h-full flex items-center justify-center text-gray-500">No data available</div>; 
-  const maxVal = Math.max(...data.map(d => d.remaining), 5); 
-  return (
-    <div className="flex justify-around items-end w-full h-full pt-4 px-1">
-      {data.map((item) => (
-        <div key={item.name} className="flex flex-col items-center flex-grow h-full justify-end">
-          <div className="text-white text-xs mb-1 font-bold">{item.remaining}</div>
-          <div className="w-3/5 bg-green-500 rounded-t-md transition-all duration-500" style={{ height: `${(item.remaining / maxVal) * 80}%` }} ></div>
-          <div className="text-xs text-gray-400 mt-2 truncate w-full text-center">{item.name.substring(0, 4)}</div>
-        </div>
-      ))}
-    </div>
-  ); 
-};
+  );
+}
 
 export default function DashboardPage({ onNavigate }) {
-  const [dashboardData, setDashboardData] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const loadData = async () => {
-      try { 
-        const response = await dashboardAPI.getDashboard(); 
-        setDashboardData(response.data); 
-      } catch (error) { 
-        console.error("Failed to load dashboard data:", error); 
-      } finally { 
-        setIsLoading(false); 
-      }
-    };
-    loadData();
+    dashboardAPI.getDashboard()
+      .then(res => setData(res.data))
+      .catch(console.error)
+      .finally(() => setLoading(false));
   }, []);
 
-  const handleLogout = () => {
-    localStorage.removeItem('token');
-    onNavigate('auth');
-  };
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-9 h-9 rounded-full border-2 border-violet-500/30 border-t-violet-500 animate-spin" />
+          <p className="text-zinc-500 text-sm">Loading dashboard…</p>
+        </div>
+      </div>
+    );
+  }
 
-  if (isLoading) return (<div className="min-h-screen bg-[#0d1524] flex items-center justify-center text-white">Loading Your Dashboard...</div>);
-  if (!dashboardData) return (<div className="min-h-screen bg-[#0d1524] flex items-center justify-center text-white">Could not load dashboard data. Please try logging out and back in.</div>);
+  if (!data) {
+    return <div className="flex items-center justify-center min-h-[60vh] text-zinc-500 text-sm px-4 text-center">Failed to load. Please sign out and back in.</div>;
+  }
 
-  const { stats, charts, lowAttendanceSubjects } = dashboardData;
+  const { stats, charts, lowAttendanceSubjects } = data;
+  const skippableData = (charts.skippableClassesData || []).map(d => ({ value: d.remaining, name: d.name }));
+  const marksData = (charts.marksBySubject || []).map(d => ({ value: Math.round(d.percentage), name: d.subject }));
+
   return (
-    <div className="min-h-screen bg-[#0d1524] text-white p-4 sm:p-6 md:p-8 font-sans">
-      <header className="flex justify-between items-center mb-6">
-        <div>
-          <h1 className="text-3xl font-bold">StudySync</h1>
-          <p className="text-gray-400">Track your attendance and academic performance</p>
+    <div className="max-w-5xl mx-auto px-4 py-8 sm:px-6 md:px-8">
+      {/* Header */}
+      <div className="mb-7">
+        <p className="text-[10px] font-bold text-violet-400 uppercase tracking-widest mb-1">Overview</p>
+        <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight">Dashboard</h1>
+      </div>
+
+      {/* Row 1: Gauges + 4 stat cards */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-3">
+        {/* Gauges span 2 cols on all sizes */}
+        <div className="col-span-2 grid grid-cols-2 gap-3">
+          <GaugeCard label="Attendance" pct={stats.attendance} color="#a78bfa" glow="rgba(167,139,250,0.08)" />
+          <GaugeCard label="Avg. Marks" pct={stats.averageMarks} color="#f0abfc" glow="rgba(240,171,252,0.08)" />
         </div>
-        <div className="flex items-center space-x-2">
-          <HeaderIcon onClick={() => onNavigate('attendance')}>📅</HeaderIcon>
-          <HeaderIcon onClick={() => onNavigate('marks')}>📊</HeaderIcon>
-          <HeaderIcon onClick={() => onNavigate('subjects')}>📚</HeaderIcon>
-          <HeaderIcon onClick={() => onNavigate('notes')}>📝</HeaderIcon>
-          <HeaderIcon onClick={handleLogout}>Logout 🚪</HeaderIcon>
-        </div>
-      </header>
-      <main className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="md:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-6">
-          <CircularProgress percentage={stats.attendance} label="Attendance" />
-          <CircularProgress percentage={stats.averageMarks} label="Average Marks" />
-          <InfoCard icon="👍" label="Days Present" value={stats.daysPresent} />
-          <InfoCard icon="👎" label="Absences" value={stats.absences} />
-          <InfoCard icon="📚" label="Subjects" value={stats.subjects} />
-          <InfoCard icon="🎯" label="Total Marks" value={stats.totalMarks} />
-          <div className="sm:col-span-2 grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <div className="bg-gray-800 rounded-xl p-6 h-48">
-              <h2 className="text-lg font-semibold text-white -mt-2 mb-2">Remaining Skippable Classes</h2>
-              <SkippableClassesChart data={charts.skippableClassesData} />
-            </div>
-            <div className="bg-gray-800 rounded-xl p-6 h-48">
-              <h2 className="text-lg font-semibold text-white -mt-2 mb-2">Marks by Subject</h2>
-              <MarksBySubjectChart data={charts.marksBySubject} />
-            </div>
+        {/* Stat cards: 2×2 on mobile, each 1 col on sm+ */}
+        <StatCard icon={CalendarCheck} label="Present" value={stats.daysPresent} accent="#34d399" />
+        <StatCard icon={CalendarX} label="Absences" value={stats.absences} accent="#f87171" />
+        <StatCard icon={BookOpen} label="Subjects" value={stats.subjects} accent="#a78bfa" />
+        <StatCard icon={TrendingUp} label="Total Marks" value={stats.totalMarks} accent="#fbbf24" />
+      </div>
+
+      {/* Row 2: Two charts side by side */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
+        <div className="bg-white/[0.04] border border-white/[0.08] rounded-2xl p-5 hover:border-white/[0.13] transition-all">
+          <p className="text-sm font-bold text-white mb-0.5">Skippable Classes</p>
+          <p className="text-[10px] text-zinc-600 mb-3">Remaining per subject</p>
+          <div className="h-28">
+            <BarChart data={skippableData} color="#34d399" valueKey="value" nameKey="name" />
           </div>
         </div>
-        <div className="md:col-span-1">
-          <LowAttendanceSubjects subjects={lowAttendanceSubjects} />
+        <div className="bg-white/[0.04] border border-white/[0.08] rounded-2xl p-5 hover:border-white/[0.13] transition-all">
+          <p className="text-sm font-bold text-white mb-0.5">Marks by Subject</p>
+          <p className="text-[10px] text-zinc-600 mb-3">Score percentage</p>
+          <div className="h-28">
+            <BarChart data={marksData} color="#a78bfa" valueKey="value" nameKey="name" unitSuffix="%" />
+          </div>
         </div>
-      </main>
+      </div>
+
+      {/* Row 3: Alerts + Quick links */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        {/* Alerts */}
+        <div className="bg-white/[0.04] border border-white/[0.08] rounded-2xl p-5 hover:border-white/[0.13] transition-all">
+          <p className="text-sm font-bold text-white mb-3 flex items-center gap-2">
+            <AlertTriangle size={14} className="text-amber-400" />Attendance Alerts
+          </p>
+          <div className="space-y-3">
+            {lowAttendanceSubjects?.length > 0 ? (
+              lowAttendanceSubjects.map((s, i) => (
+                <div key={i} className="space-y-1.5">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-sm text-zinc-200 truncate">{s.name}</span>
+                    <span className="text-xs font-bold text-red-400 flex-shrink-0">{s.percentage.toFixed(1)}%</span>
+                  </div>
+                  <div className="w-full bg-white/[0.05] rounded-full h-1.5">
+                    <div className="h-1.5 rounded-full bg-gradient-to-r from-amber-500 to-red-500 transition-all" style={{ width: `${s.percentage}%` }} />
+                  </div>
+                  <p className="text-[10px] text-zinc-700">{s.remainingSkippable} skips left</p>
+                </div>
+              ))
+            ) : (
+              <div className="flex items-center gap-2 text-emerald-400">
+                <CheckCircle size={15} />
+                <span className="text-sm font-medium">All subjects above 80%</span>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Quick links 2×2 grid */}
+        <div className="grid grid-cols-2 gap-3">
+          {[
+            { label: 'Attendance', view: 'attendance', color: '#34d399', sub: 'Track classes' },
+            { label: 'Marks', view: 'marks', color: '#a78bfa', sub: 'Grades & tasks' },
+            { label: 'Subjects', view: 'subjects', color: '#60a5fa', sub: 'Manage subjects' },
+            { label: 'AI Notes', view: 'notes', color: '#f0abfc', sub: 'Generate notes' },
+          ].map(({ label, view, color, sub }) => (
+            <button
+              key={view}
+              onClick={() => onNavigate(view)}
+              className="bg-white/[0.04] border border-white/[0.08] rounded-2xl p-4 text-left hover:border-white/[0.15] hover:bg-white/[0.06] transition-all group"
+            >
+              <div className="flex items-center justify-between mb-2">
+                <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: color }} />
+                <ArrowUpRight size={12} className="text-zinc-700 group-hover:text-zinc-400 transition-colors" />
+              </div>
+              <p className="text-sm font-bold text-white leading-tight">{label}</p>
+              <p className="text-[10px] text-zinc-600 mt-0.5 leading-tight">{sub}</p>
+            </button>
+          ))}
+        </div>
+      </div>
     </div>
   );
 }

@@ -1,40 +1,248 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { Plus, Trash2, CheckCircle, AlertTriangle, Download, FileText, TrendingUp } from 'lucide-react';
 import { subjectsAPI } from '../api';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
-const EditableInfoBox = ({ label, value, onUpdate }) => ( <div className="bg-purple-900/50 rounded-lg p-3"><label className="text-gray-400 text-sm block">{label}</label><input type="number" value={value} onChange={onUpdate} className="font-bold text-white bg-transparent w-full focus:outline-none focus:bg-purple-800/50 rounded px-1 text-xl"/></div>);
-const ProgressBar = ({ label, percentage, color, targetLabel }) => (<div><div className="flex justify-between items-center mb-1"><span className={`text-sm font-bold ${color === 'green' ? 'text-green-400' : 'text-red-400'}`}>{label}</span>{targetLabel && <span className="text-xs text-gray-400">{targetLabel}</span>}</div><div className="w-full bg-purple-900/50 rounded-full h-2"><div className={`h-2 rounded-full ${color === 'green' ? 'bg-green-500' : 'bg-red-500'}`} style={{ width: `${percentage}%` }}></div></div></div>);
-const OverallAttendance = ({ subjects }) => { const stats = useMemo(() => { const totalConducted = subjects.reduce((sum, s) => sum + (s.conductedClasses || 0), 0); const totalAbsent = subjects.reduce((sum, s) => sum + (s.absentClasses || 0), 0); const totalPresent = totalConducted - totalAbsent; const overallPercentage = totalConducted > 0 ? (totalPresent / totalConducted) * 100 : 0; return { totalConducted, totalPresent, totalAbsent, overallPercentage }; }, [subjects]); const radius = 40; const circumference = 2 * Math.PI * radius; const offset = circumference - (stats.overallPercentage / 100) * circumference; return (<div className="bg-purple-800/60 rounded-xl p-4 flex items-center justify-between h-full"><div className="relative"><svg className="w-24 h-24 -rotate-90"><circle cx="50%" cy="50%" r={radius} stroke="#583d7a" strokeWidth="10" fill="transparent"/><circle cx="50%" cy="50%" r={radius} stroke="#f97316" strokeWidth="10" fill="transparent" strokeDasharray={circumference} strokeDashoffset={offset} strokeLinecap="round" style={{ transition: 'stroke-dashoffset 0.5s ease' }}/></svg><span className="absolute inset-0 flex items-center justify-center font-bold text-2xl">{stats.overallPercentage.toFixed(1)}%</span></div><div className="text-right"><h3 className="font-bold text-lg">Overall Attendance</h3><p className="text-sm text-gray-300">Total Classes: {stats.totalConducted}</p><p className="text-sm text-gray-300">Attended: {stats.totalPresent}</p><p className="text-sm text-gray-300">Absent: {stats.totalAbsent}</p></div></div>);};
-const AtAGlance = ({ subjects }) => { const stats = useMemo(() => { const goodAttendanceCount = subjects.filter(s => { const p = s.conductedClasses > 0 ? ((s.conductedClasses - s.absentClasses) / s.conductedClasses) * 100 : 100; return p >= 80; }).length; const atRiskCount = subjects.length - goodAttendanceCount; return { goodAttendanceCount, atRiskCount }; }, [subjects]); return (<div className="bg-purple-800/60 rounded-xl p-4 space-y-3 flex flex-col justify-center h-full"><h3 className="font-bold text-lg">At a Glance</h3><div className="flex items-center text-green-400"><span className="text-2xl mr-3">✓</span> Subjects with Good Attendance: <b className="ml-auto text-xl">{stats.goodAttendanceCount}</b></div><div className="flex items-center text-red-400"><span className="text-2xl mr-3">✗</span> Subjects at Risk: <b className="ml-auto text-xl">{stats.atRiskCount}</b></div></div>);};
-const AttendanceComparisonChart = ({ subjects }) => { const chartData = useMemo(() => { return subjects.map(s => { const percentage = s.conductedClasses > 0 ? ((s.conductedClasses - s.absentClasses) / s.conductedClasses) * 100 : 0; return { name: s.name, percentage: percentage < 0 ? 0 : percentage, }; }); }, [subjects]); return (<div className="bg-purple-800/60 rounded-xl p-4 flex flex-col h-full"><h3 className="font-bold text-lg text-center">Attendance Comparison</h3><div className="flex justify-around items-end w-full h-48 pt-4 px-2">{chartData.map(subject => (<div key={subject.name} className="flex flex-col items-center flex-grow h-full justify-end"><div className="text-white text-xs mb-1">{subject.percentage.toFixed(0)}%</div><div className="w-1/2 rounded-t-md transition-all duration-500" style={{ height: `${subject.percentage}%`, backgroundColor: subject.percentage >= 80 ? '#22c55e' : '#ef4444' }}></div><div className="text-xs text-gray-400 mt-2 truncate">{subject.name}</div></div>))}</div></div>);};
-const SubjectCard = ({ subject, onUpdate, onDelete }) => { const { name, conductedClasses = 0, absentClasses = 0, totalPlannedClasses = 0, _id } = subject; const handleInputChange = (field, value) => { const numValue = parseInt(value, 10); if (!isNaN(numValue) && numValue >= 0) { onUpdate(_id, { [field]: numValue }); } }; const classesPresent = conductedClasses - absentClasses; const attendancePercentage = conductedClasses > 0 ? (classesPresent / conductedClasses) * 100 : 0; const isOnTrack = attendancePercentage >= 80; const maxSkippable = Math.floor(totalPlannedClasses * 0.2); const remainingSkippable = maxSkippable - absentClasses; return (<div className="bg-gradient-to-br from-purple-800/60 to-purple-900/80 rounded-2xl p-6 space-y-5 backdrop-blur-sm border border-purple-700/50 transition-all duration-300 hover:border-purple-500 hover:shadow-xl hover:shadow-purple-500/10"><div className="flex justify-between items-center"><h3 className="text-xl font-bold text-white">{name}</h3><button onClick={() => onDelete(_id)} className="text-gray-400 hover:text-red-500 transition-colors text-2xl">🗑️</button></div><div className="space-y-3"><div className="grid grid-cols-2 gap-3"><EditableInfoBox label="Conducted" value={conductedClasses} onUpdate={(e) => handleInputChange('conductedClasses', e.target.value)} /><EditableInfoBox label="Absent" value={absentClasses} onUpdate={(e) => handleInputChange('absentClasses', e.target.value)} /><div className="bg-purple-900/50 rounded-lg p-3"><div className="text-gray-400 text-sm">Present</div><div className="font-bold text-white text-2xl">{classesPresent < 0 ? 0 : classesPresent}</div></div><div className="bg-purple-900/50 rounded-lg p-3"><div className="text-gray-400 text-sm">Attendance</div><div className="font-bold text-white text-2xl">{attendancePercentage < 0 ? 0 : attendancePercentage.toFixed(1)}%</div></div></div><ProgressBar label={isOnTrack ? 'On Track' : 'Below Requirement'} percentage={attendancePercentage} color={isOnTrack ? 'green' : 'red'} targetLabel="Target: 80%" /></div><div className="space-y-3"><h4 className="font-semibold text-gray-300">Semester Planning</h4><EditableInfoBox label="Total Planned Classes" value={totalPlannedClasses} onUpdate={(e) => handleInputChange('totalPlannedClasses', e.target.value)} /><div><div className="flex justify-between items-center mb-1 text-sm text-gray-300"><span>Remaining Skippable</span><span className="font-bold text-green-400">{remainingSkippable > 0 ? remainingSkippable : 0}</span></div><div className="w-full bg-purple-900/50 rounded-full h-2"><div className="bg-green-500 h-2 rounded-full" style={{ width: `${maxSkippable > 0 ? (remainingSkippable / maxSkippable) * 100 : 0}%` }}></div></div></div></div></div>);};
-
-export default function AttendancePage({ onNavigate }) {
-  const [subjects, setSubjects] = useState([]); const [newSubjectName, setNewSubjectName] = useState(""); const [newSubjectTotal, setNewSubjectTotal] = useState(""); const [error, setError] = useState(""); const [isLoaded, setIsLoaded] = useState(false);
-  const fetchSubjects = async () => { try { const response = await subjectsAPI.getAll(); setSubjects(response.data); } catch (error) { console.error("Fetch error:", error); setError("Could not fetch subjects."); }};
-  useEffect(() => { fetchSubjects().then(() => { setTimeout(() => setIsLoaded(true), 100); }); }, []);
-  const handleAddSubject = async (e) => { e.preventDefault(); if (!newSubjectName) return; try { await subjectsAPI.create({ name: newSubjectName, totalPlannedClasses: newSubjectTotal || 0 }); setNewSubjectName(""); setNewSubjectTotal(""); await fetchSubjects(); } catch (error) { setError("Failed to add subject."); } };
-  const handleDeleteSubject = async (id) => { if (window.confirm("Are you sure you want to delete this subject?")) { try { await subjectsAPI.delete(id); setSubjects(currentSubjects => currentSubjects.filter(s => s._id !== id)); } catch (error) { setError("Failed to delete subject."); } } };
-  const handleUpdateSubject = async (id, updatedData) => { setSubjects(currentSubjects => currentSubjects.map(s => s._id === id ? { ...s, ...updatedData } : s)); try { await subjectsAPI.update(id, updatedData); } catch (error) { setError("Failed to save changes."); } };
-  const handleExportCsv = () => { const headers = ["Subject", "Attendance %", "Status", "Conducted", "Present", "Absent", "Planned", "Max Skip", "Remain Skip"]; const rows = subjects.map(s => { const present = s.conductedClasses - s.absentClasses; const percentage = s.conductedClasses > 0 ? (present / s.conductedClasses) * 100 : 100; const status = percentage >= 80 ? "On Track" : "At Risk"; const maxSkip = Math.floor(s.totalPlannedClasses * 0.2); const remainSkip = maxSkip - s.absentClasses; return [s.name, percentage.toFixed(2), status, s.conductedClasses, present, s.absentClasses, s.totalPlannedClasses, maxSkip, remainSkip > 0 ? remainSkip : 0].join(','); }); const csvContent = [headers.join(','), ...rows].join('\n'); const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' }); const link = document.createElement("a"); const url = URL.createObjectURL(blob); link.setAttribute("href", url); link.setAttribute("download", "attendance_report.csv"); link.style.visibility = 'hidden'; document.body.appendChild(link); link.click(); document.body.removeChild(link); };
-  const handleExportPdf = () => { const doc = new jsPDF(); doc.text("Student Attendance Report", 14, 16); const tableColumn = ["Subject", "Att. %", "Status", "Conducted", "Present", "Absent", "Planned", "Max Skip", "Remain Skip"]; const tableRows = []; subjects.forEach(subject => { const present = subject.conductedClasses - subject.absentClasses; const percentage = subject.conductedClasses > 0 ? (present / subject.conductedClasses) * 100 : 100; const status = percentage >= 80 ? "On Track" : "At Risk"; const maxSkip = Math.floor(subject.totalPlannedClasses * 0.2); const remainSkip = maxSkip - subject.absentClasses; const rowData = [ subject.name, `${percentage.toFixed(1)}%`, status, subject.conductedClasses, present > 0 ? present : 0, subject.absentClasses, subject.totalPlannedClasses, maxSkip, remainSkip > 0 ? remainSkip : 0 ]; tableRows.push(rowData); }); autoTable(doc, { head: [tableColumn], body: tableRows, startY: 20, theme: 'striped', headStyles: { fillColor: [41, 128, 185] }, }); doc.save("attendance_report.pdf"); };
-  
+function Ring({ pct, color, size = 52, stroke = 5 }) {
+  const r = size / 2 - stroke / 2;
+  const circ = 2 * Math.PI * r;
+  const offset = circ - (Math.min(pct, 100) / 100) * circ;
   return (
-    <div className={`min-h-screen bg-gradient-to-br from-[#1a0c2e] via-[#0d0d24] to-[#1c0f2f] text-white p-4 sm:p-8 font-sans transition-opacity duration-700 ease-in-out ${isLoaded ? 'opacity-100' : 'opacity-0'}`}>
-      <div className="max-w-7xl mx-auto">
-        <div className="flex justify-between items-center mb-6">
-            <button onClick={() => onNavigate('dashboard')} className="text-gray-300 hover:text-white transition-colors">&larr; Back to Dashboard</button>
-            <div className="flex gap-4">
-                <button onClick={handleExportCsv} className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg transition-colors">Export CSV</button>
-                <button onClick={handleExportPdf} className="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg transition-colors">Export PDF</button>
+    <svg width={size} height={size} className="-rotate-90" style={{ minWidth: size }}>
+      <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth={stroke} />
+      <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke={color} strokeWidth={stroke}
+        strokeLinecap="round" strokeDasharray={`${circ} ${circ}`}
+        style={{ strokeDashoffset: offset, transition: 'stroke-dashoffset 0.7s ease' }} />
+    </svg>
+  );
+}
+
+function SubjectCard({ subject, onUpdate, onDelete }) {
+  const { name, conductedClasses = 0, absentClasses = 0, totalPlannedClasses = 0, _id } = subject;
+  const present = Math.max(conductedClasses - absentClasses, 0);
+  const pct = conductedClasses > 0 ? (present / conductedClasses) * 100 : 0;
+  const onTrack = pct >= 80;
+  const maxSkip = Math.floor(totalPlannedClasses * 0.2);
+  const canSkip = Math.max(maxSkip - absentClasses, 0);
+
+  const set = (field, val) => {
+    const n = parseInt(val, 10);
+    if (!isNaN(n) && n >= 0) onUpdate(_id, { [field]: n });
+  };
+
+  return (
+    <div className="bg-white/[0.04] border border-white/[0.08] rounded-2xl p-4 sm:p-5 hover:border-white/[0.13] transition-all">
+      {/* Header */}
+      <div className="flex items-start justify-between mb-4">
+        <div className="flex items-center gap-3 min-w-0">
+          <div className="relative flex-shrink-0">
+            <Ring pct={pct} color={onTrack ? '#34d399' : '#f87171'} />
+            <span className="absolute inset-0 flex items-center justify-center text-[10px] font-black"
+              style={{ color: onTrack ? '#34d399' : '#f87171' }}>
+              {pct.toFixed(0)}%
+            </span>
+          </div>
+          <div className="min-w-0">
+            <h3 className="font-bold text-white text-sm leading-tight truncate">{name}</h3>
+            <div className="flex items-center gap-1 mt-0.5">
+              {onTrack
+                ? <><CheckCircle size={10} className="text-emerald-400 flex-shrink-0" /><span className="text-[11px] text-emerald-400">On track</span></>
+                : <><AlertTriangle size={10} className="text-amber-400 flex-shrink-0" /><span className="text-[11px] text-amber-400">Below 80%</span></>
+              }
             </div>
+          </div>
         </div>
-        <div className="text-center mb-10"><h1 className="text-4xl font-bold">Subject-wise Attendance Tracker</h1><p className="text-gray-400 mt-2">Update your attendance and see your progress in real-time</p></div>
-        {subjects.length > 0 && (<div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10"><OverallAttendance subjects={subjects} /><AtAGlance subjects={subjects} /><AttendanceComparisonChart subjects={subjects} /></div>)}
-        <div className="max-w-4xl mx-auto mb-10 bg-purple-900/50 rounded-xl p-4 border border-purple-700/50"><form onSubmit={handleAddSubject} className="flex flex-wrap items-center gap-4"><input type="text" placeholder="Subject Name" value={newSubjectName} onChange={e => setNewSubjectName(e.target.value)} className="flex-grow bg-transparent p-2 rounded focus:outline-none focus:bg-purple-800/50" required /><input type="number" placeholder="Total Planned Classes" value={newSubjectTotal} onChange={e => setNewSubjectTotal(e.target.value)} className="bg-transparent p-2 rounded focus:outline-none focus:bg-purple-800/50 w-40" required/><button type="submit" className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg transition-colors">+ Add Subject</button></form>{error && <p className="text-red-500 text-center mt-2">{error}</p>}</div>
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">{subjects.map((subject) => ( <SubjectCard key={subject._id} subject={subject} onUpdate={handleUpdateSubject} onDelete={handleDeleteSubject} /> ))}</div>
+        <button
+          onClick={() => { if (window.confirm(`Delete "${name}"?`)) onDelete(_id); }}
+          className="text-zinc-700 hover:text-red-400 transition-colors p-1 flex-shrink-0 ml-2"
+        >
+          <Trash2 size={14} />
+        </button>
       </div>
+
+      {/* Editable inputs */}
+      <div className="grid grid-cols-3 gap-2 mb-3">
+        {[
+          { label: 'Conducted', field: 'conductedClasses', value: conductedClasses },
+          { label: 'Absent', field: 'absentClasses', value: absentClasses },
+          { label: 'Planned', field: 'totalPlannedClasses', value: totalPlannedClasses },
+        ].map(({ label, field, value }) => (
+          <div key={field} className="bg-white/[0.04] rounded-xl p-2.5 border border-white/[0.06]">
+            <p className="text-[10px] text-zinc-600 mb-0.5 leading-none">{label}</p>
+            <input
+              type="number" value={value}
+              onChange={e => set(field, e.target.value)}
+              className="w-full bg-transparent text-white font-bold text-sm sm:text-base leading-none focus:outline-none"
+            />
+          </div>
+        ))}
+      </div>
+
+      {/* Read-only stats */}
+      <div className="grid grid-cols-2 gap-2">
+        <div className="bg-white/[0.03] rounded-xl p-2.5 border border-white/[0.05]">
+          <p className="text-[10px] text-zinc-600 leading-none mb-0.5">Present</p>
+          <p className="font-bold text-white text-sm sm:text-base">{present}</p>
+        </div>
+        <div className="bg-white/[0.03] rounded-xl p-2.5 border border-white/[0.05]">
+          <p className="text-[10px] text-zinc-600 leading-none mb-0.5">Can Skip</p>
+          <p className={`font-bold text-sm sm:text-base ${canSkip > 0 ? 'text-emerald-400' : 'text-red-400'}`}>{canSkip}</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function SummaryStrip({ subjects }) {
+  const { overall, good, atRisk } = useMemo(() => {
+    const tc = subjects.reduce((s, x) => s + (x.conductedClasses || 0), 0);
+    const ta = subjects.reduce((s, x) => s + (x.absentClasses || 0), 0);
+    const overall = tc > 0 ? ((tc - ta) / tc) * 100 : 0;
+    const good = subjects.filter(s => {
+      const p = s.conductedClasses > 0 ? ((s.conductedClasses - s.absentClasses) / s.conductedClasses) * 100 : 100;
+      return p >= 80;
+    }).length;
+    return { overall, good, atRisk: subjects.length - good };
+  }, [subjects]);
+
+  return (
+    <div className="grid grid-cols-3 gap-3 mb-5">
+      {[
+        { label: 'Overall', value: `${overall.toFixed(1)}%`, color: '#a78bfa' },
+        { label: 'On Track', value: good, color: '#34d399' },
+        { label: 'At Risk', value: atRisk, color: '#fbbf24' },
+      ].map(({ label, value, color }) => (
+        <div key={label} className="bg-white/[0.04] border border-white/[0.08] rounded-2xl p-3 sm:p-4 text-center">
+          <p className="text-[10px] text-zinc-600 mb-0.5 uppercase tracking-wide">{label}</p>
+          <p className="text-xl sm:text-2xl font-black leading-none" style={{ color }}>{value}</p>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+export default function AttendancePage() {
+  const [subjects, setSubjects] = useState([]);
+  const [newName, setNewName] = useState('');
+  const [newTotal, setNewTotal] = useState('');
+  const [error, setError] = useState('');
+  const [adding, setAdding] = useState(false);
+
+  const fetchSubjects = async () => {
+    try { setSubjects((await subjectsAPI.getAll()).data); }
+    catch { setError('Could not load subjects.'); }
+  };
+
+  useEffect(() => { fetchSubjects(); }, []);
+
+  const handleAdd = async (e) => {
+    e.preventDefault();
+    setAdding(true);
+    try {
+      await subjectsAPI.create({ name: newName.trim(), totalPlannedClasses: newTotal || 0 });
+      setNewName(''); setNewTotal('');
+      fetchSubjects();
+    } catch { setError('Failed to add subject.'); }
+    finally { setAdding(false); }
+  };
+
+  const handleUpdate = async (id, data) => {
+    setSubjects(s => s.map(x => x._id === id ? { ...x, ...data } : x));
+    try { await subjectsAPI.update(id, data); } catch { setError('Failed to save.'); }
+  };
+
+  const handleDelete = async (id) => {
+    try { await subjectsAPI.delete(id); setSubjects(s => s.filter(x => x._id !== id)); }
+    catch { setError('Failed to delete.'); }
+  };
+
+  const exportCsv = () => {
+    const rows = subjects.map(s => {
+      const p = Math.max(s.conductedClasses - s.absentClasses, 0);
+      const pct = s.conductedClasses > 0 ? (p / s.conductedClasses) * 100 : 100;
+      const ms = Math.floor(s.totalPlannedClasses * 0.2);
+      return [s.name, pct.toFixed(2), pct >= 80 ? 'On Track' : 'At Risk', s.conductedClasses, p, s.absentClasses, s.totalPlannedClasses, ms, Math.max(ms - s.absentClasses, 0)].join(',');
+    });
+    const blob = new Blob([['Subject,Att%,Status,Conducted,Present,Absent,Planned,MaxSkip,RemSkip', ...rows].join('\n')], { type: 'text/csv' });
+    Object.assign(document.createElement('a'), { href: URL.createObjectURL(blob), download: 'attendance.csv' }).click();
+  };
+
+  const exportPdf = () => {
+    const doc = new jsPDF();
+    doc.text('Attendance Report', 14, 16);
+    autoTable(doc, {
+      head: [['Subject', 'Att%', 'Status', 'Conducted', 'Present', 'Absent', 'Max Skip', 'Remaining']],
+      body: subjects.map(s => {
+        const p = Math.max(s.conductedClasses - s.absentClasses, 0);
+        const pct = s.conductedClasses > 0 ? (p / s.conductedClasses) * 100 : 100;
+        const ms = Math.floor(s.totalPlannedClasses * 0.2);
+        return [s.name, `${pct.toFixed(1)}%`, pct >= 80 ? 'On Track' : 'At Risk', s.conductedClasses, p, s.absentClasses, ms, Math.max(ms - s.absentClasses, 0)];
+      }),
+      startY: 22, theme: 'striped', headStyles: { fillColor: [124, 58, 237] },
+    });
+    doc.save('attendance.pdf');
+  };
+
+  return (
+    <div className="max-w-5xl mx-auto px-4 py-8 sm:px-6 md:px-8">
+      {/* Header */}
+      <div className="flex items-start justify-between gap-3 mb-7">
+        <div>
+          <p className="text-[10px] font-bold text-violet-400 uppercase tracking-widest mb-1">Tracker</p>
+          <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight">Attendance</h1>
+        </div>
+        {subjects.length > 0 && (
+          <div className="flex gap-2 mt-1 flex-shrink-0">
+            <button onClick={exportCsv} className="flex items-center gap-1.5 px-3 py-2 bg-white/[0.05] hover:bg-white/[0.08] border border-white/[0.08] rounded-xl text-xs font-medium text-zinc-400 hover:text-white transition-all">
+              <Download size={12} /><span className="hidden sm:inline">CSV</span>
+            </button>
+            <button onClick={exportPdf} className="flex items-center gap-1.5 px-3 py-2 bg-white/[0.05] hover:bg-white/[0.08] border border-white/[0.08] rounded-xl text-xs font-medium text-zinc-400 hover:text-white transition-all">
+              <FileText size={12} /><span className="hidden sm:inline">PDF</span>
+            </button>
+          </div>
+        )}
+      </div>
+
+      {subjects.length > 0 && <SummaryStrip subjects={subjects} />}
+
+      {/* Add form */}
+      <div className="bg-white/[0.04] border border-white/[0.08] rounded-2xl p-4 sm:p-5 mb-5">
+        <p className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest mb-3">Add Subject</p>
+        <form onSubmit={handleAdd} className="flex flex-col sm:flex-row gap-2.5">
+          <input
+            type="text" placeholder="Subject name" value={newName}
+            onChange={e => setNewName(e.target.value)}
+            className="flex-1 bg-white/[0.05] border border-white/[0.08] text-white placeholder-zinc-600 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-violet-500/50 transition-all"
+            required
+          />
+          <input
+            type="number" placeholder="Total classes" value={newTotal}
+            onChange={e => setNewTotal(e.target.value)}
+            className="sm:w-40 bg-white/[0.05] border border-white/[0.08] text-white placeholder-zinc-600 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-violet-500/50 transition-all"
+            required
+          />
+          <button
+            type="submit" disabled={adding}
+            className="flex items-center justify-center gap-2 px-5 py-2.5 bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 disabled:opacity-50 text-white rounded-xl text-sm font-semibold transition-all shadow-lg shadow-violet-500/20 whitespace-nowrap"
+          >
+            <Plus size={15} />{adding ? 'Adding…' : 'Add'}
+          </button>
+        </form>
+        {error && <p className="text-xs text-red-400 mt-2">{error}</p>}
+      </div>
+
+      {/* Subject cards */}
+      {subjects.length === 0 ? (
+        <div className="bg-white/[0.04] border border-white/[0.08] rounded-2xl py-16 flex flex-col items-center gap-3">
+          <TrendingUp size={26} className="text-zinc-700" />
+          <p className="text-sm text-zinc-600">Add a subject to start tracking.</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {subjects.map(s => <SubjectCard key={s._id} subject={s} onUpdate={handleUpdate} onDelete={handleDelete} />)}
+        </div>
+      )}
     </div>
   );
 }

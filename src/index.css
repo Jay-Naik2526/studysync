@@ -3,21 +3,46 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Smooth scrolling & hardware acceleration */
-.custom-scrollbar {
-  scrollbar-width: thin;
-  scrollbar-color: #3b82f6 #1f2937;
-  will-change: transform;
+@layer base {
+  html {
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    background: #07070c;
+  }
 }
 
-/* Print-optimized styles for Sexy PDF Export */
+.custom-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255,255,255,0.08) transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar { width: 4px; }
+.custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(255,255,255,0.08);
+  border-radius: 9999px;
+}
+
+/* Flashcard 3D flip */
+.flip-card { perspective: 1200px; }
+.flip-card-inner {
+  transform-style: preserve-3d;
+  transition: transform 0.55s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+}
+.flip-card-inner.flipped { transform: rotateY(180deg); }
+.flip-card-front,
+.flip-card-back {
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+.flip-card-back { transform: rotateY(180deg); }
+
 .pdf-export-container {
   font-family: 'Inter', 'Segoe UI', sans-serif;
   line-height: 1.6;
 }
-
-.pdf-export-container h1 { font-size: 24pt; margin-bottom: 20pt; border-bottom: 2pt solid #3b82f6; padding-bottom: 10pt; }
-.pdf-export-container h2 { font-size: 18pt; margin-top: 20pt; color: #1e40af; }
-.pdf-export-container table { border-collapse: collapse; width: 100%; margin: 15pt 0; }
-.pdf-export-container th, .pdf-export-container td { border: 1pt solid #ddd; padding: 8pt; text-align: left; }
-.pdf-export-container th { background-color: #f8fafc; font-weight: bold; }

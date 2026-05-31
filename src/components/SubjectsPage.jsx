@@ -1,85 +1,119 @@
 import React, { useState, useEffect } from 'react';
+import { Plus, BookOpen, Hash, Award } from 'lucide-react';
 import { subjectsAPI } from '../api';
 
-export default function SubjectsPage({ onNavigate }) {
+export default function SubjectsPage() {
   const [subjects, setSubjects] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [newSubjectName, setNewSubjectName] = useState("");
-  const [newSubjectTotal, setNewSubjectTotal] = useState("");
-  const [newSubjectTotalMarks, setNewSubjectTotalMarks] = useState(100);
-  const [error, setError] = useState("");
+  const [name, setName] = useState('');
+  const [total, setTotal] = useState('');
+  const [totalMarks, setTotalMarks] = useState(100);
+  const [error, setError] = useState('');
+  const [adding, setAdding] = useState(false);
 
   const fetchSubjects = async () => {
     try {
       setIsLoading(true);
-      const response = await subjectsAPI.getAll();
-      setSubjects(response.data);
-    } catch (err) {
-      setError("Failed to load subjects.");
-    } finally {
-      setIsLoading(false);
-    }
+      setSubjects((await subjectsAPI.getAll()).data);
+    } catch { setError('Failed to load subjects.'); }
+    finally { setIsLoading(false); }
   };
 
-  useEffect(() => {
-    fetchSubjects();
-  }, []);
+  useEffect(() => { fetchSubjects(); }, []);
 
-  const handleAddSubject = async (e) => {
+  const handleAdd = async (e) => {
     e.preventDefault();
-    if (!newSubjectName) return;
+    if (!name.trim()) return;
+    setAdding(true); setError('');
     try {
-      await subjectsAPI.create({ 
-          name: newSubjectName, 
-          totalPlannedClasses: newSubjectTotal || 0,
-          totalMarks: newSubjectTotalMarks 
-      });
-      setNewSubjectName(""); 
-      setNewSubjectTotal("");
-      setNewSubjectTotalMarks(100);
-      await fetchSubjects();
-    } catch (error) { 
-      setError("Failed to add subject.");
-    }
+      await subjectsAPI.create({ name: name.trim(), totalPlannedClasses: total || 0, totalMarks });
+      setName(''); setTotal(''); setTotalMarks(100);
+      fetchSubjects();
+    } catch { setError('Failed to add subject.'); }
+    finally { setAdding(false); }
   };
-  
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 to-blue-900 py-8 px-4 text-white">
-      <div className="max-w-4xl mx-auto">
-        <button onClick={() => onNavigate('dashboard')} className="mb-8 text-gray-300 hover:text-white transition-colors">&larr; Back to Dashboard</button>
-        <h1 className="text-4xl font-bold mb-2">Manage Subjects</h1>
-        <div className="bg-gray-800 rounded-xl p-6 mb-8">
-          <h2 className="text-2xl font-bold mb-4">Add a New Subject</h2>
-          <form onSubmit={handleAddSubject} className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <input type="text" placeholder="Subject Name" value={newSubjectName} onChange={e => setNewSubjectName(e.target.value)} className="md:col-span-1 bg-gray-700 rounded-lg p-3 focus:outline-none" required />
-            <input type="number" placeholder="Total Planned Classes" value={newSubjectTotal} onChange={e => setNewSubjectTotal(e.target.value)} className="md:col-span-1 bg-gray-700 rounded-lg p-3 focus:outline-none" required />
-            <input type="number" placeholder="Overall Total Marks" value={newSubjectTotalMarks} onChange={e => setNewSubjectTotalMarks(e.target.value)} className="md:col-span-1 bg-gray-700 rounded-lg p-3 focus:outline-none" required />
-            <button type="submit" className="md:col-span-3 bg-blue-600 hover:bg-blue-700 font-bold py-3 rounded-lg">+ Add Subject</button>
-          </form>
-          {error && <p className="text-red-500 text-center mt-2">{error}</p>}
-        </div>
-        
-        <div className="bg-gray-800 rounded-xl p-6">
-          <h2 className="text-2xl font-bold mb-4">Your Subjects</h2>
-          {isLoading ? (
-            <p>Loading...</p>
-          ) : (
-            <div className="space-y-4">
-              {subjects.length > 0 ? (
-                subjects.map((subject) => (
-                  <div key={subject._id} className="bg-gray-700 rounded-lg p-4 flex justify-between items-center">
-                    <div>
-                      <h3 className="text-xl font-semibold">{subject.name}</h3>
-                      <p className="text-gray-400">Total Marks: {subject.totalMarks}</p>
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <p className="text-gray-400">You haven't added any subjects yet.</p>
-              )}
+    <div className="max-w-2xl mx-auto px-4 py-8 sm:px-6 md:px-8">
+      <div className="mb-7">
+        <p className="text-[10px] font-bold text-violet-400 uppercase tracking-widest mb-1">Config</p>
+        <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight">Subjects</h1>
+      </div>
+
+      {/* Add form */}
+      <div className="bg-white/[0.04] border border-white/[0.08] rounded-2xl p-4 sm:p-5 mb-5">
+        <p className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest mb-4">Add New Subject</p>
+        <form onSubmit={handleAdd} className="space-y-3">
+          <input
+            type="text" placeholder="Subject name" value={name}
+            onChange={e => setName(e.target.value)}
+            className="w-full bg-white/[0.05] border border-white/[0.08] text-white placeholder-zinc-600 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-violet-500/50 transition-all"
+            required
+          />
+          <div className="grid grid-cols-2 gap-3">
+            <div className="relative">
+              <Hash size={13} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-600" />
+              <input
+                type="number" placeholder="Total classes" value={total}
+                onChange={e => setTotal(e.target.value)}
+                className="w-full bg-white/[0.05] border border-white/[0.08] text-white placeholder-zinc-600 rounded-xl pl-9 pr-4 py-3 text-sm focus:outline-none focus:border-violet-500/50 transition-all"
+                required
+              />
             </div>
-          )}
+            <div className="relative">
+              <Award size={13} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-600" />
+              <input
+                type="number" placeholder="Total marks" value={totalMarks}
+                onChange={e => setTotalMarks(Number(e.target.value))}
+                className="w-full bg-white/[0.05] border border-white/[0.08] text-white placeholder-zinc-600 rounded-xl pl-9 pr-4 py-3 text-sm focus:outline-none focus:border-violet-500/50 transition-all"
+                required
+              />
+            </div>
+          </div>
+          <button
+            type="submit" disabled={adding}
+            className="w-full py-3 bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 disabled:opacity-50 text-white font-semibold rounded-xl text-sm flex items-center justify-center gap-2 transition-all shadow-lg shadow-violet-500/20"
+          >
+            <Plus size={15} />{adding ? 'Adding…' : 'Add Subject'}
+          </button>
+          {error && <p className="text-xs text-red-400">{error}</p>}
+        </form>
+      </div>
+
+      {/* List */}
+      <div className="bg-white/[0.04] border border-white/[0.08] rounded-2xl overflow-hidden">
+        <div className="px-5 py-4 border-b border-white/[0.06] flex items-center justify-between">
+          <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Your Subjects</p>
+          <span className="text-xs text-zinc-700">{subjects.length} total</span>
         </div>
+
+        {isLoading ? (
+          <div className="px-5 py-10 text-center text-sm text-zinc-600">Loading…</div>
+        ) : subjects.length === 0 ? (
+          <div className="px-5 py-14 flex flex-col items-center gap-3">
+            <div className="w-11 h-11 rounded-2xl bg-white/[0.04] flex items-center justify-center">
+              <BookOpen size={18} className="text-zinc-700" />
+            </div>
+            <p className="text-sm text-zinc-600">No subjects yet.</p>
+          </div>
+        ) : (
+          <div className="divide-y divide-white/[0.04]">
+            {subjects.map((s, i) => (
+              <div key={s._id} className="px-4 sm:px-5 py-4 flex items-center justify-between hover:bg-white/[0.03] transition-colors gap-3">
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="w-8 h-8 rounded-xl flex items-center justify-center text-xs font-black flex-shrink-0"
+                    style={{ background: `hsl(${(i * 47) % 360}, 55%, 22%)`, color: `hsl(${(i * 47) % 360}, 75%, 70%)` }}>
+                    {s.name.charAt(0).toUpperCase()}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold text-white truncate">{s.name}</p>
+                    <p className="text-[11px] text-zinc-600">{s.totalPlannedClasses} classes · {s.totalMarks} marks</p>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

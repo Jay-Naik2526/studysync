@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import AuthPage from './components/AuthPage';
+import Layout from './components/Layout';
 import DashboardPage from './components/DashboardPage';
 import AttendancePage from './components/AttendancePage';
 import MarksPage from './components/MarksPage';
@@ -21,7 +22,6 @@ function App() {
   }, []);
 
   const handleLogin = (data) => {
-    // Data contains { token, user } from backend
     setUser(data.user);
     localStorage.setItem('user', JSON.stringify(data.user));
     localStorage.setItem('token', data.token);
@@ -40,20 +40,26 @@ function App() {
     window.scrollTo(0, 0);
   };
 
-  if (loading) return <div className="min-h-screen bg-[#0d1524] text-white flex items-center justify-center">Loading StudySync...</div>;
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-slate-950 text-slate-400 flex items-center justify-center text-sm">
+        Loading…
+      </div>
+    );
+  }
 
   if (!user && !localStorage.getItem('token')) {
     return <AuthPage onLogin={handleLogin} />;
   }
 
   return (
-    <div className="min-h-screen bg-[#0d1524]">
-      {view === 'dashboard' && <DashboardPage onNavigate={onNavigate} onLogout={handleLogout} />}
+    <Layout currentView={view} onNavigate={onNavigate} onLogout={handleLogout} user={user}>
+      {view === 'dashboard' && <DashboardPage onNavigate={onNavigate} />}
       {view === 'attendance' && <AttendancePage onNavigate={onNavigate} />}
       {view === 'marks' && <MarksPage onNavigate={onNavigate} />}
       {view === 'subjects' && <SubjectsPage onNavigate={onNavigate} />}
       {view === 'notes' && <NotesPage onNavigate={onNavigate} />}
-    </div>
+    </Layout>
   );
 }
 

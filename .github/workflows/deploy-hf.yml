@@ -1,0 +1,55 @@
+name: Deploy Backend to Hugging Face
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Push backend to Hugging Face Space
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: |
+          git config --global user.email "action@github.com"
+          git config --global user.name "GitHub Actions"
+
+          # ── Stage in a temp folder ──────────────────────────────────────
+          mkdir -p /tmp/hf-deploy
+
+          # Copy ONLY backend source (no frontend, no binary files)
+          cp -r backend/. /tmp/hf-deploy/
+
+          # ── HuggingFace README (required – must have valid colors) ──────
+          cat > /tmp/hf-deploy/README.md << 'HFEOF'
+          ---
+          title: StudySync Backend
+          emoji: 🎓
+          colorFrom: blue
+          colorTo: red
+          sdk: docker
+          pinned: false
+          ---
+
+          # StudySync Backend
+
+          Express.js + MongoDB backend for StudySync.
+          Listens on port 7860 as required by Hugging Face Spaces.
+          HFEOF
+
+          # ── Orphan push (no history = no large binary files) ────────────
+          cd /tmp/hf-deploy
+          git init
+          git add .
+          git commit -m "Deploy $(date +'%Y-%m-%d %H:%M:%S')"
+
+          # Force-push to HuggingFace (orphan branch, clean history every time)
+          git push --force \
+            https://Jaynaik2526:${HF_TOKEN}@huggingface.co/spaces/Jaynaik2526/studysync-backend \
+            HEAD:main
