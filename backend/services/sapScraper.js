@@ -163,16 +163,24 @@ export async function parsePDFAttendance(pdfBuffer) {
     const courseName = courseMatch[1].trim();
     if (courseName.length < 3) continue;
 
-    // Scan the next few lines for a bare "P" or "A" (the attendance marker)
+    // Scan the next few lines for a bare "P", "A" or "NU" (the attendance marker)
     let attendance = null;
     let dateStr = null;
 
+    // First check if the date was concatenated onto the end of the courseName line itself
+    const concatenatedDateMatch = courseLine.match(/([a-z]{3}\s+\d{1,2},\s+\d{4})/i);
+    if (concatenatedDateMatch) {
+      dateStr = concatenatedDateMatch[1];
+    }
+
     for (let j = i + 2; j <= i + 6 && j < lines.length; j++) {
-      // Find date in row (e.g. "Jan 2, 2026" or "May 31, 2026")
-      if (/^[a-z]{3}\s+\d{1,2},\s+\d{4}$/i.test(lines[j])) {
-        dateStr = lines[j];
+      // Find date in adjacent row rows if not already found (e.g. "Jan 2, 2026" or "May 31, 2026")
+      // Also handles dates concatenated with times like "Jan 2, 202612:00:01 PM"
+      const dateMatch = lines[j].match(/([a-z]{3}\s+\d{1,2},\s+\d{4})/i);
+      if (dateMatch && !dateStr) {
+        dateStr = dateMatch[1];
       }
-      if (/^[PA]$/.test(lines[j])) {
+      if (/^[PA]$/.test(lines[j]) || lines[j] === 'NU') {
         attendance = lines[j];
         break;
       }
@@ -180,11 +188,16 @@ export async function parsePDFAttendance(pdfBuffer) {
       if (/^\d+$/.test(lines[j]) && j > i + 2) break;
     }
 
+    // If attendance is 'NU' (Not Updated), we still parse it as a valid row (with zero action on absent counting)
     if (!attendance) continue;
 
     if (!map[courseName]) map[courseName] = { conducted: 0, absent: 0, dates: [] };
-    map[courseName].conducted++;
-    if (attendance === 'A') map[courseName].absent++;
+    
+    // NU (Not Updated) classes are planned but not conducted yet — we do not count them as conducted
+    if (attendance !== 'NU') {
+      map[courseName].conducted++;
+      if (attendance === 'A') map[courseName].absent++;
+    }
     if (dateStr) map[courseName].dates.push(dateStr);
   }
 

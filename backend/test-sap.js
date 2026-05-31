@@ -9,12 +9,13 @@ async function testPDFParsing() {
   console.log('\n=== TEST 1: PDF Parsing ===');
   try {
     const buf = readFileSync('/Users/JayNaik/Downloads/ZSVKM_STUDENT_ATTENDANCE_COPY.pdf');
-    const map = await parsePDFAttendance(buf);
+    const { courseMap, latestAttendanceDate } = await parsePDFAttendance(buf);
     console.log('✅ PDF parsed successfully:');
-    for (const [name, d] of Object.entries(map)) {
+    for (const [name, d] of Object.entries(courseMap)) {
       const pct = ((d.conducted - d.absent) / d.conducted * 100).toFixed(1);
       console.log(`  ${name}: ${d.conducted - d.absent}/${d.conducted} (${pct}%)`);
     }
+    console.log(`📅 Latest parsed date: ${latestAttendanceDate ? latestAttendanceDate.toLocaleDateString() : 'N/A'}`);
     return true;
   } catch (e) {
     console.error('❌ PDF test failed:', e.message);
