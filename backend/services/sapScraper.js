@@ -67,6 +67,10 @@ function matchSubject(pdfName, subjects) {
   const isAcronymMatch = (ac1, ac2) => {
     if (ac1 === ac2) return true;
     
+    // Safety check: Acronyms must start and end with the same letter to be considered potential variations
+    // This perfectly prevents false matches when short-forms happen to have similar subsequences
+    if (ac1[0] !== ac2[0] || ac1[ac1.length - 1] !== ac2[ac2.length - 1]) return false;
+    
     // Clean vowels (except first letter) to see if they are structural consonant matches (e.g. 'daiot' -> 'dait')
     const dropVowels = s => s[0] + s.substring(1).replace(/[aeiou]/g, '');
     if (dropVowels(ac1) === dropVowels(ac2)) return true;
