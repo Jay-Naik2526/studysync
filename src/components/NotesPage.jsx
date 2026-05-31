@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Sparkles, Download, FileText, BookOpen, Brain,
   ClipboardList, HelpCircle, ChevronDown, ChevronLeft, ChevronRight,
@@ -20,16 +20,29 @@ const typeOptions = [
   { value: 'quiz',       label: 'Practice Quiz',   icon: HelpCircle },
 ];
 
-const MarkdownRenderer = React.memo(({ content, isPrint = false }) => (
-  <div className={isPrint ? 'prose prose-slate max-w-none bg-white p-10' : 'markdown-dark'}>
-    <ReactMarkdown
-      remarkPlugins={[remarkMath, remarkGfm]}
-      rehypePlugins={[[rehypeKatex, { throwOnError: false, strict: false, output: 'html' }]]}
-    >
-      {content}
-    </ReactMarkdown>
-  </div>
-));
+function MarkdownRenderer({ content, isPrint = false }) {
+  const ref = useRef(null);
+
+  useEffect(() => {
+    if (!ref.current) return;
+    // KaTeX renders error spans with a `title` attribute that creates browser tooltips.
+    // Strip them so no error popup appears — the math just renders as-is.
+    ref.current.querySelectorAll('.katex-error').forEach(el => {
+      el.removeAttribute('title');
+    });
+  }, [content]);
+
+  return (
+    <div ref={ref} className={isPrint ? 'prose prose-slate max-w-none bg-white p-10' : 'markdown-dark'}>
+      <ReactMarkdown
+        remarkPlugins={[remarkMath, remarkGfm]}
+        rehypePlugins={[[rehypeKatex, { throwOnError: false, strict: false, output: 'html' }]]}
+      >
+        {content}
+      </ReactMarkdown>
+    </div>
+  );
+}
 
 /* ─────────────────────────── Flashcards ─────────────────────────── */
 
