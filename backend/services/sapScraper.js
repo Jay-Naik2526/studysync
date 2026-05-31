@@ -54,13 +54,18 @@ function matchSubject(pdfName, subjects) {
     // Standard acronym (first letters: ['discrete', 'mathematics'] -> 'dm')
     const std = words.map(w => w[0]).join('');
     
-    // Compound acronym (checks if a word is 'iot' or 'cs' and preserves it: ['design', 'applied', 'integrative', 'thinking', 'iot'] -> 'daiot')
+    // Compound acronym (checks if a word is 'iot' or 'cs' and preserves it)
     const compound = words.map(w => {
       if (['iot', 'cs', 'it', 'ai', 'ml'].includes(w)) return w;
       return w[0];
     }).join('');
 
-    return Array.from(new Set([std, compound]));
+    // Handle IoT specific edge case: if standard is 'dait', also register 'daiot' as a valid acronym
+    const list = [std, compound];
+    if (std === 'dait' || compound === 'dait') list.push('daiot');
+    if (std === 'daiot' || compound === 'daiot') list.push('dait');
+
+    return Array.from(new Set(list));
   };
 
   const pdfW = getWords(pdfName);
