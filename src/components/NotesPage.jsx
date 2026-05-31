@@ -29,15 +29,13 @@ function preprocessMarkdown(content) {
   processed = processed.replace(/(?<!\n)\$\$/g, '\n$$');
   processed = processed.replace(/\$\$(?!\n)/g, '$$\n');
 
-  // 2. Escape dollar signs that are likely text/currency or typos (like 1$, 2$, etc.)
+  // 2. Escape dollar signs that are likely typos/labels (like 1$, 2$, etc.)
   // Preceded by a digit (e.g. "1$") -> "1\$"
   processed = processed.replace(/(\d+)\$/g, '$1\\$');
 
-  // Followed by a space or end of line -> "\$"
-  processed = processed.replace(/\$(?=\s|$)/g, '\\$');
-
-  // Preceded by a space or start of line and followed by a space -> "\$"
-  processed = processed.replace(/(?<=^|\s)\$(?=\s)/g, '\\$');
+  // 3. Escape isolated dollar signs (surrounded by spaces or boundary) -> "\$"
+  // This matches a dollar sign that is both preceded by a space/start-of-line AND followed by a space/end-of-line.
+  processed = processed.replace(/(?<=^|\s)\$(?=\s|$)/g, '\\$');
 
   return processed;
 }
