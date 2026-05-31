@@ -313,11 +313,18 @@ export default function AttendancePage() {
                 {sapStatus?.connected && <span className="ml-2 text-[10px] font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full">Connected</span>}
               </p>
               <p className="text-xs text-zinc-600 mt-0.5">
-                {sapStatus?.connected
-                  ? sapStatus.lastSync
-                    ? `Last synced: ${new Date(sapStatus.lastSync).toLocaleString()}`
-                    : 'Never synced — hit Sync Now'
-                  : 'Connect once, auto-sync your SVKM attendance'}
+                {sapStatus?.connected ? (
+                  <>
+                    {sapStatus.lastSync ? `Last synced: ${new Date(sapStatus.lastSync).toLocaleString()}` : 'Never synced — hit Sync Now'}
+                    {sapStatus.lastAttendanceDate && (
+                      <span className="block text-[11px] text-fuchsia-400 font-medium mt-1">
+                        📅 Portal Data Marked Up To: {new Date(sapStatus.lastAttendanceDate).toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })} (1 day previous)
+                      </span>
+                    )}
+                  </>
+                ) : (
+                  'Connect once, auto-sync your SVKM attendance'
+                )}
               </p>
             </div>
           </div>

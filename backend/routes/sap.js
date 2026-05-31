@@ -35,11 +35,12 @@ router.get('/status', authMiddleware, async (req, res) => {
   if (!creds) return res.json({ connected: false });
 
   res.json({
-    connected:       true,
-    lastSync:        creds.lastSync,
-    lastSyncStatus:  creds.lastSyncStatus,
-    lastSyncMessage: creds.lastSyncMessage,
-    lastSyncDetails: creds.lastSyncDetails || [],
+    connected:          true,
+    lastSync:           creds.lastSync,
+    lastSyncStatus:     creds.lastSyncStatus,
+    lastSyncMessage:    creds.lastSyncMessage,
+    lastSyncDetails:    creds.lastSyncDetails || [],
+    lastAttendanceDate: creds.lastAttendanceDate,
   });
 });
 
@@ -70,7 +71,7 @@ router.post('/sync', authMiddleware, async (req, res) => {
         return;
       }
 
-      const { results, syncedAt } = await scrapeSAPAttendance(username, password, subjects);
+      const { results, syncedAt, latestAttendanceDate } = await scrapeSAPAttendance(username, password, subjects);
 
       // Import AI matcher
       const { matchSubjectWithAI } = await import('../services/aiService.js');
@@ -133,10 +134,11 @@ router.post('/sync', authMiddleware, async (req, res) => {
         }
       }
 
-      creds.lastSync        = syncedAt;
-      creds.lastSyncStatus  = 'success';
-      creds.lastSyncMessage = `Updated ${updated} subject(s). ${skipped} course(s) from SAP could not be matched — add more subjects with matching names.`;
-      creds.lastSyncDetails = details;
+      creds.lastSync            = syncedAt;
+      creds.lastSyncStatus      = 'success';
+      creds.lastSyncMessage     = `Updated ${updated} subject(s). ${skipped} course(s) from SAP could not be matched — add more subjects with matching names.`;
+      creds.lastSyncDetails     = details;
+      creds.lastAttendanceDate  = latestAttendanceDate;
       await creds.save();
 
       console.log(`✅ SAP sync complete: ${updated} updated, ${skipped} unmatched`);

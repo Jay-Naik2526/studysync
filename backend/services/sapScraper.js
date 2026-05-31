@@ -165,7 +165,13 @@ export async function parsePDFAttendance(pdfBuffer) {
 
     // Scan the next few lines for a bare "P" or "A" (the attendance marker)
     let attendance = null;
+    let dateStr = null;
+
     for (let j = i + 2; j <= i + 6 && j < lines.length; j++) {
+      // Find date in row (e.g. "Jan 2, 2026" or "May 31, 2026")
+      if (/^[a-z]{3}\s+\d{1,2},\s+\d{4}$/i.test(lines[j])) {
+        dateStr = lines[j];
+      }
       if (/^[PA]$/.test(lines[j])) {
         attendance = lines[j];
         break;
@@ -176,13 +182,30 @@ export async function parsePDFAttendance(pdfBuffer) {
 
     if (!attendance) continue;
 
-    if (!map[courseName]) map[courseName] = { conducted: 0, absent: 0 };
+    if (!map[courseName]) map[courseName] = { conducted: 0, absent: 0, dates: [] };
     map[courseName].conducted++;
     if (attendance === 'A') map[courseName].absent++;
+    if (dateStr) map[courseName].dates.push(dateStr);
   }
 
-  console.log(`📊 Parsed ${Object.keys(map).length} course(s): ${Object.keys(map).join(', ')}`);
-  return map;
+  // Determine the latest attendance date across all parsed rows
+  let maxDate = null;
+  for (const info of Object.values(map)) {
+    if (!info.dates || info.dates.length === 0) continue;
+    for (const d of info.dates) {
+      const parsed = Date.parse(d);
+      if (!isNaN(parsed)) {
+        if (!maxDate || parsed > maxDate) {
+          maxDate = parsed;
+        }
+      }
+    }
+  }
+
+  const latestAttendanceDate = maxDate ? new Date(maxDate) : null;
+  console.log(`📊 Parsed ${Object.keys(map).length} course(s). Latest attendance date: ${latestAttendanceDate ? latestAttendanceDate.toLocaleDateString() : 'N/A'}`);
+  
+  return { courseMap: map, latestAttendanceDate };
 }
 
 // ── SAP WD listbox click (readonly input → click option div) ─────
@@ -719,7 +742,7 @@ export async function scrapeSAPAttendance(username, password, subjects) {
     console.log(`✅ PDF ready (${Math.round(pdfBuffer.length / 1024)} KB) — parsing…`);
 
     // ── 6. Parse PDF + match subjects ────────────────────────────
-    const courseMap = await parsePDFAttendance(pdfBuffer);
+    const { courseMap, latestAttendanceDate } = await parsePDFAttendance(pdfBuffer);
     console.log('📊 Courses found:', Object.keys(courseMap).join(', ') || '(none)');
 
     const results = [];
@@ -737,7 +760,7 @@ export async function scrapeSAPAttendance(username, password, subjects) {
       });
     }
 
-    return { success: true, results, syncedAt: new Date() };
+    return { success: true, results, syncedAt: new Date(), latestAttendanceDate };
 
   } finally {
     await browser.close();
