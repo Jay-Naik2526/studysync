@@ -384,9 +384,15 @@ export default function AttendancePage() {
                         </td>
                         <td className="p-3 text-right">
                           {isMatched ? (
-                            <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full">
-                              <CheckCircle size={10} /> Synced
-                            </span>
+                            detail.matchedBy === 'ai' ? (
+                              <span className="inline-flex items-center gap-1 text-[10px] font-bold text-fuchsia-400 bg-fuchsia-500/10 px-2 py-0.5 rounded-full" title="Matched using optimized Gemini fallback">
+                                🧠 Synced via AI
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full" title="Matched instantly using fast heuristics">
+                                <CheckCircle size={10} /> Synced
+                              </span>
+                            )
                           ) : (
                             <span className="inline-flex items-center gap-1 text-[10px] font-bold text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-full" title="To match this, add a subject with this name or acronym">
                               <AlertTriangle size={10} /> Unmatched

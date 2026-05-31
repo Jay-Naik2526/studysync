@@ -84,6 +84,7 @@ router.post('/sync', authMiddleware, async (req, res) => {
         let finalSubjectId = r.subjectId;
         let finalSubjectName = r.subjectName;
         let finalConfidence = r.confidence;
+        let matchedBy = 'heuristics';
 
         // Fallback: If heuristic/regex failed to match, ask Gemini to analyze it
         if (!finalMatched) {
@@ -96,6 +97,7 @@ router.post('/sync', authMiddleware, async (req, res) => {
               finalSubjectId = aiMatch.subjectId;
               finalSubjectName = aiMatch.subjectName;
               finalConfidence = aiMatch.confidence;
+              matchedBy = 'ai';
             }
           } catch (aiErr) {
             console.error(`⚠ [AI Subject Fallback] Gemini match failed: ${aiErr.message}`);
@@ -114,7 +116,8 @@ router.post('/sync', authMiddleware, async (req, res) => {
             status: 'synced',
             conducted: r.conducted,
             absent: r.absent,
-            confidence: finalConfidence
+            confidence: finalConfidence,
+            matchedBy: matchedBy
           });
         } else {
           skipped++;
@@ -124,7 +127,8 @@ router.post('/sync', authMiddleware, async (req, res) => {
             status: 'unmatched',
             conducted: r.conducted,
             absent: r.absent,
-            confidence: r.confidence
+            confidence: r.confidence,
+            matchedBy: 'none'
           });
         }
       }
