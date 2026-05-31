@@ -23,27 +23,46 @@ export function decryptCredential(data) {
 
 // ── Subject fuzzy matcher ─────────────────────────────────────────
 function matchSubject(pdfName, subjects) {
-  const norm = s => s.toLowerCase()
-    .replace(/[()&]/g, ' ').replace(/[^a-z0-9\s]/g, '')
+  // Normalize string by cleaning symbols and converting to lower case
+  const clean = s => s.toLowerCase().replace(/[()&]/g, ' ').replace(/[^a-z0-9\s]/g, '');
+
+  // Extract a list of words, removing minor filler words
+  const getWords = s => clean(s)
     .split(/\s+/)
     .filter(w => w.length > 0 && !['and','the','for','with','through','in','of','to','by'].includes(w));
 
-  // Get acronym/initials of a normalized word list (e.g. ['discrete', 'mathematics'] -> 'dm')
-  const getAcronym = words => words.map(w => w[0]).join('');
+  // Generates multiple acronym candidates to match dynamic abbreviation short-forms (e.g. DAIoT, TCS, DM)
+  const getAcronyms = words => {
+    if (words.length === 0) return [];
+    
+    // Standard acronym (first letters: ['discrete', 'mathematics'] -> 'dm')
+    const std = words.map(w => w[0]).join('');
+    
+    // Compound acronym (checks if a word is 'iot' or 'cs' and preserves it: ['design', 'applied', 'integrative', 'thinking', 'iot'] -> 'daiot')
+    const compound = words.map(w => {
+      if (['iot', 'cs', 'it', 'ai', 'ml'].includes(w)) return w;
+      return w[0];
+    }).join('');
 
-  const pdfW = norm(pdfName);
-  const pdfAcronym = getAcronym(pdfW);
+    return Array.from(new Set([std, compound]));
+  };
+
+  const pdfW = getWords(pdfName);
+  const pdfAcronyms = getAcronyms(pdfW);
 
   let best = null, bestScore = 0;
 
   for (const sub of subjects) {
-    const subW = norm(sub.name);
-    const subAcronym = getAcronym(subW);
+    const subW = getWords(sub.name);
+    const subAcronyms = getAcronyms(subW);
 
-    // 1. Check exact acronym match (e.g., "TCS" -> "Theoretical Computer Science" or vice versa)
-    if (pdfAcronym.length >= 2 && (pdfAcronym === subAcronym || pdfW.includes(subAcronym) || subW.includes(pdfAcronym))) {
+    // 1. Check acronym intersection (e.g., "DAIoT" -> "Des and App Int Thin" / "Design and Applied Integrative Thinking [IoT]")
+    const hasAcronymMatch = pdfAcronyms.some(pa => subAcronyms.includes(pa) || subW.includes(pa)) ||
+                           subAcronyms.some(sa => pdfAcronyms.includes(sa) || pdfW.includes(sa));
+    
+    if (hasAcronymMatch) {
       best = sub;
-      bestScore = 1.0; // Perfect match score
+      bestScore = 1.0; // Mark as perfect acronym match
       break;
     }
 
@@ -81,11 +100,10 @@ export async function parsePDFAttendance(pdfBuffer) {
     // A row starts with a bare sequence number
     if (!/^\d+$/.test(lines[i])) continue;
 
-    // Next line: "CourseName<section> BTech CS ..."
+    // Next line: "CourseName<section> BTech/CE/AIML/IT/CSDS..."
     const courseLine = lines[i + 1] || '';
-    // Extract course name — everything before the section code ([TUP]\d) that appears
-    // directly concatenated or separated by a space before "BTech CS"
-    const courseMatch = courseLine.match(/^([\w\s&,.()\-\/]+?)\s*[TUP]\d\s+BTech\s+CS/i);
+    // Extract course name — match anything before the section code ([TUP]\d) followed by BTech, B.Tech, B Tech, MBA, etc.
+    const courseMatch = courseLine.match(/^([\w\s&,.()\-\/]+?)\s*[TUP]\d\s+(?:B\.?\s*Tech|MBA|M\.?\s*Tech|B\.?\s*E|B\.?\s*Sc|B\.?\s*CA)/i);
     if (!courseMatch) continue;
 
     const courseName = courseMatch[1].trim();
