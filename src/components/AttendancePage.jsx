@@ -318,7 +318,7 @@ export default function AttendancePage() {
                     {sapStatus.lastSync ? `Last synced: ${new Date(sapStatus.lastSync).toLocaleString()}` : 'Never synced — hit Sync Now'}
                     {sapStatus.lastAttendanceDate && (
                       <span className="block text-[11px] text-fuchsia-400 font-medium mt-1">
-                        📅 Portal Data Marked Up To: {new Date(sapStatus.lastAttendanceDate).toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })} (1 day previous)
+                        📅 Portal Data Marked Up To: {new Date(sapStatus.lastAttendanceDate).toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
                       </span>
                     )}
                   </>
