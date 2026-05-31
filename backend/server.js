@@ -11,6 +11,7 @@ import gradesRoutes from './routes/grades.js';
 import todosRoutes from './routes/todos.js';
 import dashboardRoutes from './routes/dashboard.js';
 import notesRoutes from './routes/notes.js';
+import sapRoutes   from './routes/sap.js';
 
 dotenv.config();
 const app = express();
@@ -51,7 +52,8 @@ app.use('/api/todos', authMiddleware, todosRoutes);
 /** * CRITICAL UPDATE: Removed authMiddleware from here.
  * It must be placed AFTER multer in /routes/notes.js to avoid 404/413 errors on Vercel.
  */
-app.use('/api/notes', notesRoutes); 
+app.use('/api/notes', notesRoutes);
+app.use('/api/sap',   sapRoutes); 
 
 app.get('/', (req, res) => {
     res.send('StudySync Backend is Live! 🚀');

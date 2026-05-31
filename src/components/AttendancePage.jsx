@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { Plus, Trash2, CheckCircle, AlertTriangle, Download, FileText, TrendingUp } from 'lucide-react';
-import { subjectsAPI } from '../api';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { Plus, Trash2, CheckCircle, AlertTriangle, Download, FileText, TrendingUp, RefreshCw, Link, Unlink, X, Loader2 } from 'lucide-react';
+import { subjectsAPI, sapAPI } from '../api';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
@@ -122,6 +122,56 @@ function SummaryStrip({ subjects }) {
   );
 }
 
+// ── SAP Connect Modal ────────────────────────────────────────────
+function SapModal({ onClose, onSaved }) {
+  const [sapUser, setSapUser] = useState('');
+  const [sapPass, setSapPass] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [err, setErr] = useState('');
+
+  const handleSave = async (e) => {
+    e.preventDefault();
+    setSaving(true); setErr('');
+    try {
+      await sapAPI.saveCredentials({ username: sapUser, password: sapPass });
+      onSaved();
+    } catch (e) {
+      setErr(e.response?.data?.message || 'Failed to save.');
+    } finally { setSaving(false); }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
+      <div className="bg-[#0d0c17] border border-white/[0.1] rounded-2xl p-6 w-full max-w-sm shadow-2xl">
+        <div className="flex items-center justify-between mb-5">
+          <div>
+            <h3 className="text-base font-bold text-white">Connect SAP Portal</h3>
+            <p className="text-xs text-zinc-500 mt-0.5">Stored encrypted. Used only to sync attendance.</p>
+          </div>
+          <button onClick={onClose} className="text-zinc-600 hover:text-zinc-300 transition-colors"><X size={18} /></button>
+        </div>
+        <form onSubmit={handleSave} className="space-y-3">
+          <div>
+            <label className="block text-[10px] font-bold text-zinc-600 uppercase tracking-widest mb-1.5">SAP User ID</label>
+            <input type="text" placeholder="e.g. 70552400047" value={sapUser} onChange={e => setSapUser(e.target.value)}
+              className="w-full bg-white/[0.05] border border-white/[0.08] text-white placeholder-zinc-600 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-violet-500/50" required />
+          </div>
+          <div>
+            <label className="block text-[10px] font-bold text-zinc-600 uppercase tracking-widest mb-1.5">Password</label>
+            <input type="password" placeholder="••••••••" value={sapPass} onChange={e => setSapPass(e.target.value)}
+              className="w-full bg-white/[0.05] border border-white/[0.08] text-white placeholder-zinc-600 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-violet-500/50" required />
+          </div>
+          {err && <p className="text-xs text-red-400">{err}</p>}
+          <button type="submit" disabled={saving}
+            className="w-full py-2.5 bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 disabled:opacity-50 text-white font-semibold rounded-xl text-sm transition-all">
+            {saving ? 'Saving…' : 'Save & Connect'}
+          </button>
+        </form>
+      </div>
+    </div>
+  );
+}
+
 export default function AttendancePage() {
   const [subjects, setSubjects] = useState([]);
   const [newName, setNewName] = useState('');
@@ -129,12 +179,56 @@ export default function AttendancePage() {
   const [error, setError] = useState('');
   const [adding, setAdding] = useState(false);
 
+  // SAP sync state
+  const [sapStatus, setSapStatus] = useState(null); // null | { connected, lastSync, lastSyncStatus, lastSyncMessage }
+  const [showSapModal, setShowSapModal] = useState(false);
+  const [syncing, setSyncing] = useState(false);
+  const [syncMsg, setSyncMsg] = useState('');
+
   const fetchSubjects = async () => {
     try { setSubjects((await subjectsAPI.getAll()).data); }
     catch { setError('Could not load subjects.'); }
   };
 
-  useEffect(() => { fetchSubjects(); }, []);
+  const fetchSapStatus = useCallback(async () => {
+    try { setSapStatus((await sapAPI.getStatus()).data); }
+    catch { /* ignore */ }
+  }, []);
+
+  useEffect(() => { fetchSubjects(); fetchSapStatus(); }, []);
+
+  const handleSapSync = async () => {
+    setSyncing(true);
+    setSyncMsg('Sync started — this takes ~30 seconds…');
+    try {
+      await sapAPI.sync();
+      // Poll for completion
+      const poll = setInterval(async () => {
+        const { data } = await sapAPI.getStatus();
+        setSapStatus(data);
+        if (data.lastSyncStatus === 'success') {
+          setSyncMsg(`✓ ${data.lastSyncMessage}`);
+          setSyncing(false);
+          clearInterval(poll);
+          fetchSubjects(); // refresh attendance numbers
+        } else if (data.lastSyncStatus === 'failed') {
+          setSyncMsg(`✗ ${data.lastSyncMessage}`);
+          setSyncing(false);
+          clearInterval(poll);
+        }
+      }, 4000);
+    } catch (e) {
+      setSyncMsg(e.response?.data?.message || 'Sync failed.');
+      setSyncing(false);
+    }
+  };
+
+  const handleSapDisconnect = async () => {
+    if (!window.confirm('Remove SAP credentials?')) return;
+    await sapAPI.disconnect();
+    setSapStatus({ connected: false });
+    setSyncMsg('');
+  };
 
   const handleAdd = async (e) => {
     e.preventDefault();
@@ -205,6 +299,62 @@ export default function AttendancePage() {
       </div>
 
       {subjects.length > 0 && <SummaryStrip subjects={subjects} />}
+
+      {/* SAP Auto-Sync Panel */}
+      <div className="bg-white/[0.04] border border-white/[0.08] rounded-2xl p-4 sm:p-5 mb-5">
+        <div className="flex items-center justify-between gap-3 flex-wrap">
+          <div className="flex items-center gap-3">
+            <div className={`w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 ${sapStatus?.connected ? 'bg-emerald-500/15' : 'bg-zinc-800'}`}>
+              {sapStatus?.connected ? <Link size={15} className="text-emerald-400" /> : <Link size={15} className="text-zinc-600" />}
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-white">
+                SAP Portal Sync
+                {sapStatus?.connected && <span className="ml-2 text-[10px] font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full">Connected</span>}
+              </p>
+              <p className="text-xs text-zinc-600 mt-0.5">
+                {sapStatus?.connected
+                  ? sapStatus.lastSync
+                    ? `Last synced: ${new Date(sapStatus.lastSync).toLocaleString()}`
+                    : 'Never synced — hit Sync Now'
+                  : 'Connect once, auto-sync your SVKM attendance'}
+              </p>
+            </div>
+          </div>
+          <div className="flex gap-2 flex-shrink-0">
+            {sapStatus?.connected ? (
+              <>
+                <button
+                  onClick={handleSapSync} disabled={syncing}
+                  className="flex items-center gap-1.5 px-4 py-2 bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 disabled:opacity-50 text-white rounded-xl text-xs font-semibold transition-all">
+                  {syncing ? <Loader2 size={13} className="animate-spin" /> : <RefreshCw size={13} />}
+                  {syncing ? 'Syncing…' : 'Sync Now'}
+                </button>
+                <button onClick={handleSapDisconnect} className="px-3 py-2 bg-white/[0.05] hover:bg-red-500/10 border border-white/[0.08] hover:border-red-500/20 rounded-xl transition-all">
+                  <Unlink size={13} className="text-zinc-500 hover:text-red-400" />
+                </button>
+              </>
+            ) : (
+              <button onClick={() => setShowSapModal(true)}
+                className="flex items-center gap-1.5 px-4 py-2 bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 text-white rounded-xl text-xs font-semibold transition-all">
+                <Link size={13} /> Connect SAP
+              </button>
+            )}
+          </div>
+        </div>
+        {syncMsg && (
+          <p className={`text-xs mt-3 px-3 py-2 rounded-lg ${syncMsg.startsWith('✓') ? 'bg-emerald-500/10 text-emerald-400' : syncMsg.startsWith('✗') ? 'bg-red-500/10 text-red-400' : 'bg-violet-500/10 text-violet-300'}`}>
+            {syncMsg}
+          </p>
+        )}
+      </div>
+
+      {showSapModal && (
+        <SapModal
+          onClose={() => setShowSapModal(false)}
+          onSaved={() => { setShowSapModal(false); fetchSapStatus(); }}
+        />
+      )}
 
       {/* Add form */}
       <div className="bg-white/[0.04] border border-white/[0.08] rounded-2xl p-4 sm:p-5 mb-5">

@@ -29,7 +29,8 @@
     "mongoose": "^8.0.3",
     "multer": "^2.0.2",
     "officeparser": "^5.2.2",
-    "pdf-parse": "^1.1.1"
+    "pdf-parse": "^1.1.1",
+    "playwright": "^1.60.0"
   },
   "devDependencies": {
     "nodemon": "^3.0.2"

@@ -61,4 +61,11 @@ export const notesAPI = {
   }),
 };
 
+export const sapAPI = {
+  saveCredentials: (data)  => api.post('/sap/credentials', data),
+  getStatus:       ()      => api.get('/sap/status'),
+  sync:            ()      => api.post('/sap/sync'),
+  disconnect:      ()      => api.delete('/sap/credentials'),
+};
+
 export default api;
