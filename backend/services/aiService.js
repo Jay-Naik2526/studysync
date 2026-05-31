@@ -246,3 +246,54 @@ You must produce a highly structured textbook-style study plan in Markdown conta
   }
   throw new Error("CRITICAL: All Gemini models failed to process Planner request.");
 };
+
+// ── AI Subject Matcher (Gemini Fallback) ──
+export const matchSubjectWithAI = async (pdfName, subjectsList) => {
+  const systemInstruction = "You are a university academic database assistant. Your task is to match a course name extracted from a university portal attendance sheet (often containing short-forms, abbreviations, or weird formatting) against a list of the student's added StudySync dashboard subjects. Respond in strict JSON format.";
+
+  const promptText = `
+COURSE NAME FROM PORTAL: "${pdfName}"
+
+STUDENT'S ADDED SUBJECTS LIST:
+${subjectsList.map(s => `- id: "${s._id}", name: "${s.name}"`).join('\n')}
+
+MATCHING INSTRUCTIONS:
+1. Identify if any subject in the student's list matches the portal course name.
+2. Account for common acronyms (e.g. "TCS" -> "Theoretical Computer Science", "DAIoT" -> "Des and App Int Thin" / "Design and Applied Integrative Thinking [IoT]", "DM" -> "Discrete Mathematics", "DAA" -> "Design and Analysis of Algorithms", "DBMS" -> "Data Management Systems").
+3. Account for abbreviations (e.g. "Comp Sci" -> "Computer Science", "Mgt" -> "Management", "Obj Ori Pro" -> "Object Oriented Programming").
+4. If there is a highly confident match (confidence >= 60%), set "matched" to true, "subjectId" to the matched ID, "subjectName" to the matched subject name, and "confidence" to the confidence score (0 to 100).
+5. If there is no good match in the list, set "matched" to false, "subjectId" to null, "subjectName" to null, and "confidence" to 0.
+
+OUTPUT FORMAT — Return ONLY a raw, valid JSON object, no markdown code block formatting, no extra explanation:
+{
+  "matched": true/false,
+  "subjectId": "matched_subject_id_or_null",
+  "subjectName": "matched_subject_name_or_null",
+  "confidence": 85
+}
+`;
+
+  for (let i = 0; i < API_KEYS.length; i++) {
+    for (const modelName of MODELS) {
+      try {
+        console.log(`📡 [AI Matcher] Attempting ${modelName} with Key #${i + 1}...`);
+        const genAI = new GoogleGenerativeAI(API_KEYS[i]);
+        const model = genAI.getGenerativeModel({ model: modelName, systemInstruction });
+        
+        const result = await model.generateContent({
+          contents: [{ role: "user", parts: [{ text: promptText }] }],
+          generationConfig: { temperature: 0.2, maxOutputTokens: 256 }
+        });
+        
+        const rawText = result.response.text().replace(/```json|```/g, "").trim();
+        console.log(`✅ [AI Matcher] SUCCESS: [Model ${modelName}]`);
+        return JSON.parse(rawText);
+      } catch (err) {
+        console.error(`❌ [AI Matcher] FAILED: ${modelName} | Error: ${err.message}`);
+        if (err.message.includes("429") || err.message.includes("quota")) continue;
+      }
+    }
+  }
+  // Fallback to null if all keys/models fail
+  return { matched: false, subjectId: null, subjectName: null, confidence: 0 };
+};
