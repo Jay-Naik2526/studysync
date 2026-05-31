@@ -26,10 +26,26 @@ function matchSubject(pdfName, subjects) {
   // Normalize string by cleaning symbols and converting to lower case
   const clean = s => s.toLowerCase().replace(/[()&]/g, ' ').replace(/[^a-z0-9\s]/g, '');
 
-  // Extract a list of words, removing minor filler words
+  // Map known short-form abbreviations to their full representations to enable exact acronym generation
+  const dictionary = {
+    des: 'design',
+    app: 'applied',
+    ana: 'analysis',
+    int: 'integrative',
+    thin: 'thinking',
+    comp: 'computer',
+    sci: 'science',
+    mgt: 'management',
+    sys: 'systems',
+    pro: 'programming',
+    throug: 'through'
+  };
+
+  // Extract a list of words, replacing abbreviations and removing minor filler words
   const getWords = s => clean(s)
     .split(/\s+/)
-    .filter(w => w.length > 0 && !['and','the','for','with','through','in','of','to','by'].includes(w));
+    .filter(w => w.length > 0 && !['and','the','for','with','through','in','of','to','by'].includes(w))
+    .map(w => dictionary[w] || w);
 
   // Generates multiple acronym candidates to match dynamic abbreviation short-forms (e.g. DAIoT, TCS, DM)
   const getAcronyms = words => {
