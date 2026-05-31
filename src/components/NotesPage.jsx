@@ -21,10 +21,7 @@ const typeOptions = [
 ];
 
 const MarkdownRenderer = React.memo(({ content, isPrint = false }) => (
-  <div className={isPrint
-    ? 'prose prose-slate max-w-none bg-white p-10'
-    : 'prose prose-invert prose-sm max-w-none prose-headings:text-white prose-headings:font-black prose-p:text-zinc-300 prose-strong:text-zinc-100 prose-code:text-violet-300 prose-pre:bg-white/[0.05] prose-pre:border prose-pre:border-white/[0.08] prose-a:text-violet-400 prose-li:text-zinc-300'
-  }>
+  <div className={isPrint ? 'prose prose-slate max-w-none bg-white p-10' : 'markdown-dark'}>
     <ReactMarkdown remarkPlugins={[remarkMath, remarkGfm]} rehypePlugins={[rehypeKatex]}>
       {content}
     </ReactMarkdown>
@@ -480,7 +477,8 @@ export default function NotesPage() {
   );
 
   const OutputPanel = (
-    <div className="bg-white/[0.04] border border-white/[0.08] rounded-2xl flex flex-col" style={{ minHeight: 400 }}>
+    <div className="bg-white/[0.04] border border-white/[0.08] rounded-2xl flex flex-col"
+      style={{ height: 'clamp(400px, calc(100vh - 180px), 900px)' }}>
       <div className="flex items-center justify-between px-5 py-3.5 border-b border-white/[0.07] flex-shrink-0 gap-3">
         <div className="flex items-center gap-2 min-w-0">
           <button onClick={() => setShowForm(true)} className="lg:hidden text-zinc-600 hover:text-zinc-300 text-xs font-medium transition-colors mr-1 flex-shrink-0">← Form</button>
@@ -502,7 +500,7 @@ export default function NotesPage() {
         )}
       </div>
 
-      <div className="p-5 sm:p-7">
+      <div className="flex-1 overflow-y-auto custom-scrollbar p-5 sm:p-7">
         {currentNote ? (
           <div>
             {/* Title for notes only */}
