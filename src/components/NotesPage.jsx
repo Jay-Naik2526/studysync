@@ -480,7 +480,7 @@ export default function NotesPage() {
   );
 
   const OutputPanel = (
-    <div className="bg-white/[0.04] border border-white/[0.08] rounded-2xl flex flex-col overflow-hidden" style={{ minHeight: 400 }}>
+    <div className="bg-white/[0.04] border border-white/[0.08] rounded-2xl flex flex-col" style={{ minHeight: 400 }}>
       <div className="flex items-center justify-between px-5 py-3.5 border-b border-white/[0.07] flex-shrink-0 gap-3">
         <div className="flex items-center gap-2 min-w-0">
           <button onClick={() => setShowForm(true)} className="lg:hidden text-zinc-600 hover:text-zinc-300 text-xs font-medium transition-colors mr-1 flex-shrink-0">← Form</button>
@@ -502,7 +502,7 @@ export default function NotesPage() {
         )}
       </div>
 
-      <div className="flex-1 overflow-y-auto custom-scrollbar p-5 sm:p-7">
+      <div className="p-5 sm:p-7">
         {currentNote ? (
           <div>
             {/* Title for notes only */}
@@ -594,9 +594,7 @@ export default function NotesPage() {
       <div className="hidden lg:grid lg:grid-cols-12 gap-6">
         <div className="lg:col-span-4 self-start sticky top-6">{FormPanel}</div>
         <div className="lg:col-span-8">
-          <div style={{ maxHeight: '85vh' }} className="overflow-hidden rounded-2xl">
-            {OutputPanel}
-          </div>
+          {OutputPanel}
         </div>
       </div>
     </div>
