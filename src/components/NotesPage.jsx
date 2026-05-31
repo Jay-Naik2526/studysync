@@ -20,6 +20,28 @@ const typeOptions = [
   { value: 'quiz',       label: 'Practice Quiz',   icon: HelpCircle },
 ];
 
+function preprocessMarkdown(content) {
+  if (!content) return '';
+
+  let processed = content;
+
+  // 1. Ensure block equations ($$) have newlines before and after them
+  processed = processed.replace(/(?<!\n)\$\$/g, '\n$$');
+  processed = processed.replace(/\$\$(?!\n)/g, '$$\n');
+
+  // 2. Escape dollar signs that are likely text/currency or typos (like 1$, 2$, etc.)
+  // Preceded by a digit (e.g. "1$") -> "1\$"
+  processed = processed.replace(/(\d+)\$/g, '$1\\$');
+
+  // Followed by a space or end of line -> "\$"
+  processed = processed.replace(/\$(?=\s|$)/g, '\\$');
+
+  // Preceded by a space or start of line and followed by a space -> "\$"
+  processed = processed.replace(/(?<=^|\s)\$(?=\s)/g, '\\$');
+
+  return processed;
+}
+
 function MarkdownRenderer({ content, isPrint = false }) {
   const ref = useRef(null);
 
@@ -32,13 +54,15 @@ function MarkdownRenderer({ content, isPrint = false }) {
     });
   }, [content]);
 
+  const sanitizedContent = preprocessMarkdown(content);
+
   return (
     <div ref={ref} className={isPrint ? 'prose prose-slate max-w-none bg-white p-10' : 'markdown-dark'}>
       <ReactMarkdown
         remarkPlugins={[remarkMath, remarkGfm]}
         rehypePlugins={[[rehypeKatex, { throwOnError: false, strict: false, output: 'html' }]]}
       >
-        {content}
+        {sanitizedContent}
       </ReactMarkdown>
     </div>
   );
