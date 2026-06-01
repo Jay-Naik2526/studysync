@@ -11,7 +11,7 @@ const API_KEYS = [
 ].filter(Boolean);
 
 // Priority list as per your research
-const MODELS = ["gemini-flash-latest", "gemini-3.5-flash", "gemini-3.5-pro"];
+const MODELS = ["gemini-flash-latest", "gemini-3-flash-preview", "gemini-3.1-pro-preview"];
 
 export const generateStudyMaterials = async (fileBuffers, description, type) => {
   let sourceText = description || "";
