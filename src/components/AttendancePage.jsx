@@ -425,9 +425,43 @@ export default function AttendancePage() {
                         </td>
                         <td className="p-3">
                           {isMatched ? (
-                            <span className="text-emerald-400 font-medium">{detail.subjectName}</span>
+                            <div className="flex items-center gap-1.5">
+                              <span className="text-emerald-400 font-medium">{detail.subjectName}</span>
+                              <button
+                                onClick={async () => {
+                                  if (window.confirm(`Remove mapping for "${detail.pdfName}"?`)) {
+                                    const sub = subjects.find(s => s.name === detail.subjectName);
+                                    if (sub) {
+                                      await handleUpdate(sub._id, { portalName: "" });
+                                      fetchSubjects();
+                                      fetchSapStatus();
+                                    }
+                                  }
+                                }}
+                                className="text-zinc-500 hover:text-red-400 p-0.5 rounded transition-colors"
+                                title="Unlink mapping"
+                              >
+                                <X size={12} />
+                              </button>
+                            </div>
                           ) : (
-                            <span className="text-zinc-600 italic">No matching subject</span>
+                            <select
+                              onChange={async (e) => {
+                                const subId = e.target.value;
+                                if (subId) {
+                                  await handleUpdate(subId, { portalName: detail.pdfName });
+                                  fetchSubjects();
+                                  fetchSapStatus();
+                                }
+                              }}
+                              defaultValue=""
+                              className="bg-[#181628] border border-white/[0.08] text-zinc-300 rounded-lg px-2 py-1 text-xs focus:outline-none focus:border-violet-500/50 max-w-[150px]"
+                            >
+                              <option value="" disabled>Map to subject...</option>
+                              {subjects.map(s => (
+                                <option key={s._id} value={s._id}>{s.name}</option>
+                              ))}
+                            </select>
                           )}
                         </td>
                         <td className="p-3">

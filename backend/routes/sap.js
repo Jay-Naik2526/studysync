@@ -90,8 +90,7 @@ router.post('/sync', authMiddleware, async (req, res) => {
 
       const { results, syncedAt, latestAttendanceDate } = await scrapeSAPAttendance(username, password, subjects);
 
-      // Import AI matcher
-      const { matchSubjectWithAI } = await import('../services/aiService.js');
+
 
       // Update matched subjects
       let updated = 0, skipped = 0;
@@ -104,23 +103,7 @@ router.post('/sync', authMiddleware, async (req, res) => {
         let finalConfidence = r.confidence;
         let matchedBy = 'heuristics';
 
-        // Fallback: If heuristic/regex failed to match, ask Gemini to analyze it
-        if (!finalMatched) {
-          try {
-            console.log(`🧠 [AI Subject Fallback] Trying to match portal course: "${r.pdfName}" via Gemini...`);
-            const aiMatch = await matchSubjectWithAI(r.pdfName, subjects);
-            if (aiMatch && aiMatch.matched && aiMatch.subjectId) {
-              console.log(`🎉 [AI Subject Fallback] Gemini successfully matched: "${r.pdfName}" ➡️ "${aiMatch.subjectName}" (${aiMatch.confidence}% confident)`);
-              finalMatched = true;
-              finalSubjectId = aiMatch.subjectId;
-              finalSubjectName = aiMatch.subjectName;
-              finalConfidence = aiMatch.confidence;
-              matchedBy = 'ai';
-            }
-          } catch (aiErr) {
-            console.error(`⚠ [AI Subject Fallback] Gemini match failed: ${aiErr.message}`);
-          }
-        }
+
 
         if (finalMatched && finalSubjectId) {
           await Subject.findByIdAndUpdate(finalSubjectId, {
