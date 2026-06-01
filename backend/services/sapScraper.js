@@ -232,9 +232,24 @@ export async function parsePDFAttendance(pdfBuffer) {
 // ── SAP WD listbox click (readonly input → click option div) ─────
 async function wdClickOption(frame, inputId, optionId) {
   try {
+    // 1. Click the input to open the dropdown listbox
     await frame.locator(`#${inputId}`).click({ force: true, timeout: 5000 });
-    await frame.waitForTimeout(600);
-    await frame.locator(`#${optionId}`).click({ force: true, timeout: 5000 });
+    await frame.waitForTimeout(800);
+    
+    // 2. Wait for the option to be visible/attached
+    let optionLocator = frame.locator(`#${optionId}`);
+    try {
+      await optionLocator.waitFor({ state: 'visible', timeout: 3000 });
+    } catch {
+      // If it timed out, try clicking the input again in case the first click was ignored or closed it
+      console.warn(`  Dropdown option #${optionId} not visible, retrying click on #${inputId}…`);
+      await frame.locator(`#${inputId}`).click({ force: true, timeout: 3000 });
+      await frame.waitForTimeout(800);
+      await optionLocator.waitFor({ state: 'visible', timeout: 3000 });
+    }
+    
+    // 3. Click the option
+    await optionLocator.click({ force: true, timeout: 5000 });
     await frame.waitForTimeout(800);
     return true;
   } catch (e) {
@@ -577,7 +592,14 @@ export async function scrapeSAPAttendance(username, password, subjects) {
     // ── 3. Fill form using exact WD IDs (discovered via debug) ───
     // AY: WD2B (input) → WD2E (2025-2026 option)
     console.log('  Selecting Academic Year 2025-2026…');
-    await wdClickOption(wdFrame, 'WD2B', 'WD2E');
+    let aySelected = false;
+    for (let retry = 0; retry < 3 && !aySelected; retry++) {
+      aySelected = await wdClickOption(wdFrame, 'WD2B', 'WD2E');
+      if (!aySelected) {
+        console.warn(`    Retry selecting Academic Year (attempt ${retry + 2}/3)…`);
+        await wdFrame.waitForTimeout(1500);
+      }
+    }
 
     // Semester: WD33 (input) → options in WD34 listbox
     console.log('  Selecting Semester IV…');
@@ -613,7 +635,14 @@ export async function scrapeSAPAttendance(username, password, subjects) {
 
     // Report type: WD39 (input) → WD3C (Detail Report option)
     console.log('  Selecting Detail Report…');
-    await wdClickOption(wdFrame, 'WD39', 'WD3C');
+    let reportSelected = false;
+    for (let retry = 0; retry < 3 && !reportSelected; retry++) {
+      reportSelected = await wdClickOption(wdFrame, 'WD39', 'WD3C');
+      if (!reportSelected) {
+        console.warn(`    Retry selecting Detail Report (attempt ${retry + 2}/3)…`);
+        await wdFrame.waitForTimeout(1500);
+      }
+    }
 
     // Dates: WD46 = Start Date, WD4B = End Date
     // These are readonly SAP DatePicker inputs — use JS value injection
