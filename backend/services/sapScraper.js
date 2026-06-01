@@ -564,11 +564,13 @@ export async function scrapeSAPAttendance(username, password, subjects) {
       } catch {}
     }
 
-    console.log('⏳ Waiting for WD frame…');
-    await page.waitForTimeout(5000);
-
-    let wdFrame = await getWDFrame(page);
-    if (!wdFrame) { await page.waitForTimeout(3000); wdFrame = await getWDFrame(page); }
+    console.log('⏳ Waiting for WD frame (polling up to 30s)…');
+    let wdFrame = null;
+    const frameTimeout = Date.now() + 30000;
+    while (!wdFrame && Date.now() < frameTimeout) {
+      wdFrame = await getWDFrame(page);
+      if (!wdFrame) await page.waitForTimeout(2000);
+    }
     if (!wdFrame) throw new Error('Could not locate WD attendance form iframe.');
     console.log(`📝 WD frame ready`);
 

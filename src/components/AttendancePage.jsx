@@ -245,7 +245,7 @@ export default function AttendancePage() {
 
   const handleSapSync = async () => {
     setSyncing(true);
-    setSyncMsg('Sync started — this takes ~30 seconds…');
+    setSyncMsg('Sync started — this takes ~1 minute…');
     try {
       await sapAPI.sync();
       // Poll for completion
