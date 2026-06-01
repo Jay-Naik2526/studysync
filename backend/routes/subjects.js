@@ -15,8 +15,8 @@ router.get('/', authMiddleware, async (req, res) => {
 
 router.post('/', authMiddleware, async (req, res) => {
   try {
-    const { name, totalPlannedClasses, totalMarks } = req.body;
-    const newSubject = new Subject({ name, totalPlannedClasses, totalMarks, user: req.user.id });
+    const { name, portalName, totalPlannedClasses, totalMarks } = req.body;
+    const newSubject = new Subject({ name, portalName, totalPlannedClasses, totalMarks, user: req.user.id });
     await newSubject.save();
     res.status(201).json(newSubject);
   } catch (error) { res.status(400).json({ message: 'Error creating subject' }); }
@@ -24,8 +24,20 @@ router.post('/', authMiddleware, async (req, res) => {
 
 router.put('/:id', authMiddleware, async (req, res) => {
   try {
-    const { conductedClasses, absentClasses, totalPlannedClasses } = req.body;
-    const updatedSubject = await Subject.findOneAndUpdate( { _id: req.params.id, user: req.user.id }, { conductedClasses, absentClasses, totalPlannedClasses }, { new: true } );
+    const { name, portalName, conductedClasses, absentClasses, totalPlannedClasses, totalMarks } = req.body;
+    const updateData = {};
+    if (name !== undefined) updateData.name = name;
+    if (portalName !== undefined) updateData.portalName = portalName;
+    if (conductedClasses !== undefined) updateData.conductedClasses = conductedClasses;
+    if (absentClasses !== undefined) updateData.absentClasses = absentClasses;
+    if (totalPlannedClasses !== undefined) updateData.totalPlannedClasses = totalPlannedClasses;
+    if (totalMarks !== undefined) updateData.totalMarks = totalMarks;
+
+    const updatedSubject = await Subject.findOneAndUpdate(
+      { _id: req.params.id, user: req.user.id },
+      updateData,
+      { new: true }
+    );
     if (!updatedSubject) return res.status(404).json({ message: 'Subject not found' });
     res.json(updatedSubject);
   } catch (error) { res.status(500).json({ message: 'Server error' }); }

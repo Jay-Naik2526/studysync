@@ -26,6 +26,14 @@ function matchSubject(pdfName, subjects) {
   // Normalize string by cleaning symbols and converting to lower case
   const clean = s => s.toLowerCase().replace(/[()&]/g, ' ').replace(/[^a-z0-9\s]/g, '');
 
+  // 0. Direct match against portalName alias
+  for (const sub of subjects) {
+    if (sub.portalName && (clean(pdfName).trim() === clean(sub.portalName).trim() || clean(pdfName).includes(clean(sub.portalName).trim()))) {
+      console.log(`🎯 [Deterministic Match] Matched "${pdfName}" to "${sub.name}" via portalName alias "${sub.portalName}"`);
+      return { subject: sub, confidence: 1.0 };
+    }
+  }
+
   // Map known short-form abbreviations to their full representations to enable exact acronym generation
   const dictionary = {
     des: 'design',
