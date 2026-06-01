@@ -232,24 +232,9 @@ export async function parsePDFAttendance(pdfBuffer) {
 // ── SAP WD listbox click (readonly input → click option div) ─────
 async function wdClickOption(frame, inputId, optionId) {
   try {
-    // 1. Click the input to open the dropdown listbox
     await frame.locator(`#${inputId}`).click({ force: true, timeout: 5000 });
     await frame.waitForTimeout(800);
-    
-    // 2. Wait for the option to be visible/attached
-    let optionLocator = frame.locator(`#${optionId}`);
-    try {
-      await optionLocator.waitFor({ state: 'visible', timeout: 3000 });
-    } catch {
-      // If it timed out, try clicking the input again in case the first click was ignored or closed it
-      console.warn(`  Dropdown option #${optionId} not visible, retrying click on #${inputId}…`);
-      await frame.locator(`#${inputId}`).click({ force: true, timeout: 3000 });
-      await frame.waitForTimeout(800);
-      await optionLocator.waitFor({ state: 'visible', timeout: 3000 });
-    }
-    
-    // 3. Click the option
-    await optionLocator.click({ force: true, timeout: 5000 });
+    await frame.locator(`#${optionId}`).click({ force: true, timeout: 5000 });
     await frame.waitForTimeout(800);
     return true;
   } catch (e) {
