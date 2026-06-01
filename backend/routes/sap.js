@@ -52,6 +52,20 @@ router.post('/sync', authMiddleware, async (req, res) => {
   const creds = await SapCredentials.findOne({ userId: req.user.id });
   if (!creds) return res.status(404).json({ message: 'No SAP credentials found. Connect your portal first.' });
 
+  // The SAP Portal is closed from 7:00 AM to 6:00 PM IST (UTC+5:30)
+  const now = new Date();
+  // Convert current UTC time to IST timezone components
+  const istDateStr = now.toLocaleString("en-US", { timeZone: "Asia/Kolkata" });
+  const istDate = new Date(istDateStr);
+  const istHour = istDate.getHours();
+  const istMinutes = istDate.getMinutes();
+  
+  if (istHour >= 7 && istHour < 18) {
+    return res.status(400).json({ 
+      message: 'The SAP portal is closed for syncing between 7:00 AM and 6:00 PM IST. Please try syncing after 6:00 PM IST.' 
+    });
+  }
+
   // Mark as running
   creds.lastSyncStatus = 'running';
   await creds.save();
