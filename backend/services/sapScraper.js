@@ -275,10 +275,28 @@ async function wdSetDate(frame, inputId, dateValue) {
 async function getWDFrame(page) {
   for (const frame of page.frames()) {
     const url = frame.url();
-    if (url.includes('ZSVKM_STUDENT_ATTENDANCE2') && !url.includes('USR_ABORT')) {
+    // Match ZSVKM_STUDENT_ATTENDANCE2 or any attendance-related WD app
+    if (
+      (url.includes('ZSVKM_STUDENT_ATTENDANCE') || url.includes('ATTENDANCE')) &&
+      !url.includes('USR_ABORT') &&
+      url.includes('sap/bc/webdynpro')
+    ) {
       return frame;
     }
   }
+  return null;
+}
+
+async function waitForWDFrame(page, timeoutMs = 30000) {
+  const start = Date.now();
+  while (Date.now() - start < timeoutMs) {
+    const frame = await getWDFrame(page);
+    if (frame) return frame;
+    await page.waitForTimeout(1000);
+  }
+  // Log all current frames for debugging
+  const frameList = page.frames().map(f => f.url()).join('\n  ');
+  console.error(`❌ WD frame not found after ${timeoutMs / 1000}s. Current frames:\n  ${frameList}`);
   return null;
 }
 
@@ -564,11 +582,9 @@ export async function scrapeSAPAttendance(username, password, subjects) {
       } catch {}
     }
 
-    console.log('⏳ Waiting for WD frame…');
-    await page.waitForTimeout(5000);
+    console.log('⏳ Waiting for WD frame (polling up to 30s)…');
 
-    let wdFrame = await getWDFrame(page);
-    if (!wdFrame) { await page.waitForTimeout(3000); wdFrame = await getWDFrame(page); }
+    const wdFrame = await waitForWDFrame(page, 30000);
     if (!wdFrame) throw new Error('Could not locate WD attendance form iframe.');
     console.log(`📝 WD frame ready`);
 
