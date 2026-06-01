@@ -417,7 +417,12 @@ export default function AttendancePage() {
                 </thead>
                 <tbody className="divide-y divide-white/[0.04]">
                   {sapStatus.lastSyncDetails.map((detail, idx) => {
-                    const isMatched = detail.status === 'synced';
+                    const cleanStr = s => s ? s.toLowerCase().replace(/[()&]/g, ' ').replace(/[^a-z0-9\s]/g, '').trim() : '';
+                    const cleanPdf = cleanStr(detail.pdfName);
+                    const matchedSub = subjects.find(s => s.portalName && (cleanStr(s.portalName) === cleanPdf || cleanPdf.includes(cleanStr(s.portalName))));
+                    const isMatched = detail.status === 'synced' || !!matchedSub;
+                    const matchedSubjectName = matchedSub ? matchedSub.name : detail.subjectName;
+
                     return (
                       <tr key={idx} className="hover:bg-white/[0.01] transition-colors text-zinc-300">
                         <td className="p-3 font-medium truncate max-w-[200px]" title={detail.pdfName}>
@@ -426,13 +431,17 @@ export default function AttendancePage() {
                         <td className="p-3">
                           {isMatched ? (
                             <div className="flex items-center gap-1.5">
-                              <span className="text-emerald-400 font-medium">{detail.subjectName}</span>
+                              <span className="text-emerald-400 font-medium">{matchedSubjectName}</span>
                               <button
                                 onClick={async () => {
                                   if (window.confirm(`Remove mapping for "${detail.pdfName}"?`)) {
-                                    const sub = subjects.find(s => s.name === detail.subjectName);
+                                    const sub = matchedSub || subjects.find(s => s.name === detail.subjectName);
                                     if (sub) {
-                                      await handleUpdate(sub._id, { portalName: "" });
+                                      await handleUpdate(sub._id, { 
+                                        portalName: "",
+                                        conductedClasses: 0,
+                                        absentClasses: 0
+                                      });
                                       fetchSubjects();
                                       fetchSapStatus();
                                     }
@@ -449,7 +458,11 @@ export default function AttendancePage() {
                               onChange={async (e) => {
                                 const subId = e.target.value;
                                 if (subId) {
-                                  await handleUpdate(subId, { portalName: detail.pdfName });
+                                  await handleUpdate(subId, { 
+                                    portalName: detail.pdfName,
+                                    conductedClasses: detail.conducted,
+                                    absentClasses: detail.absent
+                                  });
                                   fetchSubjects();
                                   fetchSapStatus();
                                 }
