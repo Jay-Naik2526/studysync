@@ -574,6 +574,10 @@ export async function scrapeSAPAttendance(username, password, subjects) {
     if (!wdFrame) throw new Error('Could not locate WD attendance form iframe.');
     console.log(`📝 WD frame ready`);
 
+    // Wait for the form element to be ready inside the WD frame
+    console.log('⏳ Waiting for WD form elements to render…');
+    await wdFrame.locator('#WD2B').waitFor({ state: 'attached', timeout: 15000 });
+
     // ── 3. Fill form using exact WD IDs (discovered via debug) ───
     // AY: WD2B (input) → WD2E (2025-2026 option)
     console.log('  Selecting Academic Year 2025-2026…');
