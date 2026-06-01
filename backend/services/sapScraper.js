@@ -574,16 +574,64 @@ export async function scrapeSAPAttendance(username, password, subjects) {
     if (!wdFrame) throw new Error('Could not locate WD attendance form iframe.');
     console.log(`📝 WD frame ready`);
 
-    // Wait for the form element to be ready inside the WD frame
+    // Wait for the form elements to start rendering inside the WD frame
     console.log('⏳ Waiting for WD form elements to render…');
-    await wdFrame.locator('#WD2B').waitFor({ state: 'attached', timeout: 15000 });
+    await wdFrame.locator('input').first().waitFor({ state: 'attached', timeout: 15000 });
+
+    // Dynamic ID Shift Offset Discovery (WebDynpro IDs are Hexadecimal sequential arrays)
+    const discoveredInputId = await wdFrame.evaluate(() => {
+      const inputs = Array.from(document.querySelectorAll('input[role="combobox"], input.lsInputField, input'));
+      return inputs.length > 0 ? inputs[0].id : null;
+    });
+
+    let offset = 0;
+    if (discoveredInputId) {
+      const parseHexId = s => {
+        const m = s.match(/^WD([0-9A-F]+)$/i);
+        return m ? parseInt(m[1], 16) : null;
+      };
+      const baseNum = parseHexId('WD2B');
+      const discNum = parseHexId(discoveredInputId);
+      if (baseNum !== null && discNum !== null) {
+        offset = discNum - baseNum;
+        console.log(`🎯 [Dynamic ID Discovery] Academic Year input is "${discoveredInputId}" (Base: "WD2B"). Offset: ${offset >= 0 ? '+' : ''}${offset}`);
+      }
+    }
+
+    const formatHexId = (baseId, shift) => {
+      const m = baseId.match(/^WD([0-9A-F]+)$/i);
+      if (!m) return baseId;
+      const baseNum = parseInt(m[1], 16);
+      return `WD${(baseNum + shift).toString(16).toUpperCase()}`;
+    };
+
+    const ID_AY_INPUT      = formatHexId('WD2B', offset);
+    const ID_AY_OPTION     = formatHexId('WD2E', offset);
+    const ID_SEM_INPUT     = formatHexId('WD33', offset);
+    const ID_SEM_OPTIONS   = formatHexId('WD34', offset);
+    const ID_REPORT_INPUT  = formatHexId('WD39', offset);
+    const ID_REPORT_OPTION = formatHexId('WD3C', offset);
+    const ID_START_DATE    = formatHexId('WD46', offset);
+    const ID_END_DATE      = formatHexId('WD4B', offset);
+    const ID_SUBMIT        = formatHexId('WD51', offset);
+
+    console.log(`📋 Active WebDynpro Element Map:
+      * Academic Year Input: ${ID_AY_INPUT}
+      * Academic Year Option: ${ID_AY_OPTION}
+      * Semester Input: ${ID_SEM_INPUT}
+      * Semester Options List: ${ID_SEM_OPTIONS}
+      * Detail Report Input: ${ID_REPORT_INPUT}
+      * Detail Report Option: ${ID_REPORT_OPTION}
+      * Start Date Input: ${ID_START_DATE}
+      * End Date Input: ${ID_END_DATE}
+      * Submit Button: ${ID_SUBMIT}`);
 
     // ── 3. Fill form using exact WD IDs (discovered via debug) ───
     // AY: WD2B (input) → WD2E (2025-2026 option)
     console.log('  Selecting Academic Year 2025-2026…');
     let aySelected = false;
     for (let retry = 0; retry < 3 && !aySelected; retry++) {
-      aySelected = await wdClickOption(wdFrame, 'WD2B', 'WD2E');
+      aySelected = await wdClickOption(wdFrame, ID_AY_INPUT, ID_AY_OPTION);
       if (!aySelected) {
         console.warn(`    Retry selecting Academic Year (attempt ${retry + 2}/3)…`);
         await wdFrame.waitForTimeout(1500);
@@ -595,12 +643,12 @@ export async function scrapeSAPAttendance(username, password, subjects) {
     await wdFrame.waitForTimeout(1500);
     let semSelected = false;
     for (let retry = 0; retry < 3 && !semSelected; retry++) {
-      const semOptions = wdFrame.locator('#WD34 [role="option"]');
+      const semOptions = wdFrame.locator(`#${ID_SEM_OPTIONS} [role="option"]`);
       const semCount   = await semOptions.count();
       for (let i = 0; i < semCount; i++) {
         const text = (await semOptions.nth(i).textContent() || '').trim();
         if (/\bIV\b|Semester\s*4/i.test(text)) {
-          await wdFrame.locator('#WD33').click({ force: true });
+          await wdFrame.locator(`#${ID_SEM_INPUT}`).click({ force: true });
           await wdFrame.waitForTimeout(400);
           await semOptions.nth(i).click({ force: true });
           await wdFrame.waitForTimeout(800);
@@ -612,7 +660,7 @@ export async function scrapeSAPAttendance(username, password, subjects) {
       if (!semSelected && semCount > 0) {
         // No IV found — pick first
         const text = (await semOptions.first().textContent() || '').trim();
-        await wdFrame.locator('#WD33').click({ force: true });
+        await wdFrame.locator(`#${ID_SEM_INPUT}`).click({ force: true });
         await wdFrame.waitForTimeout(400);
         await semOptions.first().click({ force: true });
         await wdFrame.waitForTimeout(800);
@@ -626,7 +674,7 @@ export async function scrapeSAPAttendance(username, password, subjects) {
     console.log('  Selecting Detail Report…');
     let reportSelected = false;
     for (let retry = 0; retry < 3 && !reportSelected; retry++) {
-      reportSelected = await wdClickOption(wdFrame, 'WD39', 'WD3C');
+      reportSelected = await wdClickOption(wdFrame, ID_REPORT_INPUT, ID_REPORT_OPTION);
       if (!reportSelected) {
         console.warn(`    Retry selecting Detail Report (attempt ${retry + 2}/3)…`);
         await wdFrame.waitForTimeout(1500);
@@ -641,23 +689,23 @@ export async function scrapeSAPAttendance(username, password, subjects) {
     const endDate   = `${String(now.getDate()).padStart(2,'0')}.${String(now.getMonth()+1).padStart(2,'0')}.${yyyy}`;
     console.log(`  Date range: ${startDate} → ${endDate}`);
 
-    await wdSetDate(wdFrame, 'WD46', startDate);
-    await wdSetDate(wdFrame, 'WD4B', endDate);
+    await wdSetDate(wdFrame, ID_START_DATE, startDate);
+    await wdSetDate(wdFrame, ID_END_DATE, endDate);
 
     // Trigger a Tab on an adjacent element to make SAP register the date values
-    await wdFrame.locator('#WD51').focus().catch(() => {});
+    await wdFrame.locator(`#${ID_SUBMIT}`).focus().catch(() => {});
     await wdFrame.waitForTimeout(300);
 
     // ── 4. Submit ─────────────────────────────────────────────────
-    console.log('⏳ Submitting form (#WD51)…');
+    console.log(`⏳ Submitting form (#${ID_SUBMIT})…`);
     interceptedPDF = null;
     downloadedPDF  = null;
 
     try {
-      await wdFrame.locator('#WD51').click({ force: true, timeout: 5000 });
+      await wdFrame.locator(`#${ID_SUBMIT}`).click({ force: true, timeout: 5000 });
       console.log('  ✓ SUBMIT clicked');
     } catch (e) {
-      console.warn(`  ⚠ #WD51 error: ${e.message.split('\n')[0]}`);
+      console.warn(`  ⚠ #${ID_SUBMIT} error: ${e.message.split('\n')[0]}`);
       // Fallback: click by text content
       for (const sel of [
         'div.lsButton:has-text("SUBMIT")',
