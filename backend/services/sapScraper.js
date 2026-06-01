@@ -746,6 +746,13 @@ export async function scrapeSAPAttendance(username, password, subjects) {
     }
 
     if (!pdfBuffer || pdfBuffer.length < 500) {
+      try {
+        const screenshotPath = 'public/sap-timeout-error.png';
+        await page.screenshot({ path: screenshotPath, fullPage: true });
+        console.log(`📸 Saved timeout screenshot to ${screenshotPath}`);
+      } catch (err) {
+        console.error(`Failed to capture screenshot: ${err.message}`);
+      }
       throw new Error(
         'PDF not received after 60s. The form submitted but the PDF viewer did not load. ' +
         'Check that Semester IV and Detail Report options are correct for your current academic year.'

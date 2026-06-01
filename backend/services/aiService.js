@@ -11,7 +11,7 @@ const API_KEYS = [
 ].filter(Boolean);
 
 // Priority list as per your research
-const MODELS = ["gemini-flash-latest", "gemini-2.5-flash", "gemini-2.5-pro"];
+const MODELS = ["gemini-flash-latest", "gemini-3.5-flash", "gemini-3.5-pro"];
 
 export const generateStudyMaterials = async (fileBuffers, description, type) => {
   let sourceText = description || "";
@@ -285,7 +285,13 @@ OUTPUT FORMAT — Return ONLY a raw, valid JSON object, no markdown code block f
           generationConfig: { temperature: 0.2, maxOutputTokens: 256 }
         });
         
-        const rawText = result.response.text().replace(/```json|```/g, "").trim();
+        let rawText = result.response.text().trim();
+        // Extract JSON using regex if there's any markdown wrapping
+        const jsonMatch = rawText.match(/\{[\s\S]*?\}/);
+        if (jsonMatch) {
+          rawText = jsonMatch[0];
+        }
+        
         console.log(`✅ [AI Matcher] SUCCESS: [Model ${modelName}]`);
         return JSON.parse(rawText);
       } catch (err) {
