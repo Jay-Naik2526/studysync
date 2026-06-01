@@ -641,59 +641,79 @@ export async function scrapeSAPAttendance(username, password, subjects) {
       * Submit Button: ${ID_SUBMIT}`);
 
     // ── 3. Fill form using exact WD IDs (discovered via debug) ───
+    // SAP WebDynpro reloads the iframe after EVERY dropdown selection,
+    // so we must re-acquire a fresh (non-detached) frame before each step.
+    const getFrame = () => waitForWDFrame(page, 15000);
+
+    // Helper: perform a wdClickOption using a fresh frame each time
+    const clickOption = async (inputId, optionId, label) => {
+      for (let retry = 0; retry < 4; retry++) {
+        const f = await getFrame();
+        if (!f) throw new Error(`Cannot find WD frame before selecting ${label}`);
+        const ok = await wdClickOption(f, inputId, optionId);
+        if (ok) { console.log(`    ✓ ${label} selected`); return f; }
+        console.warn(`    ⚠ Retry ${retry + 1}/3 for ${label}…`);
+        await page.waitForTimeout(1500);
+      }
+      throw new Error(`Failed to select ${label} after retries`);
+    };
+
     // AY: WD2B (input) → WD2E (2025-2026 option)
     console.log('  Selecting Academic Year 2025-2026…');
-    let aySelected = false;
-    for (let retry = 0; retry < 3 && !aySelected; retry++) {
-      aySelected = await wdClickOption(wdFrame, ID_AY_INPUT, ID_AY_OPTION);
-      if (!aySelected) {
-        console.warn(`    Retry selecting Academic Year (attempt ${retry + 2}/3)…`);
-        await wdFrame.waitForTimeout(1500);
-      }
-    }
+    await clickOption(ID_AY_INPUT, ID_AY_OPTION, 'Academic Year 2025-2026');
+
+    // Wait for frame to reload after AY selection, then re-acquire
+    await page.waitForTimeout(2000);
 
     // Semester: WD33 (input) → options in WD34 listbox
     console.log('  Selecting Semester IV…');
-    await wdFrame.waitForTimeout(1500);
     let semSelected = false;
-    for (let retry = 0; retry < 3 && !semSelected; retry++) {
-      const semOptions = wdFrame.locator(`#${ID_SEM_OPTIONS} [role="option"]`);
-      const semCount   = await semOptions.count();
-      for (let i = 0; i < semCount; i++) {
-        const text = (await semOptions.nth(i).textContent() || '').trim();
-        if (/\bIV\b|Semester\s*4/i.test(text)) {
-          await wdFrame.locator(`#${ID_SEM_INPUT}`).click({ force: true });
-          await wdFrame.waitForTimeout(400);
-          await semOptions.nth(i).click({ force: true });
-          await wdFrame.waitForTimeout(800);
-          console.log(`    ✓ Semester: "${text}"`);
-          semSelected = true;
-          break;
+    for (let retry = 0; retry < 4 && !semSelected; retry++) {
+      const f = await getFrame();
+      if (!f) throw new Error('Cannot find WD frame before semester selection');
+      try {
+        // Open the semester dropdown first
+        await f.locator(`#${ID_SEM_INPUT}`).click({ force: true, timeout: 5000 });
+        await f.waitForTimeout(600);
+        const semOptions = f.locator(`#${ID_SEM_OPTIONS} [role="option"]`);
+        const semCount   = await semOptions.count();
+        let picked = false;
+        for (let i = 0; i < semCount; i++) {
+          const text = (await semOptions.nth(i).textContent() || '').trim();
+          if (/\bIV\b|Semester\s*4/i.test(text)) {
+            await semOptions.nth(i).click({ force: true });
+            await f.waitForTimeout(800);
+            console.log(`    ✓ Semester: "${text}"`);
+            semSelected = true; picked = true; break;
+          }
         }
+        if (!picked && semCount > 0) {
+          const text = (await semOptions.first().textContent() || '').trim();
+          await semOptions.first().click({ force: true });
+          await f.waitForTimeout(800);
+          console.log(`    ⚠ No Sem IV found — picked first: "${text}"`);
+          semSelected = true;
+        }
+      } catch (e) {
+        console.warn(`    ⚠ Semester retry ${retry + 1}: ${e.message.split('\n')[0]}`);
+        await page.waitForTimeout(2000);
       }
-      if (!semSelected && semCount > 0) {
-        // No IV found — pick first
-        const text = (await semOptions.first().textContent() || '').trim();
-        await wdFrame.locator(`#${ID_SEM_INPUT}`).click({ force: true });
-        await wdFrame.waitForTimeout(400);
-        await semOptions.first().click({ force: true });
-        await wdFrame.waitForTimeout(800);
-        console.log(`    ⚠ No Sem IV — picked first: "${text}"`);
-        semSelected = true;
-      }
-      if (!semSelected) await wdFrame.waitForTimeout(1500);
     }
+    if (!semSelected) throw new Error('Failed to select Semester after retries');
+
+    // Wait for frame reload after semester selection
+    await page.waitForTimeout(2000);
 
     // Report type: WD39 (input) → WD3C (Detail Report option)
     console.log('  Selecting Detail Report…');
-    let reportSelected = false;
-    for (let retry = 0; retry < 3 && !reportSelected; retry++) {
-      reportSelected = await wdClickOption(wdFrame, ID_REPORT_INPUT, ID_REPORT_OPTION);
-      if (!reportSelected) {
-        console.warn(`    Retry selecting Detail Report (attempt ${retry + 2}/3)…`);
-        await wdFrame.waitForTimeout(1500);
-      }
-    }
+    await clickOption(ID_REPORT_INPUT, ID_REPORT_OPTION, 'Detail Report');
+
+    // Wait for frame reload after report type selection
+    await page.waitForTimeout(1500);
+
+    // Re-acquire fresh frame for date + submit steps
+    const freshFrame = await getFrame();
+    if (!freshFrame) throw new Error('Cannot find WD frame before date/submit step');
 
     // Dates: WD46 = Start Date, WD4B = End Date
     // These are readonly SAP DatePicker inputs — use JS value injection
@@ -703,12 +723,12 @@ export async function scrapeSAPAttendance(username, password, subjects) {
     const endDate   = `${String(now.getDate()).padStart(2,'0')}.${String(now.getMonth()+1).padStart(2,'0')}.${yyyy}`;
     console.log(`  Date range: ${startDate} → ${endDate}`);
 
-    await wdSetDate(wdFrame, ID_START_DATE, startDate);
-    await wdSetDate(wdFrame, ID_END_DATE, endDate);
+    await wdSetDate(freshFrame, ID_START_DATE, startDate);
+    await wdSetDate(freshFrame, ID_END_DATE, endDate);
 
     // Trigger a Tab on an adjacent element to make SAP register the date values
-    await wdFrame.locator(`#${ID_SUBMIT}`).focus().catch(() => {});
-    await wdFrame.waitForTimeout(300);
+    await freshFrame.locator(`#${ID_SUBMIT}`).focus().catch(() => {});
+    await freshFrame.waitForTimeout(300);
 
     // ── 4. Submit ─────────────────────────────────────────────────
     console.log(`⏳ Submitting form (#${ID_SUBMIT})…`);
@@ -716,7 +736,7 @@ export async function scrapeSAPAttendance(username, password, subjects) {
     downloadedPDF  = null;
 
     try {
-      await wdFrame.locator(`#${ID_SUBMIT}`).click({ force: true, timeout: 5000 });
+      await freshFrame.locator(`#${ID_SUBMIT}`).click({ force: true, timeout: 5000 });
       console.log('  ✓ SUBMIT clicked');
     } catch (e) {
       console.warn(`  ⚠ #${ID_SUBMIT} error: ${e.message.split('\n')[0]}`);
@@ -727,7 +747,7 @@ export async function scrapeSAPAttendance(username, password, subjects) {
         'span.lsButton__text:has-text("SUBMIT")',
       ]) {
         try {
-          await wdFrame.locator(sel).first().click({ force: true, timeout: 3000 });
+          await freshFrame.locator(sel).first().click({ force: true, timeout: 3000 });
           console.log(`  ✓ SUBMIT via: "${sel}"`);
           break;
         } catch {}
