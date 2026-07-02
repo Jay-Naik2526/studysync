@@ -710,38 +710,55 @@ export async function scrapeSAPAttendance(username, password, subjects, options 
       throw new Error(`Failed to select ${label} after retries`);
     };
 
-    // AY: WD2B (input) → match the requested year within the open listbox,
-    // falling back to the known static option (WD2E) in the SAME pass so we
-    // never leave the dropdown open-but-unclicked (SAP auto-closes it quickly,
-    // and a delayed fallback click can silently no-op with force:true).
+    // AY: WD2B (input) → listbox option, e.g. "Acad .Year 2025-2026".
+    // The portal's option text has a fixed prefix, so we match by extracting
+    // the YYYY-YYYY range rather than comparing full strings. We never guess
+    // "current year" from today's date — a new academic year can already
+    // appear in the dropdown before that year's semesters have actually
+    // started, so the year the student needs is whatever they picked in the UI.
     console.log(`  Selecting Academic Year "${academicYear}"…`);
+    const extractYearRange = txt => {
+      const m = txt.match(/(\d{4})\s*-\s*(\d{4})/);
+      return m ? `${m[1]}-${m[2]}` : null;
+    };
+
     let aySelected = false;
-    for (let retry = 0; retry < 4 && !aySelected; retry++) {
+    const AY_RETRIES = 4;
+    for (let retry = 0; retry < AY_RETRIES && !aySelected; retry++) {
       const f = await getFrame();
       if (!f) throw new Error('Cannot find WD frame before AY selection');
       try {
         await f.locator(`#${ID_AY_INPUT}`).click({ force: true, timeout: 5000 });
-        await f.waitForTimeout(800);
+        await f.waitForTimeout(1000);
         const ayOptions = f.locator('[role="option"]');
         const ayCount   = await ayOptions.count();
 
         let matchedIdx = -1;
+        let lastText = null;
         for (let i = 0; i < ayCount; i++) {
           const text = (await ayOptions.nth(i).textContent() || '').trim();
-          if (text.replace(/\s+/g, '') === academicYear.replace(/\s+/g, '')) { matchedIdx = i; break; }
+          lastText = text;
+          if (extractYearRange(text) === academicYear) { matchedIdx = i; break; }
         }
 
         if (matchedIdx >= 0) {
           await ayOptions.nth(matchedIdx).click({ force: true, timeout: 5000 });
+          await f.waitForTimeout(800);
           console.log(`    ✓ Academic Year: "${academicYear}"`);
-        } else {
-          // No exact match (or listbox not queryable via a generic selector) —
-          // click the known-good default option for this portal deployment.
+          aySelected = true;
+        } else if (retry === AY_RETRIES - 1) {
+          // Last resort after every retry has failed to find a real match:
+          // fall back to the portal's known default option.
+          await f.locator(`#${ID_AY_INPUT}`).click({ force: true, timeout: 5000 });
+          await f.waitForTimeout(400);
           await f.locator(`#${ID_AY_OPTION}`).click({ force: true, timeout: 5000 });
-          console.log(`    ⚠ No exact AY match for "${academicYear}" — used default portal option`);
+          await f.waitForTimeout(800);
+          console.log(`    ⚠ No AY option matched "${academicYear}" (last seen: "${lastText}") — used default portal option`);
+          aySelected = true;
+        } else {
+          console.warn(`    ⚠ No AY match yet for "${academicYear}" among ${ayCount} option(s) — retrying…`);
+          await page.waitForTimeout(1000);
         }
-        await f.waitForTimeout(800);
-        aySelected = true;
       } catch (e) {
         console.warn(`    ⚠ AY retry ${retry + 1}: ${e.message.split('\n')[0]}`);
         await page.waitForTimeout(1500);
