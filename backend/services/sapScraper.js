@@ -304,12 +304,27 @@ async function findInputNearLabel(frame, labelText) {
       }
     }
 
-    // 2. Fallback: Find the first visible input following any element containing the label text.
-    // Filter by visibility to prevent matching hidden/system-level input elements.
-    const xpathLoc = frame.locator(`xpath=//*[contains(normalize-space(text()), "${labelText}")]/following::input`).filter({ visible: true }).first();
-    if (await xpathLoc.count() > 0) {
-      console.log(`    ℹ [findInputNearLabel] Found visible input for "${labelText}" via XPath following-sibling`);
-      return xpathLoc;
+    // 2. Try to find a text element (span, td, div, label) containing the labelText
+    // and locate the first visible input inside its parent container (row/layout).
+    const textLocators = [
+      frame.locator(`span:has-text("${labelText}")`),
+      frame.locator(`td:has-text("${labelText}")`),
+      frame.locator(`div:has-text("${labelText}")`),
+      frame.locator(`text="${labelText}"`)
+    ];
+
+    for (const loc of textLocators) {
+      if (await loc.count() > 0) {
+        // Look up the DOM tree for a parent container row or cell layout
+        const container = loc.first().locator('xpath=./ancestor::tr | ./ancestor::div[contains(@class, "Matrix")] | ./ancestor::table').first();
+        if (await container.count() > 0) {
+          const input = container.locator('input').filter({ visible: true }).first();
+          if (await input.count() > 0) {
+            console.log(`    ℹ [findInputNearLabel] Found visible input for "${labelText}" inside parent row/container`);
+            return input;
+          }
+        }
+      }
     }
   } catch (e) {
     console.warn(`    ⚠ findInputNearLabel error for "${labelText}": ${e.message}`);
@@ -317,19 +332,16 @@ async function findInputNearLabel(frame, labelText) {
   return null;
 }
 
-// ── Type into SAP DatePicker's real <input> ───────────────────────
-// The visible date field (e.g. #WD46) is often a WRAPPER element, not an
-// <input> itself — the actual editable <input> SAP's WD framework listens to
-// is nested inside it (or elsewhere near it). JS value injection on a
-// wrapper is a silent no-op, so we click the real input and type into it
-// exactly like a user would.
-// We try three candidates in priority order: label-relative lookup, nested
-// input under the computed hex ID, and direct computed hex ID, skipping
-// non-visible inputs.
+// ── Type/Set SAP DatePicker's real <input> ───────────────────────
+// SAP DatePicker inputs are often readonly elements inside a wrapper.
+// Direct keyboard typing can fail, and direct JS value setting on a wrapper
+// does nothing. We find the real input field using our locator fallback chain,
+// bypass readonly via direct JS value injection, and trigger the events (change, input, blur)
+// required by the SAP WebDynpro framework to register the new value.
 async function wdTypeDate(frame, containerId, labelText, dateValue) {
   const candidates = [];
 
-  // Candidate 1: Label-relative lookup
+  // Candidate 1: Label-relative lookup (most robust)
   const labelInput = await findInputNearLabel(frame, labelText);
   if (labelInput) {
     candidates.push({ locator: labelInput, source: 'label-relative' });
@@ -349,13 +361,24 @@ async function wdTypeDate(frame, containerId, labelText, dateValue) {
       // Skip if the candidate input is not visible
       if (!(await cand.locator.isVisible().catch(() => false))) continue;
 
-      // Try to click and type
-      await cand.locator.click({ force: true, timeout: 3000 });
-      await cand.locator.press('Control+a');
-      await cand.locator.type(dateValue, { delay: 30 });
-      await cand.locator.press('Tab');
-      console.log(`    ✓ Typed "${labelText}" (via ${cand.source}) = "${dateValue}"`);
-      return true;
+      // Inject the value via JS on the resolved DOM element, temporarily removing readonly
+      const success = await cand.locator.evaluate((el, val) => {
+        if (!el) return false;
+        const wasReadonly = el.hasAttribute('readonly');
+        el.removeAttribute('readonly');
+        el.value = val;
+        if (wasReadonly) el.setAttribute('readonly', '');
+        
+        ['input', 'change', 'blur'].forEach(evt =>
+          el.dispatchEvent(new Event(evt, { bubbles: true }))
+        );
+        return true;
+      }, dateValue);
+
+      if (success) {
+        console.log(`    ✓ Set "${labelText}" (via ${cand.source}) = "${dateValue}"`);
+        return true;
+      }
     } catch (e) {
       console.warn(`    ⚠ Failed trying candidate ${cand.source} for "${labelText}": ${e.message.split('\n')[0]}`);
     }
