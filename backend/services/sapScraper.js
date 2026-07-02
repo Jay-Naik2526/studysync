@@ -716,55 +716,45 @@ export async function scrapeSAPAttendance(username, password, subjects, options 
     // "current year" from today's date — a new academic year can already
     // appear in the dropdown before that year's semesters have actually
     // started, so the year the student needs is whatever they picked in the UI.
-    console.log(`  Selecting Academic Year "${academicYear}"…`);
+    //
+    // IMPORTANT: we discover the matching option's real element id via a
+    // READ-ONLY probe (no click on the AY input at all — SAP pre-renders the
+    // listbox content in the DOM, just hidden, so text/id are readable without
+    // opening it). The actual selection is then done with the exact same
+    // single open→click commit sequence used by the proven-stable
+    // clickOption/wdClickOption helper (used for Detail Report below).
+    // Earlier attempts that opened the dropdown, queried it, and clicked in a
+    // multi-step sequence let SAP's popup auto-close between our query and our
+    // click — the click then silently no-oped (force:true never throws) and
+    // the Semester listbox never actually got populated.
     const extractYearRange = txt => {
       const m = txt.match(/(\d{4})\s*-\s*(\d{4})/);
       return m ? `${m[1]}-${m[2]}` : null;
     };
 
-    let aySelected = false;
-    const AY_RETRIES = 4;
-    for (let retry = 0; retry < AY_RETRIES && !aySelected; retry++) {
-      const f = await getFrame();
-      if (!f) throw new Error('Cannot find WD frame before AY selection');
-      try {
-        await f.locator(`#${ID_AY_INPUT}`).click({ force: true, timeout: 5000 });
-        await f.waitForTimeout(1000);
-        const ayOptions = f.locator('[role="option"]');
-        const ayCount   = await ayOptions.count();
-
-        let matchedIdx = -1;
-        let lastText = null;
+    console.log(`  Looking up Academic Year "${academicYear}" in the portal's option list…`);
+    let ayOptionId = null;
+    try {
+      const probeFrame = await getFrame();
+      if (probeFrame) {
+        const ayOptions = probeFrame.locator('[role="option"]');
+        const ayCount = await ayOptions.count();
         for (let i = 0; i < ayCount; i++) {
-          const text = (await ayOptions.nth(i).textContent() || '').trim();
-          lastText = text;
-          if (extractYearRange(text) === academicYear) { matchedIdx = i; break; }
+          const el = ayOptions.nth(i);
+          const text = (await el.textContent() || '').trim();
+          if (extractYearRange(text) === academicYear) {
+            ayOptionId = await el.getAttribute('id');
+            break;
+          }
         }
-
-        if (matchedIdx >= 0) {
-          await ayOptions.nth(matchedIdx).click({ force: true, timeout: 5000 });
-          await f.waitForTimeout(800);
-          console.log(`    ✓ Academic Year: "${academicYear}"`);
-          aySelected = true;
-        } else if (retry === AY_RETRIES - 1) {
-          // Last resort after every retry has failed to find a real match:
-          // fall back to the portal's known default option.
-          await f.locator(`#${ID_AY_INPUT}`).click({ force: true, timeout: 5000 });
-          await f.waitForTimeout(400);
-          await f.locator(`#${ID_AY_OPTION}`).click({ force: true, timeout: 5000 });
-          await f.waitForTimeout(800);
-          console.log(`    ⚠ No AY option matched "${academicYear}" (last seen: "${lastText}") — used default portal option`);
-          aySelected = true;
-        } else {
-          console.warn(`    ⚠ No AY match yet for "${academicYear}" among ${ayCount} option(s) — retrying…`);
-          await page.waitForTimeout(1000);
-        }
-      } catch (e) {
-        console.warn(`    ⚠ AY retry ${retry + 1}: ${e.message.split('\n')[0]}`);
-        await page.waitForTimeout(1500);
       }
+    } catch (e) {
+      console.warn(`    ⚠ AY lookup probe failed (will use default option): ${e.message.split('\n')[0]}`);
     }
-    if (!aySelected) throw new Error('Failed to select Academic Year after retries');
+
+    const finalAyOptionId = ayOptionId || ID_AY_OPTION;
+    console.log(`  Selecting Academic Year "${academicYear}" (${ayOptionId ? `option #${ayOptionId}` : 'default portal option — no exact match found'})…`);
+    await clickOption(ID_AY_INPUT, finalAyOptionId, `Academic Year ${academicYear}`);
 
     // Wait for frame to reload after AY selection, then re-acquire
     await page.waitForTimeout(2000);
