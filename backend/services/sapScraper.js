@@ -864,6 +864,13 @@ export async function scrapeSAPAttendance(username, password, subjects, options 
     interceptedPDF = null;
     downloadedPDF  = null;
 
+    // Read back what SAP actually stored in the date inputs right before
+    // submitting — if our JS injection didn't fully register with the WD
+    // framework's internal state, the visible value may differ from what
+    // the server will validate against.
+    const readDateValue = async id => freshFrame.locator(`#${id}`).inputValue().catch(() => '(unreadable)');
+    console.log(`  📋 Date inputs just before submit: start="${await readDateValue(ID_START_DATE)}" end="${await readDateValue(ID_END_DATE)}"`);
+
     try {
       await freshFrame.locator(`#${ID_SUBMIT}`).click({ force: true, timeout: 5000 });
       console.log('  ✓ SUBMIT clicked');
@@ -982,6 +989,16 @@ export async function scrapeSAPAttendance(username, password, subjects, options 
           }
         }
       }
+      // At the halfway point, dump the WD form's visible text — if SAP
+      // rejected the submission (e.g. an invalid-date validation error) it'll
+      // show up here as on-screen text, even though no new frame/PDF appears.
+      if (elapsed === 20) {
+        const wf = await getWDFrame(page);
+        if (wf) {
+          const bodyText = await wf.evaluate(() => document.body.innerText).catch(() => null);
+          if (bodyText) console.log(`    📄 WD form text @ 20s:\n${bodyText.trim().substring(0, 1000)}`);
+        }
+      }
     }
 
     if (!pdfBuffer || pdfBuffer.length < 500) {
@@ -992,6 +1009,16 @@ export async function scrapeSAPAttendance(username, password, subjects, options 
       } catch (err) {
         console.error(`Failed to capture screenshot: ${err.message}`);
       }
+      // Dump the final on-screen text of the WD form too — this is the most
+      // useful signal we have since we can't retrieve the screenshot file
+      // from a remote deploy.
+      try {
+        const wf = await getWDFrame(page);
+        if (wf) {
+          const bodyText = await wf.evaluate(() => document.body.innerText).catch(() => null);
+          if (bodyText) console.log(`📄 WD form text at timeout:\n${bodyText.trim().substring(0, 1500)}`);
+        }
+      } catch {}
       throw new Error(
         'PDF not received after 60s. The form submitted but the PDF viewer did not load. ' +
         'Check that Semester IV and Detail Report options are correct for your current academic year.'
