@@ -229,6 +229,52 @@ export async function parsePDFAttendance(pdfBuffer) {
   return { courseMap: map, latestAttendanceDate };
 }
 
+// ── Academic year / semester helpers ──────────────────────────────
+// SVKM's academic year flips on ~July 1. Before July → prior AY is active,
+// on/after July → the new AY has started.
+export function defaultAcademicYear(now = new Date()) {
+  const y = now.getFullYear();
+  return now.getMonth() + 1 >= 7 ? `${y}-${y + 1}` : `${y - 1}-${y}`;
+}
+
+const ROMAN = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII'];
+
+// Accepts "IV", "4", "Semester IV", "Sem 4", "Trimester 4" → returns 1-8, or null
+export function normalizeSemesterNumber(input) {
+  if (input === null || input === undefined || input === '') return null;
+  const s = String(input).trim();
+
+  const num = parseInt(s, 10);
+  if (!isNaN(num) && String(num) === s && num >= 1 && num <= 8) return num;
+
+  const romanIdx = ROMAN.indexOf(s.toUpperCase());
+  if (romanIdx !== -1) return romanIdx + 1;
+
+  const m = s.match(/([IVX]+|\d+)\s*$/i);
+  if (m && m[1] !== s) return normalizeSemesterNumber(m[1]);
+
+  return null;
+}
+
+// Builds a regex that matches this semester's roman numeral or "Semester N" / "Trimester N" text
+function semesterMatchRegex(semNum) {
+  const roman = ROMAN[semNum - 1];
+  return new RegExp(`\\b${roman}\\b|(?:Semester|Trimester|Sem)\\.?\\s*0?${semNum}\\b`, 'i');
+}
+
+// Odd semesters (I, III, V, VII) run Jul–Dec; even semesters (II, IV, VI, VIII) run Jan–Jun.
+// Start date is fixed to the semester's official start; end date is always "today".
+export function computeSmartDateRange(academicYear, semNum, now = new Date()) {
+  const m = String(academicYear).match(/(\d{4}).*?(\d{4})/);
+  const startYear = m ? parseInt(m[1], 10) : now.getFullYear();
+  const endYear   = m ? parseInt(m[2], 10) : startYear + 1;
+
+  const isOdd = semNum % 2 === 1;
+  const startDate = isOdd ? `13.07.${startYear}` : `02.01.${endYear}`;
+  const endDate = `${String(now.getDate()).padStart(2, '0')}.${String(now.getMonth() + 1).padStart(2, '0')}.${now.getFullYear()}`;
+  return { startDate, endDate };
+}
+
 // ── SAP WD listbox click (readonly input → click option div) ─────
 async function wdClickOption(frame, inputId, optionId) {
   try {
@@ -423,8 +469,14 @@ async function fetchEmbeddedPDF(page, context, waitMs = 60000) {
 }
 
 // ── MAIN scraper ──────────────────────────────────────────────────
-export async function scrapeSAPAttendance(username, password, subjects) {
-  console.log(`🚀 SAP scrape starting…`);
+export async function scrapeSAPAttendance(username, password, subjects, options = {}) {
+  const academicYear = options.academicYear || defaultAcademicYear();
+  const semNum = normalizeSemesterNumber(options.semester);
+  if (!semNum) {
+    throw new Error('A valid Semester/Trimester (I–VIII) must be selected before syncing.');
+  }
+
+  console.log(`🚀 SAP scrape starting… (AY: ${academicYear}, Semester: ${ROMAN[semNum - 1]})`);
 
   const browser = await chromium.launch({
     headless: true,
@@ -658,15 +710,57 @@ export async function scrapeSAPAttendance(username, password, subjects) {
       throw new Error(`Failed to select ${label} after retries`);
     };
 
-    // AY: WD2B (input) → WD2E (2025-2026 option)
-    console.log('  Selecting Academic Year 2025-2026…');
-    await clickOption(ID_AY_INPUT, ID_AY_OPTION, 'Academic Year 2025-2026');
+    // AY: WD2B (input) → dynamically discover & match the option list
+    // rather than assuming a fixed academic year is always present.
+    console.log(`  Selecting Academic Year "${academicYear}"…`);
+    let aySelected = false;
+    for (let retry = 0; retry < 4 && !aySelected; retry++) {
+      const f = await getFrame();
+      if (!f) throw new Error('Cannot find WD frame before AY selection');
+      try {
+        await f.locator(`#${ID_AY_INPUT}`).click({ force: true, timeout: 5000 });
+        await f.waitForTimeout(600);
+        const ayOptions = f.locator('[role="option"]');
+        const ayCount   = await ayOptions.count();
+        let picked = false;
+        for (let i = 0; i < ayCount; i++) {
+          const text = (await ayOptions.nth(i).textContent() || '').trim();
+          if (text.replace(/\s+/g, '') === academicYear.replace(/\s+/g, '')) {
+            await ayOptions.nth(i).click({ force: true });
+            await f.waitForTimeout(800);
+            console.log(`    ✓ Academic Year: "${text}"`);
+            aySelected = true; picked = true; break;
+          }
+        }
+        if (!picked && ayCount > 0) {
+          // Fallback 1: the historically known static option (kept for resilience)
+          try {
+            await f.locator(`#${ID_AY_OPTION}`).click({ force: true, timeout: 3000 });
+            await f.waitForTimeout(800);
+            console.log(`    ⚠ No exact AY match for "${academicYear}" — used default portal option`);
+            aySelected = true;
+          } catch {
+            const text = (await ayOptions.last().textContent() || '').trim();
+            await ayOptions.last().click({ force: true });
+            await f.waitForTimeout(800);
+            console.log(`    ⚠ No AY match — picked last available option: "${text}"`);
+            aySelected = true;
+          }
+        }
+      } catch (e) {
+        console.warn(`    ⚠ AY retry ${retry + 1}: ${e.message.split('\n')[0]}`);
+        await page.waitForTimeout(2000);
+      }
+    }
+    if (!aySelected) throw new Error('Failed to select Academic Year after retries');
 
     // Wait for frame to reload after AY selection, then re-acquire
     await page.waitForTimeout(2000);
 
-    // Semester: WD33 (input) → options in WD34 listbox
-    console.log('  Selecting Semester IV…');
+    // Semester: WD33 (input) → options in WD34 listbox, matched against the
+    // user-selected semester/trimester rather than a hardcoded "IV".
+    console.log(`  Selecting Semester ${ROMAN[semNum - 1]}…`);
+    const semRegex = semesterMatchRegex(semNum);
     let semSelected = false;
     for (let retry = 0; retry < 4 && !semSelected; retry++) {
       const f = await getFrame();
@@ -680,7 +774,7 @@ export async function scrapeSAPAttendance(username, password, subjects) {
         let picked = false;
         for (let i = 0; i < semCount; i++) {
           const text = (await semOptions.nth(i).textContent() || '').trim();
-          if (/\bIV\b|Semester\s*4/i.test(text)) {
+          if (semRegex.test(text)) {
             await semOptions.nth(i).click({ force: true });
             await f.waitForTimeout(800);
             console.log(`    ✓ Semester: "${text}"`);
@@ -691,7 +785,7 @@ export async function scrapeSAPAttendance(username, password, subjects) {
           const text = (await semOptions.first().textContent() || '').trim();
           await semOptions.first().click({ force: true });
           await f.waitForTimeout(800);
-          console.log(`    ⚠ No Sem IV found — picked first: "${text}"`);
+          console.log(`    ⚠ No match for Semester ${ROMAN[semNum - 1]} — picked first available: "${text}"`);
           semSelected = true;
         }
       } catch (e) {
@@ -716,11 +810,10 @@ export async function scrapeSAPAttendance(username, password, subjects) {
     if (!freshFrame) throw new Error('Cannot find WD frame before date/submit step');
 
     // Dates: WD46 = Start Date, WD4B = End Date
-    // These are readonly SAP DatePicker inputs — use JS value injection
-    const now   = new Date();
-    const yyyy  = now.getFullYear();
-    const startDate = `01.01.${yyyy}`;
-    const endDate   = `${String(now.getDate()).padStart(2,'0')}.${String(now.getMonth()+1).padStart(2,'0')}.${yyyy}`;
+    // These are readonly SAP DatePicker inputs — use JS value injection.
+    // Odd semesters (I/III/V/VII) run Jul 13 – Dec; even semesters (II/IV/VI/VIII)
+    // run Jan 2 – Jun. End date is always "today" so this works for any student, any year.
+    const { startDate, endDate } = computeSmartDateRange(academicYear, semNum);
     console.log(`  Date range: ${startDate} → ${endDate}`);
 
     await wdSetDate(freshFrame, ID_START_DATE, startDate);

@@ -49,6 +49,11 @@ router.get('/status', authMiddleware, async (req, res) => {
 
 // ── POST /api/sap/sync — trigger a scrape & update attendance ─────
 router.post('/sync', authMiddleware, async (req, res) => {
+  const { academicYear, semester } = req.body;
+  if (!semester) {
+    return res.status(400).json({ message: 'Please select your Semester/Trimester before syncing.' });
+  }
+
   const creds = await SapCredentials.findOne({ userId: req.user.id });
   if (!creds) return res.status(404).json({ message: 'No SAP credentials found. Connect your portal first.' });
 
@@ -88,7 +93,9 @@ router.post('/sync', authMiddleware, async (req, res) => {
         return;
       }
 
-      const { results, syncedAt, latestAttendanceDate } = await scrapeSAPAttendance(username, password, subjects);
+      const { results, syncedAt, latestAttendanceDate } = await scrapeSAPAttendance(
+        username, password, subjects, { academicYear, semester }
+      );
 
 
 

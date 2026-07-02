@@ -231,6 +231,26 @@ export default function AttendancePage() {
   const [syncing, setSyncing] = useState(false);
   const [syncMsg, setSyncMsg] = useState('');
 
+  // Academic Year auto-defaults to the currently running year (flips every July 1)
+  // so this works out of the box for any student, any year — no hardcoding.
+  const defaultAcademicYear = () => {
+    const now = new Date();
+    const y = now.getFullYear();
+    return now.getMonth() + 1 >= 7 ? `${y}-${y + 1}` : `${y - 1}-${y}`;
+  };
+  const academicYearOptions = (() => {
+    const [start] = defaultAcademicYear().split('-').map(Number);
+    // Offer the current year plus a couple before it, for students re-syncing past semesters
+    return [start, start - 1, start - 2].map(y => `${y}-${y + 1}`);
+  })();
+  const SEMESTER_ROMAN = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII'];
+
+  const [academicYear, setAcademicYear] = useState(() => localStorage.getItem('sap_academicYear') || defaultAcademicYear());
+  const [semester, setSemester] = useState(() => localStorage.getItem('sap_semester') || '');
+
+  useEffect(() => { localStorage.setItem('sap_academicYear', academicYear); }, [academicYear]);
+  useEffect(() => { localStorage.setItem('sap_semester', semester); }, [semester]);
+
   const fetchSubjects = async () => {
     try { setSubjects((await subjectsAPI.getAll()).data); }
     catch { setError('Could not load subjects.'); }
@@ -244,10 +264,14 @@ export default function AttendancePage() {
   useEffect(() => { fetchSubjects(); fetchSapStatus(); }, []);
 
   const handleSapSync = async () => {
+    if (!semester) {
+      setSyncMsg('✗ Please select your Semester/Trimester first.');
+      return;
+    }
     setSyncing(true);
     setSyncMsg('Sync started — this takes ~1 minute…');
     try {
-      await sapAPI.sync();
+      await sapAPI.sync({ academicYear, semester });
       // Poll for completion
       const poll = setInterval(async () => {
         const { data } = await sapAPI.getStatus();
@@ -378,7 +402,8 @@ export default function AttendancePage() {
             {sapStatus?.connected ? (
               <>
                 <button
-                  onClick={handleSapSync} disabled={syncing}
+                  onClick={handleSapSync} disabled={syncing || !semester}
+                  title={!semester ? 'Select Semester/Trimester first' : undefined}
                   className="flex items-center gap-1.5 px-4 py-2 bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 disabled:opacity-50 text-white rounded-xl text-xs font-semibold transition-all">
                   {syncing ? <Loader2 size={13} className="animate-spin" /> : <RefreshCw size={13} />}
                   {syncing ? 'Syncing…' : 'Sync Now'}
@@ -395,6 +420,27 @@ export default function AttendancePage() {
             )}
           </div>
         </div>
+
+        {sapStatus?.connected && (
+          <div className="flex flex-wrap gap-2 mt-3">
+            <div className="flex-1 min-w-[140px]">
+              <label className="block text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-1">Academic Year</label>
+              <select value={academicYear} onChange={e => setAcademicYear(e.target.value)}
+                className="w-full px-3 py-2 bg-white/[0.05] border border-white/[0.08] rounded-lg text-xs text-white focus:outline-none focus:border-violet-500/50">
+                {academicYearOptions.map(y => <option key={y} value={y}>{y}</option>)}
+              </select>
+            </div>
+            <div className="flex-1 min-w-[140px]">
+              <label className="block text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-1">Semester / Trimester</label>
+              <select value={semester} onChange={e => setSemester(e.target.value)}
+                className="w-full px-3 py-2 bg-white/[0.05] border border-white/[0.08] rounded-lg text-xs text-white focus:outline-none focus:border-violet-500/50">
+                <option value="">Select…</option>
+                {SEMESTER_ROMAN.map(r => <option key={r} value={r}>Semester {r}</option>)}
+              </select>
+            </div>
+          </div>
+        )}
+
         {syncMsg && (
           <p className={`text-xs mt-3 px-3 py-2 rounded-lg ${syncMsg.startsWith('✓') ? 'bg-emerald-500/10 text-emerald-400' : syncMsg.startsWith('✗') ? 'bg-red-500/10 text-red-400' : 'bg-violet-500/10 text-violet-300'}`}>
             {syncMsg}
