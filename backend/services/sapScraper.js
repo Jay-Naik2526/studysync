@@ -289,30 +289,27 @@ async function wdClickOption(frame, inputId, optionId) {
   }
 }
 
-// ── Set SAP readonly date input via JS + change event ────────────
-// SAP DatePicker inputs are readonly — we bypass via direct JS value injection
-// and fire the change event so SAP's WD framework registers the new value.
-async function wdSetDate(frame, inputId, dateValue) {
+// ── Type into SAP DatePicker's nested real <input> ────────────────
+// The visible date field (e.g. #WD46) is a WRAPPER element, not an <input>
+// itself — the actual editable <input> SAP's WD framework listens to is
+// nested inside it. JS value injection on the wrapper is a silent no-op
+// (assigning .value to a non-input DOM node does nothing), so we click the
+// real nested input and type into it exactly like a user would.
+async function wdTypeDate(frame, containerId, dateValue) {
   try {
-    await frame.evaluate(({ id, val }) => {
-      const el = document.getElementById(id);
-      if (!el) return false;
-      // Temporarily remove readonly to allow value set
-      const wasReadonly = el.hasAttribute('readonly');
-      el.removeAttribute('readonly');
-      el.value = val;
-      if (wasReadonly) el.setAttribute('readonly', '');
-      // Fire events that SAP WD listens to
-      ['input', 'change', 'blur'].forEach(evt =>
-        el.dispatchEvent(new Event(evt, { bubbles: true }))
-      );
-      return true;
-    }, { id: inputId, val: dateValue });
-    await frame.waitForTimeout(400);
-    console.log(`    ✓ Set #${inputId} = "${dateValue}" (via JS)`);
+    const input = frame.locator(`#${containerId} input`).first();
+    if (await input.count() === 0) {
+      console.warn(`    ⚠ wdTypeDate(${containerId}): no nested <input> found inside container`);
+      return false;
+    }
+    await input.click({ force: true, timeout: 5000 });
+    await input.press('Control+a');
+    await input.type(dateValue, { delay: 30 });
+    await input.press('Tab');
+    console.log(`    ✓ Typed #${containerId} input = "${dateValue}"`);
     return true;
   } catch (e) {
-    console.warn(`    ⚠ wdSetDate(${inputId}): ${e.message.split('\n')[0]}`);
+    console.warn(`    ⚠ wdTypeDate(${containerId}): ${e.message.split('\n')[0]}`);
     return false;
   }
 }
@@ -845,18 +842,17 @@ export async function scrapeSAPAttendance(username, password, subjects, options 
     const freshFrame = await getFrame();
     if (!freshFrame) throw new Error('Cannot find WD frame before date/submit step');
 
-    // Dates: WD46 = Start Date, WD4B = End Date
-    // These are readonly SAP DatePicker inputs — use JS value injection.
+    // Dates: WD46 = Start Date wrapper, WD4B = End Date wrapper.
+    // Each wraps a real nested <input> that needs genuine typing — see
+    // wdTypeDate for why JS value injection on the wrapper doesn't work.
     // Odd semesters (I/III/V/VII) run Jul 13 – Dec; even semesters (II/IV/VI/VIII)
     // run Jan 2 – Jun. End date is always "today" so this works for any student, any year.
     const { startDate, endDate } = computeSmartDateRange(academicYear, semNum);
     console.log(`  Date range: ${startDate} → ${endDate}`);
 
-    await wdSetDate(freshFrame, ID_START_DATE, startDate);
-    await wdSetDate(freshFrame, ID_END_DATE, endDate);
+    await wdTypeDate(freshFrame, ID_START_DATE, startDate);
+    await wdTypeDate(freshFrame, ID_END_DATE, endDate);
 
-    // Trigger a Tab on an adjacent element to make SAP register the date values
-    await freshFrame.locator(`#${ID_SUBMIT}`).focus().catch(() => {});
     await freshFrame.waitForTimeout(300);
 
     // ── 4. Submit ─────────────────────────────────────────────────
@@ -864,11 +860,9 @@ export async function scrapeSAPAttendance(username, password, subjects, options 
     interceptedPDF = null;
     downloadedPDF  = null;
 
-    // Read back what SAP actually stored in the date inputs right before
-    // submitting — if our JS injection didn't fully register with the WD
-    // framework's internal state, the visible value may differ from what
-    // the server will validate against.
-    const readDateValue = async id => freshFrame.locator(`#${id}`).inputValue().catch(() => '(unreadable)');
+    // Read back what's actually in the nested date inputs right before
+    // submitting, to confirm the typed values really stuck.
+    const readDateValue = async id => freshFrame.locator(`#${id} input`).first().inputValue().catch(() => '(unreadable)');
     console.log(`  📋 Date inputs just before submit: start="${await readDateValue(ID_START_DATE)}" end="${await readDateValue(ID_END_DATE)}"`);
 
     try {
