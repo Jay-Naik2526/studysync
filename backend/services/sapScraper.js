@@ -761,8 +761,13 @@ export async function scrapeSAPAttendance(username, password, subjects, options 
     // so give it more headroom than a single-reload step would need.
     await page.waitForTimeout(3000);
 
-    // Semester: WD33 (input) → options in WD34 listbox, matched against the
-    // user-selected semester/trimester rather than a hardcoded "IV".
+    // Semester: WD33 (input) → popup options. NOTE: we do NOT scope the
+    // option scan to the "#WD34" container — diagnostics showed that div
+    // exists but stays empty; SAP renders this popup's items elsewhere in
+    // the DOM (a shared popup layer, like the AY dropdown does). We scan the
+    // whole frame for [role="option"] and filter to whichever are actually
+    // VISIBLE right now, since other closed dropdowns also leave role="option"
+    // nodes sitting hidden in the DOM.
     console.log(`  Selecting Semester ${ROMAN[semNum - 1]}…`);
     const semRegex = semesterMatchRegex(semNum);
     let semSelected = false;
@@ -773,43 +778,50 @@ export async function scrapeSAPAttendance(username, password, subjects, options 
         // Open the semester dropdown first
         await f.locator(`#${ID_SEM_INPUT}`).click({ force: true, timeout: 5000 });
         await f.waitForTimeout(800);
-        const semOptions = f.locator(`#${ID_SEM_OPTIONS} [role="option"]`);
-        let semCount = await semOptions.count();
 
-        // The listbox can populate asynchronously right after opening —
+        const collectVisible = async () => {
+          const all = f.locator('[role="option"]');
+          const count = await all.count();
+          const visible = [];
+          for (let i = 0; i < count; i++) {
+            const el = all.nth(i);
+            if (await el.isVisible().catch(() => false)) visible.push(el);
+          }
+          return visible;
+        };
+
+        let visibleOptions = await collectVisible();
+        // The popup can render asynchronously right after opening —
         // give it one more beat before concluding it's genuinely empty.
-        if (semCount === 0) {
+        if (visibleOptions.length === 0) {
           await f.waitForTimeout(1200);
-          semCount = await semOptions.count();
+          visibleOptions = await collectVisible();
         }
 
-        if (semCount === 0) {
-          // Diagnostics: is the input itself even there? What does the
-          // semester-options container actually contain right now?
+        if (visibleOptions.length === 0) {
           const inputExists = await f.locator(`#${ID_SEM_INPUT}`).count();
-          const containerHTML = await f.locator(`#${ID_SEM_OPTIONS}`).count() > 0
-            ? await f.locator(`#${ID_SEM_OPTIONS}`).innerHTML().catch(() => '(could not read)')
-            : '(container #' + ID_SEM_OPTIONS + ' not found in DOM)';
-          console.warn(`    ⚠ Semester retry ${retry + 1}: 0 options found. Input #${ID_SEM_INPUT} exists: ${inputExists > 0}. Container: ${containerHTML.substring(0, 300)}`);
+          const totalOptionNodes = await f.locator('[role="option"]').count();
+          console.warn(`    ⚠ Semester retry ${retry + 1}: 0 visible options (${totalOptionNodes} hidden option node(s) exist elsewhere in DOM). Input #${ID_SEM_INPUT} exists: ${inputExists > 0}.`);
           await page.waitForTimeout(1500);
           continue;
         }
 
         let picked = false;
-        for (let i = 0; i < semCount; i++) {
-          const text = (await semOptions.nth(i).textContent() || '').trim();
+        let lastText = null;
+        for (const opt of visibleOptions) {
+          const text = (await opt.textContent() || '').trim();
+          lastText = text;
           if (semRegex.test(text)) {
-            await semOptions.nth(i).click({ force: true });
+            await opt.click({ force: true });
             await f.waitForTimeout(800);
             console.log(`    ✓ Semester: "${text}"`);
             semSelected = true; picked = true; break;
           }
         }
-        if (!picked && semCount > 0) {
-          const text = (await semOptions.first().textContent() || '').trim();
-          await semOptions.first().click({ force: true });
+        if (!picked) {
+          await visibleOptions[0].click({ force: true });
           await f.waitForTimeout(800);
-          console.log(`    ⚠ No match for Semester ${ROMAN[semNum - 1]} — picked first available: "${text}"`);
+          console.log(`    ⚠ No match for Semester ${ROMAN[semNum - 1]} among [${visibleOptions.length} option(s), last: "${lastText}"] — picked first available`);
           semSelected = true;
         }
       } catch (e) {
