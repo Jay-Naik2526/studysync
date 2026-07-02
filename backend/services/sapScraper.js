@@ -291,7 +291,28 @@ async function wdClickOption(frame, inputId, optionId) {
 
 async function findInputNearLabel(frame, labelText) {
   try {
-    // 1. Try to find a <label> with the exact/contained text and use its 'for' attribute
+    // 1. Try to find the td cell containing the label text, and look inside the next sibling td cell
+    // This matches the standard WebDynpro matrix layout structure (Label cell next to Input cell).
+    const labelCell = frame.locator(`td:has-text("${labelText}"), label:has-text("${labelText}")`).first();
+    if (await labelCell.count() > 0) {
+      // If it matched a label element directly, find its enclosing td first
+      let cell = labelCell;
+      const tagName = await labelCell.evaluate(el => el.tagName.toLowerCase()).catch(() => '');
+      if (tagName === 'label') {
+        cell = labelCell.locator('xpath=./ancestor::td').first();
+      }
+      
+      const siblingCell = cell.locator('xpath=./following-sibling::td').first();
+      if (await siblingCell.count() > 0) {
+        const input = siblingCell.locator('input').first();
+        if (await input.count() > 0) {
+          console.log(`    ℹ [findInputNearLabel] Found matching input for "${labelText}" in sibling td cell`);
+          return input;
+        }
+      }
+    }
+
+    // 2. Fallback: Try label 'for' attribute
     const label = frame.locator(`label:has-text("${labelText}")`).first();
     if (await label.count() > 0) {
       const forId = await label.getAttribute('for');
@@ -304,10 +325,9 @@ async function findInputNearLabel(frame, labelText) {
       }
     }
 
-    // 2. Try to locate the text container element (span, td, div, label) containing the labelText
+    // 3. Fallback: Find the first visible input following the label text element
     const labelEl = frame.locator(`span:has-text("${labelText}"), td:has-text("${labelText}"), div:has-text("${labelText}"), label:has-text("${labelText}")`).first();
     if (await labelEl.count() > 0) {
-      // Find the first visible input element following the resolved label text element
       const input = labelEl.locator('xpath=./following::input').filter({ visible: true }).first();
       if (await input.count() > 0) {
         console.log(`    ℹ [findInputNearLabel] Found visible input for "${labelText}" following the label text`);
@@ -348,6 +368,13 @@ async function wdTypeDate(frame, containerId, labelText, dateValue) {
       if (await cand.locator.count() === 0) continue;
       // Skip if the candidate input is not visible
       if (!(await cand.locator.isVisible().catch(() => false))) continue;
+
+      // SAFETY CHECK: Ensure we are targeting an <input> element, not a container/wrapper td cell
+      const tagName = await cand.locator.evaluate(el => el.tagName.toLowerCase()).catch(() => '');
+      if (tagName !== 'input') {
+        console.warn(`    ⚠ Candidate ${cand.source} is a <${tagName}>, not an <input> — skipping`);
+        continue;
+      }
 
       // Inject the value via JS on the resolved DOM element, temporarily removing readonly
       const success = await cand.locator.evaluate((el, val) => {
