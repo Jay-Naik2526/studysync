@@ -289,18 +289,31 @@ async function wdClickOption(frame, inputId, optionId) {
   }
 }
 
-// ── Locate a date field by its stable visible label, not its WD hex id ────
-// Three separate debug sessions have found three different hex ID pairs for
-// the SAME conceptual Start/End Date fields (WD33/WD39, then WD45/WD4A, now
-// WD46/WD4B) — SAP's internal numbering shifts between sessions. The one
-// thing that stays constant is the on-screen label text ("Start Date" /
-// "End Date"), so we locate the input via its position relative to that
-// label instead of trusting any hardcoded or offset-computed id.
 async function findInputNearLabel(frame, labelText) {
   try {
-    const loc = frame.locator(`xpath=//*[contains(normalize-space(text()), "${labelText}")]/following::input[1]`);
-    if (await loc.count() > 0) return loc.first();
-  } catch {}
+    // 1. Try to find a <label> with the exact/contained text and use its 'for' attribute
+    const label = frame.locator(`label:has-text("${labelText}")`).first();
+    if (await label.count() > 0) {
+      const forId = await label.getAttribute('for');
+      if (forId) {
+        const input = frame.locator(`#${forId}`).first();
+        if (await input.count() > 0 && await input.isVisible()) {
+          console.log(`    ℹ [findInputNearLabel] Found matching input for "${labelText}" via label for="${forId}"`);
+          return input;
+        }
+      }
+    }
+
+    // 2. Fallback: Find the first visible input following any element containing the label text.
+    // Filter by visibility to prevent matching hidden/system-level input elements.
+    const xpathLoc = frame.locator(`xpath=//*[contains(normalize-space(text()), "${labelText}")]/following::input`).filter({ visible: true }).first();
+    if (await xpathLoc.count() > 0) {
+      console.log(`    ℹ [findInputNearLabel] Found visible input for "${labelText}" via XPath following-sibling`);
+      return xpathLoc;
+    }
+  } catch (e) {
+    console.warn(`    ⚠ findInputNearLabel error for "${labelText}": ${e.message}`);
+  }
   return null;
 }
 
@@ -309,40 +322,59 @@ async function findInputNearLabel(frame, labelText) {
 // <input> itself — the actual editable <input> SAP's WD framework listens to
 // is nested inside it (or elsewhere near it). JS value injection on a
 // wrapper is a silent no-op, so we click the real input and type into it
-// exactly like a user would. Resolution order: label-relative lookup (most
-// robust — survives ID drift) → nested child of the given container id →
-// the container id itself (in case it really is a plain input this time).
+// exactly like a user would.
+// We try three candidates in priority order: label-relative lookup, nested
+// input under the computed hex ID, and direct computed hex ID, skipping
+// non-visible inputs.
 async function wdTypeDate(frame, containerId, labelText, dateValue) {
-  try {
-    let input = await findInputNearLabel(frame, labelText);
-    let source = 'label-relative';
-    if (!input) {
-      const nested = frame.locator(`#${containerId} input`).first();
-      if (await nested.count() > 0) { input = nested; source = `#${containerId} input`; }
-    }
-    if (!input) {
-      const direct = frame.locator(`#${containerId}`).first();
-      if (await direct.count() > 0) { input = direct; source = `#${containerId} (direct)`; }
-    }
-    if (!input) {
-      const allInputs = await frame.locator('input').all();
-      const dump = [];
-      for (const el of allInputs.slice(0, 20)) {
-        dump.push(`${await el.getAttribute('id') || '?'}(${await el.getAttribute('type') || 'text'})`);
-      }
-      console.warn(`    ⚠ wdTypeDate("${labelText}"): no input found via label or #${containerId}. All inputs: ${dump.join(', ')}`);
-      return false;
-    }
-    await input.click({ force: true, timeout: 5000 });
-    await input.press('Control+a');
-    await input.type(dateValue, { delay: 30 });
-    await input.press('Tab');
-    console.log(`    ✓ Typed "${labelText}" (via ${source}) = "${dateValue}"`);
-    return true;
-  } catch (e) {
-    console.warn(`    ⚠ wdTypeDate(${containerId}): ${e.message.split('\n')[0]}`);
-    return false;
+  const candidates = [];
+
+  // Candidate 1: Label-relative lookup
+  const labelInput = await findInputNearLabel(frame, labelText);
+  if (labelInput) {
+    candidates.push({ locator: labelInput, source: 'label-relative' });
   }
+
+  // Candidate 2: Nested input inside containerId (e.g. #WD46 input)
+  const nestedInput = frame.locator(`#${containerId} input`).first();
+  candidates.push({ locator: nestedInput, source: `#${containerId} input` });
+
+  // Candidate 3: Direct containerId input (e.g. #WD46)
+  const directInput = frame.locator(`#${containerId}`).first();
+  candidates.push({ locator: directInput, source: `#${containerId} (direct)` });
+
+  for (const cand of candidates) {
+    try {
+      if (await cand.locator.count() === 0) continue;
+      // Skip if the candidate input is not visible
+      if (!(await cand.locator.isVisible().catch(() => false))) continue;
+
+      // Try to click and type
+      await cand.locator.click({ force: true, timeout: 3000 });
+      await cand.locator.press('Control+a');
+      await cand.locator.type(dateValue, { delay: 30 });
+      await cand.locator.press('Tab');
+      console.log(`    ✓ Typed "${labelText}" (via ${cand.source}) = "${dateValue}"`);
+      return true;
+    } catch (e) {
+      console.warn(`    ⚠ Failed trying candidate ${cand.source} for "${labelText}": ${e.message.split('\n')[0]}`);
+    }
+  }
+
+  // Fallback diagnostic logging if all candidates failed
+  try {
+    const allInputs = await frame.locator('input').all();
+    const dump = [];
+    for (const el of allInputs.slice(0, 20)) {
+      const id = await el.getAttribute('id') || '?';
+      const type = await el.getAttribute('type') || 'text';
+      const visible = await el.isVisible().catch(() => false);
+      dump.push(`${id}(${type}, visible=${visible})`);
+    }
+    console.warn(`    ⚠ wdTypeDate("${labelText}"): all candidates failed. All inputs: ${dump.join(', ')}`);
+  } catch {}
+
+  return false;
 }
 
 // ── Find the WebDynpro attendance frame ──────────────────────────
