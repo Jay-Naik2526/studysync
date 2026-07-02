@@ -304,26 +304,14 @@ async function findInputNearLabel(frame, labelText) {
       }
     }
 
-    // 2. Try to find a text element (span, td, div, label) containing the labelText
-    // and locate the first visible input inside its parent container (row/layout).
-    const textLocators = [
-      frame.locator(`span:has-text("${labelText}")`),
-      frame.locator(`td:has-text("${labelText}")`),
-      frame.locator(`div:has-text("${labelText}")`),
-      frame.locator(`text="${labelText}"`)
-    ];
-
-    for (const loc of textLocators) {
-      if (await loc.count() > 0) {
-        // Look up the DOM tree for a parent container row or cell layout
-        const container = loc.first().locator('xpath=./ancestor::tr | ./ancestor::div[contains(@class, "Matrix")] | ./ancestor::table').first();
-        if (await container.count() > 0) {
-          const input = container.locator('input').filter({ visible: true }).first();
-          if (await input.count() > 0) {
-            console.log(`    ℹ [findInputNearLabel] Found visible input for "${labelText}" inside parent row/container`);
-            return input;
-          }
-        }
+    // 2. Try to locate the text container element (span, td, div, label) containing the labelText
+    const labelEl = frame.locator(`span:has-text("${labelText}"), td:has-text("${labelText}"), div:has-text("${labelText}"), label:has-text("${labelText}")`).first();
+    if (await labelEl.count() > 0) {
+      // Find the first visible input element following the resolved label text element
+      const input = labelEl.locator('xpath=./following::input').filter({ visible: true }).first();
+      if (await input.count() > 0) {
+        console.log(`    ℹ [findInputNearLabel] Found visible input for "${labelText}" following the label text`);
+        return input;
       }
     }
   } catch (e) {
