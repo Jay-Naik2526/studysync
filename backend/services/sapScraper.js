@@ -289,24 +289,55 @@ async function wdClickOption(frame, inputId, optionId) {
   }
 }
 
-// ── Type into SAP DatePicker's nested real <input> ────────────────
-// The visible date field (e.g. #WD46) is a WRAPPER element, not an <input>
-// itself — the actual editable <input> SAP's WD framework listens to is
-// nested inside it. JS value injection on the wrapper is a silent no-op
-// (assigning .value to a non-input DOM node does nothing), so we click the
-// real nested input and type into it exactly like a user would.
-async function wdTypeDate(frame, containerId, dateValue) {
+// ── Locate a date field by its stable visible label, not its WD hex id ────
+// Three separate debug sessions have found three different hex ID pairs for
+// the SAME conceptual Start/End Date fields (WD33/WD39, then WD45/WD4A, now
+// WD46/WD4B) — SAP's internal numbering shifts between sessions. The one
+// thing that stays constant is the on-screen label text ("Start Date" /
+// "End Date"), so we locate the input via its position relative to that
+// label instead of trusting any hardcoded or offset-computed id.
+async function findInputNearLabel(frame, labelText) {
   try {
-    const input = frame.locator(`#${containerId} input`).first();
-    if (await input.count() === 0) {
-      console.warn(`    ⚠ wdTypeDate(${containerId}): no nested <input> found inside container`);
+    const loc = frame.locator(`xpath=//*[contains(normalize-space(text()), "${labelText}")]/following::input[1]`);
+    if (await loc.count() > 0) return loc.first();
+  } catch {}
+  return null;
+}
+
+// ── Type into SAP DatePicker's real <input> ───────────────────────
+// The visible date field (e.g. #WD46) is often a WRAPPER element, not an
+// <input> itself — the actual editable <input> SAP's WD framework listens to
+// is nested inside it (or elsewhere near it). JS value injection on a
+// wrapper is a silent no-op, so we click the real input and type into it
+// exactly like a user would. Resolution order: label-relative lookup (most
+// robust — survives ID drift) → nested child of the given container id →
+// the container id itself (in case it really is a plain input this time).
+async function wdTypeDate(frame, containerId, labelText, dateValue) {
+  try {
+    let input = await findInputNearLabel(frame, labelText);
+    let source = 'label-relative';
+    if (!input) {
+      const nested = frame.locator(`#${containerId} input`).first();
+      if (await nested.count() > 0) { input = nested; source = `#${containerId} input`; }
+    }
+    if (!input) {
+      const direct = frame.locator(`#${containerId}`).first();
+      if (await direct.count() > 0) { input = direct; source = `#${containerId} (direct)`; }
+    }
+    if (!input) {
+      const allInputs = await frame.locator('input').all();
+      const dump = [];
+      for (const el of allInputs.slice(0, 20)) {
+        dump.push(`${await el.getAttribute('id') || '?'}(${await el.getAttribute('type') || 'text'})`);
+      }
+      console.warn(`    ⚠ wdTypeDate("${labelText}"): no input found via label or #${containerId}. All inputs: ${dump.join(', ')}`);
       return false;
     }
     await input.click({ force: true, timeout: 5000 });
     await input.press('Control+a');
     await input.type(dateValue, { delay: 30 });
     await input.press('Tab');
-    console.log(`    ✓ Typed #${containerId} input = "${dateValue}"`);
+    console.log(`    ✓ Typed "${labelText}" (via ${source}) = "${dateValue}"`);
     return true;
   } catch (e) {
     console.warn(`    ⚠ wdTypeDate(${containerId}): ${e.message.split('\n')[0]}`);
@@ -842,16 +873,16 @@ export async function scrapeSAPAttendance(username, password, subjects, options 
     const freshFrame = await getFrame();
     if (!freshFrame) throw new Error('Cannot find WD frame before date/submit step');
 
-    // Dates: WD46 = Start Date wrapper, WD4B = End Date wrapper.
-    // Each wraps a real nested <input> that needs genuine typing — see
-    // wdTypeDate for why JS value injection on the wrapper doesn't work.
+    // Dates: located primarily via their stable on-screen labels
+    // ("Start Date" / "End Date"), with the WD hex ids as fallback — see
+    // wdTypeDate/findInputNearLabel for why the ids alone aren't reliable.
     // Odd semesters (I/III/V/VII) run Jul 13 – Dec; even semesters (II/IV/VI/VIII)
     // run Jan 2 – Jun. End date is always "today" so this works for any student, any year.
     const { startDate, endDate } = computeSmartDateRange(academicYear, semNum);
     console.log(`  Date range: ${startDate} → ${endDate}`);
 
-    await wdTypeDate(freshFrame, ID_START_DATE, startDate);
-    await wdTypeDate(freshFrame, ID_END_DATE, endDate);
+    await wdTypeDate(freshFrame, ID_START_DATE, 'Start Date', startDate);
+    await wdTypeDate(freshFrame, ID_END_DATE, 'End Date', endDate);
 
     await freshFrame.waitForTimeout(300);
 
@@ -860,10 +891,13 @@ export async function scrapeSAPAttendance(username, password, subjects, options 
     interceptedPDF = null;
     downloadedPDF  = null;
 
-    // Read back what's actually in the nested date inputs right before
-    // submitting, to confirm the typed values really stuck.
-    const readDateValue = async id => freshFrame.locator(`#${id} input`).first().inputValue().catch(() => '(unreadable)');
-    console.log(`  📋 Date inputs just before submit: start="${await readDateValue(ID_START_DATE)}" end="${await readDateValue(ID_END_DATE)}"`);
+    // Read back what's actually in the date inputs right before submitting,
+    // to confirm the typed values really stuck.
+    const readDateValue = async labelText => {
+      const input = await findInputNearLabel(freshFrame, labelText);
+      return input ? input.inputValue().catch(() => '(unreadable)') : '(not found)';
+    };
+    console.log(`  📋 Date inputs just before submit: start="${await readDateValue('Start Date')}" end="${await readDateValue('End Date')}"`);
 
     try {
       await freshFrame.locator(`#${ID_SUBMIT}`).click({ force: true, timeout: 5000 });
