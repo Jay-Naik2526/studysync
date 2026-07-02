@@ -916,6 +916,25 @@ export async function scrapeSAPAttendance(username, password, subjects, options 
     const freshFrame = await getFrame();
     if (!freshFrame) throw new Error('Cannot find WD frame before date/submit step');
 
+    // Full DOM dump of every input right after Detail Report reveals the
+    // date fields — we've guessed at their structure three times now and
+    // been wrong each time, so log ground truth instead of guessing again.
+    try {
+      const allInputEls = await freshFrame.locator('input').all();
+      console.log(`  🔍 [DOM dump] ${allInputEls.length} <input> element(s) in WD frame after Detail Report:`);
+      for (const el of allInputEls) {
+        const id       = await el.getAttribute('id').catch(() => null) || '?';
+        const type     = await el.getAttribute('type').catch(() => null) || 'text';
+        const readonly = await el.getAttribute('readonly').catch(() => null) !== null;
+        const visible  = await el.isVisible().catch(() => false);
+        const val      = await el.inputValue().catch(() => '(n/a)');
+        const box      = await el.boundingBox().catch(() => null);
+        console.log(`      #${id} type=${type} readonly=${readonly} visible=${visible} value="${val}" pos=${box ? `(${Math.round(box.x)},${Math.round(box.y)})` : 'n/a'}`);
+      }
+    } catch (e) {
+      console.warn(`  ⚠ DOM dump failed: ${e.message.split('\n')[0]}`);
+    }
+
     // Dates: located primarily via their stable on-screen labels
     // ("Start Date" / "End Date"), with the WD hex ids as fallback — see
     // wdTypeDate/findInputNearLabel for why the ids alone aren't reliable.
