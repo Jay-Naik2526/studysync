@@ -756,8 +756,10 @@ export async function scrapeSAPAttendance(username, password, subjects, options 
     console.log(`  Selecting Academic Year "${academicYear}" (${ayOptionId ? `option #${ayOptionId}` : 'default portal option — no exact match found'})…`);
     await clickOption(ID_AY_INPUT, finalAyOptionId, `Academic Year ${academicYear}`);
 
-    // Wait for frame to reload after AY selection, then re-acquire
-    await page.waitForTimeout(2000);
+    // Wait for frame to reload after AY selection, then re-acquire.
+    // AY selection can involve more than one reload cycle (retries observed),
+    // so give it more headroom than a single-reload step would need.
+    await page.waitForTimeout(3000);
 
     // Semester: WD33 (input) → options in WD34 listbox, matched against the
     // user-selected semester/trimester rather than a hardcoded "IV".
@@ -770,9 +772,29 @@ export async function scrapeSAPAttendance(username, password, subjects, options 
       try {
         // Open the semester dropdown first
         await f.locator(`#${ID_SEM_INPUT}`).click({ force: true, timeout: 5000 });
-        await f.waitForTimeout(600);
+        await f.waitForTimeout(800);
         const semOptions = f.locator(`#${ID_SEM_OPTIONS} [role="option"]`);
-        const semCount   = await semOptions.count();
+        let semCount = await semOptions.count();
+
+        // The listbox can populate asynchronously right after opening —
+        // give it one more beat before concluding it's genuinely empty.
+        if (semCount === 0) {
+          await f.waitForTimeout(1200);
+          semCount = await semOptions.count();
+        }
+
+        if (semCount === 0) {
+          // Diagnostics: is the input itself even there? What does the
+          // semester-options container actually contain right now?
+          const inputExists = await f.locator(`#${ID_SEM_INPUT}`).count();
+          const containerHTML = await f.locator(`#${ID_SEM_OPTIONS}`).count() > 0
+            ? await f.locator(`#${ID_SEM_OPTIONS}`).innerHTML().catch(() => '(could not read)')
+            : '(container #' + ID_SEM_OPTIONS + ' not found in DOM)';
+          console.warn(`    ⚠ Semester retry ${retry + 1}: 0 options found. Input #${ID_SEM_INPUT} exists: ${inputExists > 0}. Container: ${containerHTML.substring(0, 300)}`);
+          await page.waitForTimeout(1500);
+          continue;
+        }
+
         let picked = false;
         for (let i = 0; i < semCount; i++) {
           const text = (await semOptions.nth(i).textContent() || '').trim();
