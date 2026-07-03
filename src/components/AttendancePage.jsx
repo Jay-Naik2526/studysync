@@ -269,10 +269,10 @@ export default function AttendancePage() {
       return;
     }
     setSyncing(true);
-    setSyncMsg('Sync started — this takes ~1 minute…');
+    setSyncMsg('Starting sync — this takes ~1 minute…');
     try {
       await sapAPI.sync({ academicYear, semester });
-      // Poll for completion
+      // Poll for completion, surfacing each backend step live
       const poll = setInterval(async () => {
         const { data } = await sapAPI.getStatus();
         setSapStatus(data);
@@ -285,8 +285,10 @@ export default function AttendancePage() {
           setSyncMsg(`✗ ${data.lastSyncMessage}`);
           setSyncing(false);
           clearInterval(poll);
+        } else if (data.lastSyncStatus === 'running' && data.lastSyncProgress) {
+          setSyncMsg(data.lastSyncProgress);
         }
-      }, 4000);
+      }, 3000);
     } catch (e) {
       setSyncMsg(e.response?.data?.message || 'Sync failed.');
       setSyncing(false);

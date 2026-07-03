@@ -524,7 +524,15 @@ export async function scrapeSAPAttendance(username, password, subjects, options 
     throw new Error('A valid Semester/Trimester (I–VIII) must be selected before syncing.');
   }
 
+  // Live progress reporting: each step pushes a short human-readable message
+  // through options.onProgress so the frontend (polling /api/sap/status) can
+  // show the user what's happening. Errors here must never break the scrape.
+  const progress = async (msg) => {
+    try { if (options.onProgress) await options.onProgress(msg); } catch {}
+  };
+
   console.log(`🚀 SAP scrape starting… (AY: ${academicYear}, Semester: ${ROMAN[semNum - 1]})`);
+  await progress('Launching secure browser…');
 
   const browser = await chromium.launch({
     headless: true,
@@ -625,12 +633,14 @@ export async function scrapeSAPAttendance(username, password, subjects, options 
 
     // ── 1. Login ─────────────────────────────────────────────────
     console.log('🔗 Opening SAP portal…');
+    await progress('Opening the SAP portal…');
     await page.goto(SAP_URL, { waitUntil: 'domcontentloaded', timeout: 30000 });
     await page.waitForTimeout(2000);
 
     let loginOk = false;
     for (let attempt = 1; attempt <= 3 && !loginOk; attempt++) {
       console.log(`🔐 Login attempt ${attempt}/3`);
+      await progress(attempt === 1 ? 'Logging in with your SAP credentials…' : `Logging in (attempt ${attempt}/3)…`);
       const captcha = (await page.evaluate(() => window.__captchaText || '')).trim();
       console.log(`  🔡 CAPTCHA: "${captcha}"`);
 
@@ -663,6 +673,7 @@ export async function scrapeSAPAttendance(username, password, subjects, options 
 
     // ── 2. Navigate to Attendance form ───────────────────────────
     console.log('📍 Navigating to Attendance…');
+    await progress('Logged in ✓ — opening the Attendance section…');
     await page.waitForTimeout(2000);
 
     for (const frame of [page, ...page.frames()]) {
@@ -687,6 +698,7 @@ export async function scrapeSAPAttendance(username, password, subjects, options 
     const wdFrame = await waitForWDFrame(page, 30000);
     if (!wdFrame) throw new Error('Could not locate WD attendance form iframe.');
     console.log(`📝 WD frame ready`);
+    await progress('Attendance form loaded — filling in your details…');
 
     // Wait for the form elements to start rendering inside the WD frame
     console.log('⏳ Waiting for WD form elements to render…');
@@ -802,6 +814,7 @@ export async function scrapeSAPAttendance(username, password, subjects, options 
 
     const finalAyOptionId = ayOptionId || ID_AY_OPTION;
     console.log(`  Selecting Academic Year "${academicYear}" (${ayOptionId ? `option #${ayOptionId}` : 'default portal option — no exact match found'})…`);
+    await progress(`Selecting Academic Year ${academicYear}…`);
     await clickOption(ID_AY_INPUT, finalAyOptionId, `Academic Year ${academicYear}`);
 
     // Wait for frame to reload after AY selection, then re-acquire.
@@ -817,6 +830,7 @@ export async function scrapeSAPAttendance(username, password, subjects, options 
     // VISIBLE right now, since other closed dropdowns also leave role="option"
     // nodes sitting hidden in the DOM.
     console.log(`  Selecting Semester ${ROMAN[semNum - 1]}…`);
+    await progress(`Selecting Semester ${ROMAN[semNum - 1]}…`);
     const semRegex = semesterMatchRegex(semNum);
     let semSelected = false;
     for (let retry = 0; retry < 4 && !semSelected; retry++) {
@@ -890,6 +904,7 @@ export async function scrapeSAPAttendance(username, password, subjects, options 
     // We instead click the option whose visible text matches /detail/i and
     // VERIFY by reading the combobox value back after the roundtrip.
     console.log('  Selecting Detail Report…');
+    await progress('Selecting Detail Report…');
     let reportSelected = false;
     for (let retry = 0; retry < 4 && !reportSelected; retry++) {
       const f = await getFrame();
@@ -942,6 +957,7 @@ export async function scrapeSAPAttendance(username, password, subjects, options 
     // run Jan 2 – Jun. End date is always "today" so this works for any student, any year.
     const { startDate, endDate } = computeSmartDateRange(academicYear, semNum);
     console.log(`  Date range: ${startDate} → ${endDate}`);
+    await progress(`Setting date range ${startDate} → ${endDate}…`);
 
     let formInputs = await visibleTextInputs(freshFrame);
     console.log(`  🔍 Visible inputs now: ${formInputs.map(i => `#${i.id}@y${Math.round(i.y)}="${i.value}"`).join(', ')}`);
@@ -963,6 +979,7 @@ export async function scrapeSAPAttendance(username, password, subjects, options 
 
     // ── 4. Submit ─────────────────────────────────────────────────
     console.log('⏳ Submitting form…');
+    await progress('Submitting the attendance request…');
     interceptedPDF = null;
     downloadedPDF  = null;
 
@@ -1001,6 +1018,7 @@ export async function scrapeSAPAttendance(username, password, subjects, options 
     //   3. Re-fetch a stored PDF URL with session cookies
     //   4. Scan embedded frames for PDF src, then fetch
     console.log('⏳ Waiting for PDF…');
+    await progress('Waiting for SAP to generate your attendance report…');
 
     let pdfBuffer = null;
     const deadline = Date.now() + 60000;
@@ -1128,6 +1146,7 @@ export async function scrapeSAPAttendance(username, password, subjects, options 
     }
 
     console.log(`✅ PDF ready (${Math.round(pdfBuffer.length / 1024)} KB) — parsing…`);
+    await progress('Report received ✓ — reading your attendance…');
 
     // ── 6. Parse PDF + match subjects ────────────────────────────
     const { courseMap, latestAttendanceDate } = await parsePDFAttendance(pdfBuffer);

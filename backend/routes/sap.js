@@ -38,6 +38,7 @@ router.get('/status', authMiddleware, async (req, res) => {
     connected:               true,
     lastSync:                creds.lastSync,
     lastSyncStatus:          creds.lastSyncStatus,
+    lastSyncProgress:        creds.lastSyncProgress,
     lastSyncMessage:         creds.lastSyncMessage,
     lastSyncDetails:         creds.lastSyncDetails || [],
     lastAttendanceDate:      creds.lastAttendanceDate,
@@ -72,7 +73,8 @@ router.post('/sync', authMiddleware, async (req, res) => {
   }
 
   // Mark as running
-  creds.lastSyncStatus = 'running';
+  creds.lastSyncStatus   = 'running';
+  creds.lastSyncProgress = 'Starting sync…';
   await creds.save();
 
   // Respond immediately so frontend doesn't time out
@@ -87,15 +89,27 @@ router.post('/sync', authMiddleware, async (req, res) => {
       // Get this user's StudySync subjects
       const subjects = await Subject.find({ user: req.user.id });
       if (!subjects.length) {
-        creds.lastSyncStatus  = 'failed';
-        creds.lastSyncMessage = 'No subjects found in StudySync. Add subjects first.';
+        creds.lastSyncStatus   = 'failed';
+        creds.lastSyncProgress = '';
+        creds.lastSyncMessage  = 'No subjects found in StudySync. Add subjects first.';
         await creds.save();
         return;
       }
 
       const { results, syncedAt, latestAttendanceDate } = await scrapeSAPAttendance(
-        username, password, subjects, { academicYear, semester }
+        username, password, subjects, {
+          academicYear,
+          semester,
+          // Persist each step so the frontend's status polling can show it live
+          onProgress: async (msg) => {
+            creds.lastSyncProgress = msg;
+            await creds.save().catch(() => {});
+          },
+        }
       );
+
+      creds.lastSyncProgress = 'Updating your subjects…';
+      await creds.save().catch(() => {});
 
 
 
@@ -143,6 +157,7 @@ router.post('/sync', authMiddleware, async (req, res) => {
 
       creds.lastSync            = syncedAt;
       creds.lastSyncStatus      = 'success';
+      creds.lastSyncProgress    = '';
       creds.lastSyncMessage     = `Updated ${updated} subject(s). ${skipped} course(s) from SAP could not be matched — add more subjects with matching names.`;
       creds.lastSyncDetails     = details;
       creds.lastAttendanceDate  = latestAttendanceDate;
@@ -151,8 +166,9 @@ router.post('/sync', authMiddleware, async (req, res) => {
       console.log(`✅ SAP sync complete: ${updated} updated, ${skipped} unmatched`);
     } catch (err) {
       console.error('SAP sync error:', err.message);
-      creds.lastSyncStatus  = 'failed';
-      creds.lastSyncMessage = err.message;
+      creds.lastSyncStatus   = 'failed';
+      creds.lastSyncProgress = '';
+      creds.lastSyncMessage  = err.message;
       await creds.save();
     }
   })();
