@@ -695,20 +695,31 @@ export async function scrapeSAPAttendance(username, password, subjects, options 
 
     console.log('⏳ Waiting for WD frame (polling up to 30s)…');
 
-    const wdFrame = await waitForWDFrame(page, 30000);
+    // The WD frame reloads itself once shortly after it first appears, which
+    // detaches the Frame object mid-wait. Re-acquire and retry instead of
+    // letting a "Frame was detached" error kill the whole sync — whether we
+    // hit the reload here or at the next step is pure timing luck.
+    console.log('⏳ Waiting for WD form elements to render…');
+    let wdFrame = null;
+    let discoveredInputId = null;
+    for (let retry = 0; retry < 4 && discoveredInputId === null; retry++) {
+      wdFrame = await waitForWDFrame(page, 30000);
+      if (!wdFrame) throw new Error('Could not locate WD attendance form iframe.');
+      try {
+        await wdFrame.locator('input').first().waitFor({ state: 'attached', timeout: 15000 });
+        // Dynamic ID Shift Offset Discovery (WebDynpro IDs are Hexadecimal sequential arrays)
+        discoveredInputId = await wdFrame.evaluate(() => {
+          const inputs = Array.from(document.querySelectorAll('input[role="combobox"], input.lsInputField, input'));
+          return inputs.length > 0 ? inputs[0].id : null;
+        });
+      } catch (e) {
+        console.warn(`  ⚠ WD form wait retry ${retry + 1}: ${e.message.split('\n')[0]}`);
+        await page.waitForTimeout(2000);
+      }
+    }
     if (!wdFrame) throw new Error('Could not locate WD attendance form iframe.');
     console.log(`📝 WD frame ready`);
     await progress('Attendance form loaded — filling in your details…');
-
-    // Wait for the form elements to start rendering inside the WD frame
-    console.log('⏳ Waiting for WD form elements to render…');
-    await wdFrame.locator('input').first().waitFor({ state: 'attached', timeout: 15000 });
-
-    // Dynamic ID Shift Offset Discovery (WebDynpro IDs are Hexadecimal sequential arrays)
-    const discoveredInputId = await wdFrame.evaluate(() => {
-      const inputs = Array.from(document.querySelectorAll('input[role="combobox"], input.lsInputField, input'));
-      return inputs.length > 0 ? inputs[0].id : null;
-    });
 
     let offset = 0;
     if (discoveredInputId) {
