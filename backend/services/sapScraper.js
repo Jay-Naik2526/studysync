@@ -289,130 +289,80 @@ async function wdClickOption(frame, inputId, optionId) {
   }
 }
 
-async function findInputNearLabel(frame, labelText) {
-  try {
-    // 1. Try to find the td cell containing the label text, and look inside the next sibling td cell
-    // This matches the standard WebDynpro matrix layout structure (Label cell next to Input cell).
-    const labelCell = frame.locator(`td:has-text("${labelText}"), label:has-text("${labelText}")`).first();
-    if (await labelCell.count() > 0) {
-      // If it matched a label element directly, find its enclosing td first
-      let cell = labelCell;
-      const tagName = await labelCell.evaluate(el => el.tagName.toLowerCase()).catch(() => '');
-      if (tagName === 'label') {
-        cell = labelCell.locator('xpath=./ancestor::td').first();
-      }
-      
-      const siblingCell = cell.locator('xpath=./following-sibling::td').first();
-      if (await siblingCell.count() > 0) {
-        const input = siblingCell.locator('input').first();
-        if (await input.count() > 0) {
-          console.log(`    ℹ [findInputNearLabel] Found matching input for "${labelText}" in sibling td cell`);
-          return input;
-        }
-      }
-    }
-
-    // 2. Fallback: Try label 'for' attribute
-    const label = frame.locator(`label:has-text("${labelText}")`).first();
-    if (await label.count() > 0) {
-      const forId = await label.getAttribute('for');
-      if (forId) {
-        const input = frame.locator(`#${forId}`).first();
-        if (await input.count() > 0 && await input.isVisible()) {
-          console.log(`    ℹ [findInputNearLabel] Found matching input for "${labelText}" via label for="${forId}"`);
-          return input;
-        }
-      }
-    }
-
-    // 3. Fallback: Find the first visible input following the label text element
-    const labelEl = frame.locator(`span:has-text("${labelText}"), td:has-text("${labelText}"), div:has-text("${labelText}"), label:has-text("${labelText}")`).first();
-    if (await labelEl.count() > 0) {
-      const input = labelEl.locator('xpath=./following::input').filter({ visible: true }).first();
-      if (await input.count() > 0) {
-        console.log(`    ℹ [findInputNearLabel] Found visible input for "${labelText}" following the label text`);
-        return input;
-      }
-    }
-  } catch (e) {
-    console.warn(`    ⚠ findInputNearLabel error for "${labelText}": ${e.message}`);
+// ── Position-based form introspection ─────────────────────────────
+// SAP WebDynpro re-assigns hex ids on every server roundtrip (confirmed by
+// DOM dumps: the Semester input was WD33 at first render, WD34 after AY
+// selection). Hardcoded ids silently start hitting the WRONG elements after
+// a few roundtrips. What IS stable is the form's visual layout: the visible
+// combobox/date inputs appear in a fixed top-to-bottom order matching the
+// labels (Academic Year, Trimester/Semester, Monthly/Detailed, then either
+// Month of Report or Start/End Date). So we work off the live list of
+// visible text inputs sorted by screen position instead.
+async function visibleTextInputs(frame) {
+  const els = await frame.locator('input[type="text"], input:not([type])').all();
+  const out = [];
+  for (const el of els) {
+    if (!(await el.isVisible().catch(() => false))) continue;
+    const box = await el.boundingBox().catch(() => null);
+    if (!box) continue;
+    out.push({
+      el,
+      id:    (await el.getAttribute('id').catch(() => '')) || '?',
+      value: (await el.inputValue().catch(() => '')) || '',
+      x: box.x, y: box.y,
+    });
   }
-  return null;
+  out.sort((a, b) => a.y - b.y || a.x - b.x);
+  return out;
 }
 
-// ── Type/Set SAP DatePicker's real <input> ───────────────────────
-// SAP DatePicker inputs are often readonly elements inside a wrapper.
-// Direct keyboard typing can fail, and direct JS value setting on a wrapper
-// does nothing. We find the real input field using our locator fallback chain,
-// bypass readonly via direct JS value injection, and trigger the events (change, input, blur)
-// required by the SAP WebDynpro framework to register the new value.
-async function wdTypeDate(frame, containerId, labelText, dateValue) {
-  const candidates = [];
-
-  // Candidate 1: Label-relative lookup (most robust)
-  const labelInput = await findInputNearLabel(frame, labelText);
-  if (labelInput) {
-    candidates.push({ locator: labelInput, source: 'label-relative' });
+// Collect only VISIBLE popup options — closed dropdowns leave hidden
+// [role="option"] nodes in the DOM which must be ignored.
+async function collectVisibleOptions(frame) {
+  const els = await frame.locator('[role="option"]').all();
+  const out = [];
+  for (const el of els) {
+    if (!(await el.isVisible().catch(() => false))) continue;
+    out.push({ el, text: ((await el.textContent().catch(() => '')) || '').trim() });
   }
+  return out;
+}
 
-  // Candidate 2: Nested input inside containerId (e.g. #WD46 input)
-  const nestedInput = frame.locator(`#${containerId} input`).first();
-  candidates.push({ locator: nestedInput, source: `#${containerId} input` });
-
-  // Candidate 3: Direct containerId input (e.g. #WD46)
-  const directInput = frame.locator(`#${containerId}`).first();
-  candidates.push({ locator: directInput, source: `#${containerId} (direct)` });
-
-  for (const cand of candidates) {
-    try {
-      if (await cand.locator.count() === 0) continue;
-      // Skip if the candidate input is not visible
-      if (!(await cand.locator.isVisible().catch(() => false))) continue;
-
-      // SAFETY CHECK: Ensure we are targeting an <input> element, not a container/wrapper td cell
-      const tagName = await cand.locator.evaluate(el => el.tagName.toLowerCase()).catch(() => '');
-      if (tagName !== 'input') {
-        console.warn(`    ⚠ Candidate ${cand.source} is a <${tagName}>, not an <input> — skipping`);
-        continue;
-      }
-
-      // Inject the value via JS on the resolved DOM element, temporarily removing readonly
-      const success = await cand.locator.evaluate((el, val) => {
-        if (!el) return false;
-        const wasReadonly = el.hasAttribute('readonly');
-        el.removeAttribute('readonly');
-        el.value = val;
-        if (wasReadonly) el.setAttribute('readonly', '');
-        
-        ['input', 'change', 'blur'].forEach(evt =>
-          el.dispatchEvent(new Event(evt, { bubbles: true }))
-        );
-        return true;
-      }, dateValue);
-
-      if (success) {
-        console.log(`    ✓ Set "${labelText}" (via ${cand.source}) = "${dateValue}"`);
-        return true;
-      }
-    } catch (e) {
-      console.warn(`    ⚠ Failed trying candidate ${cand.source} for "${labelText}": ${e.message.split('\n')[0]}`);
-    }
-  }
-
-  // Fallback diagnostic logging if all candidates failed
+// Set a date value on a real date <input>: try genuine typing first, fall
+// back to JS injection + WD events, and verify by reading the value back.
+async function setDateInput(frame, entry, dateValue, label) {
   try {
-    const allInputs = await frame.locator('input').all();
-    const dump = [];
-    for (const el of allInputs.slice(0, 20)) {
-      const id = await el.getAttribute('id') || '?';
-      const type = await el.getAttribute('type') || 'text';
-      const visible = await el.isVisible().catch(() => false);
-      dump.push(`${id}(${type}, visible=${visible})`);
-    }
-    console.warn(`    ⚠ wdTypeDate("${labelText}"): all candidates failed. All inputs: ${dump.join(', ')}`);
-  } catch {}
+    await entry.el.click({ force: true, timeout: 5000 });
+    await frame.waitForTimeout(200);
+    await entry.el.press('Control+a').catch(() => {});
+    await entry.el.type(dateValue, { delay: 40 }).catch(() => {});
+    await entry.el.press('Tab').catch(() => {});
+    await frame.waitForTimeout(400);
 
-  return false;
+    let val = (await entry.el.inputValue().catch(() => '')) || '';
+    if (val.trim()) {
+      console.log(`    ✓ ${label} (#${entry.id}) typed = "${val}"`);
+      return true;
+    }
+
+    // Typing didn't stick (readonly input) — inject on the real <input> and
+    // fire the events SAP's UR framework listens to.
+    await entry.el.evaluate((node, v) => {
+      node.removeAttribute('readonly');
+      node.value = v;
+      ['focus', 'input', 'change', 'blur'].forEach(t =>
+        node.dispatchEvent(new Event(t, { bubbles: true }))
+      );
+    }, dateValue);
+    await frame.waitForTimeout(400);
+
+    val = (await entry.el.inputValue().catch(() => '')) || '';
+    console.log(`    ${val.trim() ? '✓' : '⚠'} ${label} (#${entry.id}) via JS injection = "${val}"`);
+    return !!val.trim();
+  } catch (e) {
+    console.warn(`    ⚠ setDateInput(${label}): ${e.message.split('\n')[0]}`);
+    return false;
+  }
 }
 
 // ── Find the WebDynpro attendance frame ──────────────────────────
@@ -932,80 +882,115 @@ export async function scrapeSAPAttendance(username, password, subjects, options 
     // Wait for frame reload after semester selection
     await page.waitForTimeout(2000);
 
-    // Report type: WD39 (input) → WD3C (Detail Report option)
+    // Report type: the 3rd visible combobox on the form ("Monthly/Detailed").
+    // NEVER use the hardcoded WD3C option id here — a DOM dump proved that
+    // after the earlier roundtrips it points at the "Monthly Report" option,
+    // which silently selects the wrong report type; in Monthly mode SAP never
+    // renders the Start/End Date inputs at all, so the sync can't proceed.
+    // We instead click the option whose visible text matches /detail/i and
+    // VERIFY by reading the combobox value back after the roundtrip.
     console.log('  Selecting Detail Report…');
-    await clickOption(ID_REPORT_INPUT, ID_REPORT_OPTION, 'Detail Report');
+    let reportSelected = false;
+    for (let retry = 0; retry < 4 && !reportSelected; retry++) {
+      const f = await getFrame();
+      if (!f) throw new Error('Cannot find WD frame before report type selection');
+      try {
+        const inputs = await visibleTextInputs(f);
+        if (inputs.length < 3) throw new Error(`only ${inputs.length} visible input(s) on form`);
+        await inputs[2].el.click({ force: true, timeout: 5000 });
+        await f.waitForTimeout(800);
 
-    // Wait for frame reload after report type selection
-    await page.waitForTimeout(1500);
+        const options = await collectVisibleOptions(f);
+        const detail = options.find(o => /detail/i.test(o.text));
+        if (!detail) {
+          console.warn(`    ⚠ No "Detail" option among [${options.map(o => o.text).join(' | ') || '(none visible)'}] — retrying…`);
+          await page.waitForTimeout(1500);
+          continue;
+        }
+        await detail.el.click({ force: true, timeout: 5000 });
+        await f.waitForTimeout(1500);
+
+        // Verify on a fresh frame that the combobox now really says "Detail"
+        const f2 = await getFrame();
+        const after = f2 ? await visibleTextInputs(f2) : [];
+        const reportVal = after[2]?.value || '';
+        if (/detail/i.test(reportVal)) {
+          console.log(`    ✓ Report type verified: "${reportVal}"`);
+          reportSelected = true;
+        } else {
+          console.warn(`    ⚠ Report combobox reads "${reportVal}" after click — retrying…`);
+          await page.waitForTimeout(1500);
+        }
+      } catch (e) {
+        console.warn(`    ⚠ Report type retry ${retry + 1}: ${e.message.split('\n')[0]}`);
+        await page.waitForTimeout(2000);
+      }
+    }
+    if (!reportSelected) throw new Error('Failed to select Detail Report after retries');
+
+    // Wait for frame reload — selecting Detail Report makes SAP swap the
+    // "Month of Report" field for the Start/End Date inputs.
+    await page.waitForTimeout(2000);
 
     // Re-acquire fresh frame for date + submit steps
-    const freshFrame = await getFrame();
+    let freshFrame = await getFrame();
     if (!freshFrame) throw new Error('Cannot find WD frame before date/submit step');
 
-    // Full DOM dump of every input right after Detail Report reveals the
-    // date fields — we've guessed at their structure three times now and
-    // been wrong each time, so log ground truth instead of guessing again.
-    try {
-      const allInputEls = await freshFrame.locator('input').all();
-      console.log(`  🔍 [DOM dump] ${allInputEls.length} <input> element(s) in WD frame after Detail Report:`);
-      for (const el of allInputEls) {
-        const id       = await el.getAttribute('id').catch(() => null) || '?';
-        const type     = await el.getAttribute('type').catch(() => null) || 'text';
-        const readonly = await el.getAttribute('readonly').catch(() => null) !== null;
-        const visible  = await el.isVisible().catch(() => false);
-        const val      = await el.inputValue().catch(() => '(n/a)');
-        const box      = await el.boundingBox().catch(() => null);
-        console.log(`      #${id} type=${type} readonly=${readonly} visible=${visible} value="${val}" pos=${box ? `(${Math.round(box.x)},${Math.round(box.y)})` : 'n/a'}`);
-      }
-    } catch (e) {
-      console.warn(`  ⚠ DOM dump failed: ${e.message.split('\n')[0]}`);
-    }
-
-    // Dates: located primarily via their stable on-screen labels
-    // ("Start Date" / "End Date"), with the WD hex ids as fallback — see
-    // wdTypeDate/findInputNearLabel for why the ids alone aren't reliable.
+    // Dates: with Detail Report active, the Start/End Date inputs are the two
+    // bottom-most visible text inputs on the form (below AY/Sem/Report rows).
     // Odd semesters (I/III/V/VII) run Jul 13 – Dec; even semesters (II/IV/VI/VIII)
     // run Jan 2 – Jun. End date is always "today" so this works for any student, any year.
     const { startDate, endDate } = computeSmartDateRange(academicYear, semNum);
     console.log(`  Date range: ${startDate} → ${endDate}`);
 
-    await wdTypeDate(freshFrame, ID_START_DATE, 'Start Date', startDate);
-    await wdTypeDate(freshFrame, ID_END_DATE, 'End Date', endDate);
+    let formInputs = await visibleTextInputs(freshFrame);
+    console.log(`  🔍 Visible inputs now: ${formInputs.map(i => `#${i.id}@y${Math.round(i.y)}="${i.value}"`).join(', ')}`);
+    if (formInputs.length < 5) {
+      throw new Error(`Expected Start/End Date inputs after Detail Report but only ${formInputs.length} visible input(s) found — SAP did not render the date fields.`);
+    }
 
-    await freshFrame.waitForTimeout(300);
+    // Start date = second-from-bottom, End date = bottom-most.
+    await setDateInput(freshFrame, formInputs[formInputs.length - 2], startDate, 'Start Date');
+
+    // A date entry can trigger a WD roundtrip — re-acquire before End Date.
+    await page.waitForTimeout(1000);
+    freshFrame = await getFrame();
+    if (!freshFrame) throw new Error('Cannot find WD frame before End Date entry');
+    formInputs = await visibleTextInputs(freshFrame);
+    await setDateInput(freshFrame, formInputs[formInputs.length - 1], endDate, 'End Date');
+
+    await page.waitForTimeout(500);
 
     // ── 4. Submit ─────────────────────────────────────────────────
-    console.log(`⏳ Submitting form (#${ID_SUBMIT})…`);
+    console.log('⏳ Submitting form…');
     interceptedPDF = null;
     downloadedPDF  = null;
 
-    // Read back what's actually in the date inputs right before submitting,
-    // to confirm the typed values really stuck.
-    const readDateValue = async labelText => {
-      const input = await findInputNearLabel(freshFrame, labelText);
-      return input ? input.inputValue().catch(() => '(unreadable)') : '(not found)';
-    };
-    console.log(`  📋 Date inputs just before submit: start="${await readDateValue('Start Date')}" end="${await readDateValue('End Date')}"`);
+    // Read back the date inputs right before submitting, to confirm the
+    // values really stuck (both should show dd.mm.yyyy).
+    freshFrame = await getFrame();
+    if (!freshFrame) throw new Error('Cannot find WD frame before submit');
+    formInputs = await visibleTextInputs(freshFrame);
+    const n = formInputs.length;
+    console.log(`  📋 Date inputs just before submit: start="${n >= 2 ? formInputs[n - 2].value : '?'}" end="${n >= 1 ? formInputs[n - 1].value : '?'}"`);
 
-    try {
-      await freshFrame.locator(`#${ID_SUBMIT}`).click({ force: true, timeout: 5000 });
-      console.log('  ✓ SUBMIT clicked');
-    } catch (e) {
-      console.warn(`  ⚠ #${ID_SUBMIT} error: ${e.message.split('\n')[0]}`);
-      // Fallback: click by text content
-      for (const sel of [
-        'div.lsButton:has-text("SUBMIT")',
-        '[role="button"]:has-text("SUBMIT")',
-        'span.lsButton__text:has-text("SUBMIT")',
-      ]) {
-        try {
-          await freshFrame.locator(sel).first().click({ force: true, timeout: 3000 });
-          console.log(`  ✓ SUBMIT via: "${sel}"`);
-          break;
-        } catch {}
-      }
+    // Click SUBMIT by its visible text (unique on this form); the WD hex id
+    // is only a fallback since ids drift between roundtrips.
+    let submitted = false;
+    for (const sel of [
+      'div.lsButton:has-text("SUBMIT")',
+      '[role="button"]:has-text("SUBMIT")',
+      'span.lsButton__text:has-text("SUBMIT")',
+      `#${ID_SUBMIT}`,
+    ]) {
+      try {
+        await freshFrame.locator(sel).first().click({ force: true, timeout: 4000 });
+        console.log(`  ✓ SUBMIT clicked via: "${sel}"`);
+        submitted = true;
+        break;
+      } catch {}
     }
+    if (!submitted) throw new Error('Could not click the SUBMIT button');
 
     // ── 5. Retrieve the PDF ───────────────────────────────────────
     // SAP renders the PDF in an embedded viewer. In headless mode with
