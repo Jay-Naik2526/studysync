@@ -10,7 +10,7 @@ function Ring({ pct, color, size = 52, stroke = 5 }) {
   const offset = circ - (Math.min(pct, 100) / 100) * circ;
   return (
     <svg width={size} height={size} className="-rotate-90" style={{ minWidth: size }}>
-      <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth={stroke} />
+      <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="rgba(43,43,38,0.08)" strokeWidth={stroke} />
       <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke={color} strokeWidth={stroke}
         strokeLinecap="round" strokeDasharray={`${circ} ${circ}`}
         style={{ strokeDashoffset: offset, transition: 'stroke-dashoffset 0.7s ease' }} />
@@ -20,7 +20,7 @@ function Ring({ pct, color, size = 52, stroke = 5 }) {
 
 function SubjectCard({ subject, onUpdate, onDelete }) {
   const { name, conductedClasses = 0, absentClasses = 0, totalPlannedClasses = 0, _id } = subject;
-  
+
   // Interactive Simulation State
   const [simAttended, setSimAttended] = useState(0);
   const [simAbsent, setSimAbsent] = useState(0);
@@ -30,7 +30,7 @@ function SubjectCard({ subject, onUpdate, onDelete }) {
   const simulatedConducted = conductedClasses + simAttended + simAbsent;
   const simulatedAbsent = absentClasses + simAbsent;
   const present = Math.max(simulatedConducted - simulatedAbsent, 0);
-  
+
   const pct = simulatedConducted > 0 ? (present / simulatedConducted) * 100 : 0;
   const onTrack = pct >= 80;
   const maxSkip = Math.floor(totalPlannedClasses * 0.2);
@@ -47,33 +47,33 @@ function SubjectCard({ subject, onUpdate, onDelete }) {
   };
 
   return (
-    <div className={`border rounded-2xl p-4 sm:p-5 transition-all ${isSimulating ? 'bg-violet-950/10 border-violet-500/40 shadow-lg shadow-violet-500/5' : 'bg-white/[0.04] border-white/[0.08] hover:border-white/[0.13]'}`}>
+    <div className={`border rounded-2xl p-4 sm:p-5 transition-all shadow-sm ${isSimulating ? 'bg-trail-pale border-trail/40' : 'bg-parchment border-sand hover:border-sand-dark'}`}>
       {/* Header */}
       <div className="flex items-start justify-between mb-4">
         <div className="flex items-center gap-3 min-w-0">
           <div className="relative flex-shrink-0">
-            <Ring pct={pct} color={onTrack ? '#34d399' : '#f87171'} />
-            <span className="absolute inset-0 flex items-center justify-center text-[10px] font-black"
-              style={{ color: onTrack ? '#34d399' : '#f87171' }}>
+            <Ring pct={pct} color={onTrack ? '#7C9070' : '#A93B2B'} />
+            <span className="absolute inset-0 flex items-center justify-center text-[10px] font-display font-bold tabular-nums"
+              style={{ color: onTrack ? '#4A5A40' : '#A93B2B' }}>
               {pct.toFixed(0)}%
             </span>
           </div>
           <div className="min-w-0">
-            <h3 className="font-bold text-white text-sm leading-tight truncate">{name}</h3>
+            <h3 className="font-display font-bold text-ink text-sm leading-tight truncate">{name}</h3>
             <div className="flex items-center gap-1.5 mt-0.5">
               {onTrack
-                ? <><CheckCircle size={10} className="text-emerald-400 flex-shrink-0" /><span className="text-[11px] text-emerald-400">On track</span></>
-                : <><AlertTriangle size={10} className="text-amber-400 flex-shrink-0" /><span className="text-[11px] text-amber-400">Below 80%</span></>
+                ? <><CheckCircle size={10} className="text-sage-dark flex-shrink-0" /><span className="text-[11px] text-sage-dark">On track</span></>
+                : <><AlertTriangle size={10} className="text-danger flex-shrink-0" /><span className="text-[11px] text-danger">Below 80%</span></>
               }
               {isSimulating && (
-                <span className="text-[9px] font-bold text-violet-400 bg-violet-500/10 px-1.5 py-0.5 rounded uppercase tracking-wider">Simulating</span>
+                <span className="text-[9px] font-bold text-trail-dark bg-trail/15 px-1.5 py-0.5 rounded uppercase tracking-wider">Simulating</span>
               )}
             </div>
           </div>
         </div>
         <button
           onClick={() => { if (window.confirm(`Delete "${name}"?`)) onDelete(_id); }}
-          className="text-zinc-700 hover:text-red-400 transition-colors p-1 flex-shrink-0 ml-2"
+          className="text-ink-faint hover:text-danger transition-colors p-1 flex-shrink-0 ml-2"
         >
           <Trash2 size={14} />
         </button>
@@ -86,40 +86,40 @@ function SubjectCard({ subject, onUpdate, onDelete }) {
           { label: 'Absent', field: 'absentClasses', value: absentClasses },
           { label: 'Planned', field: 'totalPlannedClasses', value: totalPlannedClasses },
         ].map(({ label, field, value }) => (
-          <div key={field} className="bg-white/[0.04] rounded-xl p-2.5 border border-white/[0.06]">
-            <p className="text-[10px] text-zinc-600 mb-0.5 leading-none">{label}</p>
+          <div key={field} className="bg-map rounded-xl p-2.5 border border-sand">
+            <p className="text-[10px] text-ink-muted mb-0.5 leading-none">{label}</p>
             <input
               type="number" value={value}
               onChange={e => set(field, e.target.value)}
-              className="w-full bg-transparent text-white font-bold text-sm sm:text-base leading-none focus:outline-none"
+              className="w-full bg-transparent text-ink font-bold text-sm sm:text-base leading-none focus:outline-none tabular-nums"
             />
           </div>
         ))}
       </div>
 
       {/* Interactive Simulation Controls */}
-      <div className="bg-white/[0.02] border border-white/[0.05] rounded-xl p-2.5 mb-3">
+      <div className="bg-white/50 border border-sand rounded-xl p-2.5 mb-3">
         <div className="flex items-center justify-between mb-1.5">
-          <p className="text-[10px] font-bold text-violet-400 uppercase tracking-wider">What-If Predictor</p>
+          <p className="text-[10px] font-bold text-trail-dark uppercase tracking-wider">What-if predictor</p>
           {isSimulating && (
-            <button onClick={resetSimulation} className="text-[10px] font-medium text-zinc-500 hover:text-white transition-colors">Reset</button>
+            <button onClick={resetSimulation} className="text-[10px] font-medium text-ink-muted hover:text-ink transition-colors">Reset</button>
           )}
         </div>
         <div className="grid grid-cols-2 gap-2 text-xs">
-          <div className="flex items-center justify-between bg-emerald-500/5 hover:bg-emerald-500/10 border border-emerald-500/10 rounded-lg p-1.5 px-2">
-            <span className="text-[11px] text-emerald-400">Attend next:</span>
-            <div className="flex items-center gap-1.5 font-bold text-white">
-              <button disabled={simAttended <= 0} onClick={() => setSimAttended(prev => Math.max(0, prev - 1))} className="w-5 h-5 bg-white/5 border border-white/10 hover:bg-white/10 rounded flex items-center justify-center disabled:opacity-30">-</button>
-              <span className="w-4 text-center text-xs">{simAttended}</span>
-              <button onClick={() => setSimAttended(prev => prev + 1)} className="w-5 h-5 bg-white/5 border border-white/10 hover:bg-white/10 rounded flex items-center justify-center">+</button>
+          <div className="flex items-center justify-between bg-sage-pale border border-sage/25 rounded-lg p-1.5 px-2">
+            <span className="text-[11px] text-sage-dark">Attend next:</span>
+            <div className="flex items-center gap-1.5 font-bold text-ink">
+              <button disabled={simAttended <= 0} onClick={() => setSimAttended(prev => Math.max(0, prev - 1))} className="w-5 h-5 bg-white border border-sand hover:border-sand-dark rounded flex items-center justify-center disabled:opacity-30">-</button>
+              <span className="w-4 text-center text-xs tabular-nums">{simAttended}</span>
+              <button onClick={() => setSimAttended(prev => prev + 1)} className="w-5 h-5 bg-white border border-sand hover:border-sand-dark rounded flex items-center justify-center">+</button>
             </div>
           </div>
-          <div className="flex items-center justify-between bg-red-500/5 hover:bg-red-500/10 border border-red-500/10 rounded-lg p-1.5 px-2">
-            <span className="text-[11px] text-red-400">Skip next:</span>
-            <div className="flex items-center gap-1.5 font-bold text-white">
-              <button disabled={simAbsent <= 0} onClick={() => setSimAbsent(prev => Math.max(0, prev - 1))} className="w-5 h-5 bg-white/5 border border-white/10 hover:bg-white/10 rounded flex items-center justify-center disabled:opacity-30">-</button>
-              <span className="w-4 text-center text-xs">{simAbsent}</span>
-              <button onClick={() => setSimAbsent(prev => prev + 1)} className="w-5 h-5 bg-white/5 border border-white/10 hover:bg-white/10 rounded flex items-center justify-center">+</button>
+          <div className="flex items-center justify-between bg-danger-pale border border-danger/20 rounded-lg p-1.5 px-2">
+            <span className="text-[11px] text-danger">Skip next:</span>
+            <div className="flex items-center gap-1.5 font-bold text-ink">
+              <button disabled={simAbsent <= 0} onClick={() => setSimAbsent(prev => Math.max(0, prev - 1))} className="w-5 h-5 bg-white border border-sand hover:border-sand-dark rounded flex items-center justify-center disabled:opacity-30">-</button>
+              <span className="w-4 text-center text-xs tabular-nums">{simAbsent}</span>
+              <button onClick={() => setSimAbsent(prev => prev + 1)} className="w-5 h-5 bg-white border border-sand hover:border-sand-dark rounded flex items-center justify-center">+</button>
             </div>
           </div>
         </div>
@@ -127,13 +127,13 @@ function SubjectCard({ subject, onUpdate, onDelete }) {
 
       {/* Read-only stats */}
       <div className="grid grid-cols-2 gap-2">
-        <div className="bg-white/[0.03] rounded-xl p-2.5 border border-white/[0.05]">
-          <p className="text-[10px] text-zinc-600 leading-none mb-0.5">Present</p>
-          <p className="font-bold text-white text-sm sm:text-base">{present}</p>
+        <div className="bg-map rounded-xl p-2.5 border border-sand">
+          <p className="text-[10px] text-ink-muted leading-none mb-0.5">Present</p>
+          <p className="font-bold text-ink text-sm sm:text-base tabular-nums">{present}</p>
         </div>
-        <div className="bg-white/[0.03] rounded-xl p-2.5 border border-white/[0.05]">
-          <p className="text-[10px] text-zinc-600 leading-none mb-0.5">Can Skip</p>
-          <p className={`font-bold text-sm sm:text-base ${canSkip > 0 ? 'text-emerald-400' : 'text-red-400'}`}>{canSkip}</p>
+        <div className="bg-map rounded-xl p-2.5 border border-sand">
+          <p className="text-[10px] text-ink-muted leading-none mb-0.5">Can skip</p>
+          <p className={`font-bold text-sm sm:text-base tabular-nums ${canSkip > 0 ? 'text-sage-dark' : 'text-danger'}`}>{canSkip}</p>
         </div>
       </div>
     </div>
@@ -155,13 +155,13 @@ function SummaryStrip({ subjects }) {
   return (
     <div className="grid grid-cols-3 gap-3 mb-5">
       {[
-        { label: 'Overall', value: `${overall.toFixed(1)}%`, color: '#a78bfa' },
-        { label: 'On Track', value: good, color: '#34d399' },
-        { label: 'At Risk', value: atRisk, color: '#fbbf24' },
+        { label: 'Overall', value: `${overall.toFixed(1)}%`, color: '#3E566C' },
+        { label: 'On track', value: good, color: '#4A5A40' },
+        { label: 'At risk', value: atRisk, color: '#A8842C' },
       ].map(({ label, value, color }) => (
-        <div key={label} className="bg-white/[0.04] border border-white/[0.08] rounded-2xl p-3 sm:p-4 text-center">
-          <p className="text-[10px] text-zinc-600 mb-0.5 uppercase tracking-wide">{label}</p>
-          <p className="text-xl sm:text-2xl font-black leading-none" style={{ color }}>{value}</p>
+        <div key={label} className="bg-parchment border border-sand rounded-2xl p-3 sm:p-4 text-center shadow-sm">
+          <p className="text-[10px] text-ink-muted mb-0.5 uppercase tracking-wide">{label}</p>
+          <p className="text-xl sm:text-2xl font-display font-bold leading-none tabular-nums" style={{ color }}>{value}</p>
         </div>
       ))}
     </div>
@@ -187,30 +187,30 @@ function SapModal({ onClose, onSaved }) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
-      <div className="bg-[#0d0c17] border border-white/[0.1] rounded-2xl p-6 w-full max-w-sm shadow-2xl">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-ink/40 backdrop-blur-sm">
+      <div className="bg-parchment border border-sand rounded-2xl p-6 w-full max-w-sm shadow-xl">
         <div className="flex items-center justify-between mb-5">
           <div>
-            <h3 className="text-base font-bold text-white">Connect SAP Portal</h3>
-            <p className="text-xs text-zinc-500 mt-0.5">Stored encrypted. Used only to sync attendance.</p>
+            <h3 className="text-base font-display font-bold text-ink">Connect SAP portal</h3>
+            <p className="text-xs text-ink-muted mt-0.5">Stored encrypted. Used only to sync attendance.</p>
           </div>
-          <button onClick={onClose} className="text-zinc-600 hover:text-zinc-300 transition-colors"><X size={18} /></button>
+          <button onClick={onClose} className="text-ink-faint hover:text-ink transition-colors"><X size={18} /></button>
         </div>
         <form onSubmit={handleSave} className="space-y-3">
           <div>
-            <label className="block text-[10px] font-bold text-zinc-600 uppercase tracking-widest mb-1.5">SAP User ID</label>
+            <label className="block text-[10px] font-bold text-ink-muted uppercase tracking-widest mb-1.5">SAP user ID</label>
             <input type="text" placeholder="e.g. 70552400047" value={sapUser} onChange={e => setSapUser(e.target.value)}
-              className="w-full bg-white/[0.05] border border-white/[0.08] text-white placeholder-zinc-600 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-violet-500/50" required />
+              className="w-full bg-white border border-sand text-ink placeholder-ink-faint rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-ember" required />
           </div>
           <div>
-            <label className="block text-[10px] font-bold text-zinc-600 uppercase tracking-widest mb-1.5">Password</label>
+            <label className="block text-[10px] font-bold text-ink-muted uppercase tracking-widest mb-1.5">Password</label>
             <input type="password" placeholder="••••••••" value={sapPass} onChange={e => setSapPass(e.target.value)}
-              className="w-full bg-white/[0.05] border border-white/[0.08] text-white placeholder-zinc-600 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-violet-500/50" required />
+              className="w-full bg-white border border-sand text-ink placeholder-ink-faint rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-ember" required />
           </div>
-          {err && <p className="text-xs text-red-400">{err}</p>}
+          {err && <p className="text-xs text-danger">{err}</p>}
           <button type="submit" disabled={saving}
-            className="w-full py-2.5 bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 disabled:opacity-50 text-white font-semibold rounded-xl text-sm transition-all">
-            {saving ? 'Saving…' : 'Save & Connect'}
+            className="w-full py-2.5 bg-ember hover:bg-ember-dark disabled:opacity-50 text-white font-bold rounded-xl text-sm transition-all shadow-sm">
+            {saving ? 'Saving…' : 'Save & connect'}
           </button>
         </form>
       </div>
@@ -345,7 +345,7 @@ export default function AttendancePage() {
         const ms = Math.floor(s.totalPlannedClasses * 0.2);
         return [s.name, `${pct.toFixed(1)}%`, pct >= 80 ? 'On Track' : 'At Risk', s.conductedClasses, p, s.absentClasses, ms, Math.max(ms - s.absentClasses, 0)];
       }),
-      startY: 22, theme: 'striped', headStyles: { fillColor: [124, 58, 237] },
+      startY: 22, theme: 'striped', headStyles: { fillColor: [124, 144, 112] },
     });
     doc.save('attendance.pdf');
   };
@@ -355,15 +355,15 @@ export default function AttendancePage() {
       {/* Header */}
       <div className="flex items-start justify-between gap-3 mb-7">
         <div>
-          <p className="text-[10px] font-bold text-violet-400 uppercase tracking-widest mb-1">Tracker</p>
-          <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight">Attendance</h1>
+          <p className="text-[10px] font-bold text-ember-dark uppercase tracking-widest mb-1">Trail log</p>
+          <h1 className="text-2xl sm:text-3xl font-display font-bold text-ink tracking-tight">Attendance</h1>
         </div>
         {subjects.length > 0 && (
           <div className="flex gap-2 mt-1 flex-shrink-0">
-            <button onClick={exportCsv} className="flex items-center gap-1.5 px-3 py-2 bg-white/[0.05] hover:bg-white/[0.08] border border-white/[0.08] rounded-xl text-xs font-medium text-zinc-400 hover:text-white transition-all">
+            <button onClick={exportCsv} className="flex items-center gap-1.5 px-3 py-2 bg-white hover:bg-map border border-sand rounded-xl text-xs font-medium text-ink-muted hover:text-ink transition-all">
               <Download size={12} /><span className="hidden sm:inline">CSV</span>
             </button>
-            <button onClick={exportPdf} className="flex items-center gap-1.5 px-3 py-2 bg-white/[0.05] hover:bg-white/[0.08] border border-white/[0.08] rounded-xl text-xs font-medium text-zinc-400 hover:text-white transition-all">
+            <button onClick={exportPdf} className="flex items-center gap-1.5 px-3 py-2 bg-white hover:bg-map border border-sand rounded-xl text-xs font-medium text-ink-muted hover:text-ink transition-all">
               <FileText size={12} /><span className="hidden sm:inline">PDF</span>
             </button>
           </div>
@@ -373,24 +373,24 @@ export default function AttendancePage() {
       {subjects.length > 0 && <SummaryStrip subjects={subjects} />}
 
       {/* SAP Auto-Sync Panel */}
-      <div className="bg-white/[0.04] border border-white/[0.08] rounded-2xl p-4 sm:p-5 mb-5">
+      <div className="bg-parchment border border-sand rounded-2xl p-4 sm:p-5 mb-5 shadow-sm">
         <div className="flex items-center justify-between gap-3 flex-wrap">
           <div className="flex items-center gap-3">
-            <div className={`w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 ${sapStatus?.connected ? 'bg-emerald-500/15' : 'bg-zinc-800'}`}>
-              {sapStatus?.connected ? <Link size={15} className="text-emerald-400" /> : <Link size={15} className="text-zinc-600" />}
+            <div className={`w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 ${sapStatus?.connected ? 'bg-sage-pale' : 'bg-map'}`}>
+              {sapStatus?.connected ? <Link size={15} className="text-sage-dark" /> : <Link size={15} className="text-ink-faint" />}
             </div>
             <div>
-              <p className="text-sm font-semibold text-white">
-                SAP Portal Sync
-                {sapStatus?.connected && <span className="ml-2 text-[10px] font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full">Connected</span>}
+              <p className="text-sm font-bold text-ink">
+                SAP portal sync
+                {sapStatus?.connected && <span className="ml-2 text-[10px] font-bold text-sage-dark bg-sage-pale px-2 py-0.5 rounded-full">Connected</span>}
               </p>
-              <p className="text-xs text-zinc-600 mt-0.5">
+              <p className="text-xs text-ink-muted mt-0.5">
                 {sapStatus?.connected ? (
                   <>
-                    {sapStatus.lastSync ? `Last synced: ${new Date(sapStatus.lastSync).toLocaleString()}` : 'Never synced — hit Sync Now'}
+                    {sapStatus.lastSync ? `Last synced: ${new Date(sapStatus.lastSync).toLocaleString()}` : 'Never synced — hit Sync now'}
                     {sapStatus.lastAttendanceDate && (
-                      <span className="block text-[11px] text-fuchsia-400 font-medium mt-1">
-                        📅 Portal Data Marked Up To: {new Date(sapStatus.lastAttendanceDate).toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+                      <span className="block text-[11px] text-trail-dark font-medium mt-1">
+                        Portal data marked up to: {new Date(sapStatus.lastAttendanceDate).toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
                       </span>
                     )}
                   </>
@@ -406,17 +406,17 @@ export default function AttendancePage() {
                 <button
                   onClick={handleSapSync} disabled={syncing || !semester}
                   title={!semester ? 'Select Semester/Trimester first' : undefined}
-                  className="flex items-center gap-1.5 px-4 py-2 bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 disabled:opacity-50 text-white rounded-xl text-xs font-semibold transition-all">
+                  className="flex items-center gap-1.5 px-4 py-2 bg-ember hover:bg-ember-dark disabled:opacity-50 text-white rounded-xl text-xs font-bold transition-all shadow-sm">
                   {syncing ? <Loader2 size={13} className="animate-spin" /> : <RefreshCw size={13} />}
-                  {syncing ? 'Syncing…' : 'Sync Now'}
+                  {syncing ? 'Syncing…' : 'Sync now'}
                 </button>
-                <button onClick={handleSapDisconnect} className="px-3 py-2 bg-white/[0.05] hover:bg-red-500/10 border border-white/[0.08] hover:border-red-500/20 rounded-xl transition-all">
-                  <Unlink size={13} className="text-zinc-500 hover:text-red-400" />
+                <button onClick={handleSapDisconnect} className="px-3 py-2 bg-white hover:bg-danger-pale border border-sand hover:border-danger/30 rounded-xl transition-all group">
+                  <Unlink size={13} className="text-ink-muted group-hover:text-danger" />
                 </button>
               </>
             ) : (
               <button onClick={() => setShowSapModal(true)}
-                className="flex items-center gap-1.5 px-4 py-2 bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 text-white rounded-xl text-xs font-semibold transition-all">
+                className="flex items-center gap-1.5 px-4 py-2 bg-ember hover:bg-ember-dark text-white rounded-xl text-xs font-bold transition-all shadow-sm">
                 <Link size={13} /> Connect SAP
               </button>
             )}
@@ -426,16 +426,16 @@ export default function AttendancePage() {
         {sapStatus?.connected && (
           <div className="flex flex-wrap gap-2 mt-3">
             <div className="flex-1 min-w-[140px]">
-              <label className="block text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-1">Academic Year</label>
+              <label className="block text-[10px] font-bold text-ink-muted uppercase tracking-widest mb-1">Academic year</label>
               <select value={academicYear} onChange={e => setAcademicYear(e.target.value)}
-                className="w-full px-3 py-2 bg-white/[0.05] border border-white/[0.08] rounded-lg text-xs text-white focus:outline-none focus:border-violet-500/50">
+                className="w-full px-3 py-2 bg-white border border-sand rounded-lg text-xs text-ink focus:outline-none focus:border-ember">
                 {academicYearOptions.map(y => <option key={y} value={y}>{y}</option>)}
               </select>
             </div>
             <div className="flex-1 min-w-[140px]">
-              <label className="block text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-1">Semester / Trimester</label>
+              <label className="block text-[10px] font-bold text-ink-muted uppercase tracking-widest mb-1">Semester / trimester</label>
               <select value={semester} onChange={e => setSemester(e.target.value)}
-                className="w-full px-3 py-2 bg-white/[0.05] border border-white/[0.08] rounded-lg text-xs text-white focus:outline-none focus:border-violet-500/50">
+                className="w-full px-3 py-2 bg-white border border-sand rounded-lg text-xs text-ink focus:outline-none focus:border-ember">
                 <option value="">Select…</option>
                 {SEMESTER_ROMAN.map(r => <option key={r} value={r}>Semester {r}</option>)}
               </select>
@@ -444,26 +444,26 @@ export default function AttendancePage() {
         )}
 
         {syncMsg && (
-          <p className={`text-xs mt-3 px-3 py-2 rounded-lg ${syncMsg.startsWith('✓') ? 'bg-emerald-500/10 text-emerald-400' : syncMsg.startsWith('✗') ? 'bg-red-500/10 text-red-400' : 'bg-violet-500/10 text-violet-300'}`}>
+          <p className={`text-xs mt-3 px-3 py-2 rounded-lg ${syncMsg.startsWith('✓') ? 'bg-sage-pale text-sage-dark' : syncMsg.startsWith('✗') ? 'bg-danger-pale text-danger' : 'bg-trail-pale text-trail-dark'}`}>
             {syncMsg}
           </p>
         )}
 
         {/* Sync Mapping Details Breakdown */}
         {sapStatus?.lastSyncDetails && sapStatus.lastSyncDetails.length > 0 && (
-          <div className="mt-4 border-t border-white/[0.06] pt-4">
-            <h4 className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-3">Sync Mapping Status</h4>
-            <div className="overflow-x-auto max-h-60 overflow-y-auto rounded-xl border border-white/[0.05]">
+          <div className="mt-4 border-t border-sand pt-4">
+            <h4 className="text-[10px] font-bold text-ink-muted uppercase tracking-widest mb-3">Sync mapping status</h4>
+            <div className="overflow-x-auto max-h-60 overflow-y-auto rounded-xl border border-sand custom-scrollbar">
               <table className="w-full text-left border-collapse text-xs">
                 <thead>
-                  <tr className="bg-white/[0.02] border-b border-white/[0.06] text-zinc-400">
-                    <th className="p-3 font-semibold">SAP Course Name</th>
-                    <th className="p-3 font-semibold">StudySync Match</th>
-                    <th className="p-3 font-semibold">Attendance</th>
-                    <th className="p-3 font-semibold text-right">Status</th>
+                  <tr className="bg-map border-b border-sand text-ink-muted">
+                    <th className="p-3 font-bold">SAP course name</th>
+                    <th className="p-3 font-bold">StudySync match</th>
+                    <th className="p-3 font-bold">Attendance</th>
+                    <th className="p-3 font-bold text-right">Status</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-white/[0.04]">
+                <tbody className="divide-y divide-sand/60">
                   {sapStatus.lastSyncDetails.map((detail, idx) => {
                     const cleanStr = s => s ? s.toLowerCase().replace(/[()&]/g, ' ').replace(/[^a-z0-9\s]/g, '').trim() : '';
                     const cleanPdf = cleanStr(detail.pdfName);
@@ -472,20 +472,20 @@ export default function AttendancePage() {
                     const matchedSubjectName = matchedSub ? matchedSub.name : detail.subjectName;
 
                     return (
-                      <tr key={idx} className="hover:bg-white/[0.01] transition-colors text-zinc-300">
+                      <tr key={idx} className="hover:bg-ink/[0.02] transition-colors text-ink">
                         <td className="p-3 font-medium truncate max-w-[200px]" title={detail.pdfName}>
                           {detail.pdfName}
                         </td>
                         <td className="p-3">
                           {isMatched ? (
                             <div className="flex items-center gap-1.5">
-                              <span className="text-emerald-400 font-medium">{matchedSubjectName}</span>
+                              <span className="text-sage-dark font-bold">{matchedSubjectName}</span>
                               <button
                                 onClick={async () => {
                                   if (window.confirm(`Remove mapping for "${detail.pdfName}"?`)) {
                                     const sub = matchedSub || subjects.find(s => s.name === detail.subjectName);
                                     if (sub) {
-                                      await handleUpdate(sub._id, { 
+                                      await handleUpdate(sub._id, {
                                         portalName: "",
                                         conductedClasses: 0,
                                         absentClasses: 0
@@ -495,7 +495,7 @@ export default function AttendancePage() {
                                     }
                                   }
                                 }}
-                                className="text-zinc-500 hover:text-red-400 p-0.5 rounded transition-colors"
+                                className="text-ink-faint hover:text-danger p-0.5 rounded transition-colors"
                                 title="Unlink mapping"
                               >
                                 <X size={12} />
@@ -506,7 +506,7 @@ export default function AttendancePage() {
                               onChange={async (e) => {
                                 const subId = e.target.value;
                                 if (subId) {
-                                  await handleUpdate(subId, { 
+                                  await handleUpdate(subId, {
                                     portalName: detail.pdfName,
                                     conductedClasses: detail.conducted,
                                     absentClasses: detail.absent
@@ -516,7 +516,7 @@ export default function AttendancePage() {
                                 }
                               }}
                               defaultValue=""
-                              className="bg-[#181628] border border-white/[0.08] text-zinc-300 rounded-lg px-2 py-1 text-xs focus:outline-none focus:border-violet-500/50 max-w-[150px]"
+                              className="bg-white border border-sand text-ink rounded-lg px-2 py-1 text-xs focus:outline-none focus:border-ember max-w-[150px]"
                             >
                               <option value="" disabled>Map to subject...</option>
                               {subjects.map(s => (
@@ -526,23 +526,23 @@ export default function AttendancePage() {
                           )}
                         </td>
                         <td className="p-3">
-                          <span className="text-zinc-400">
+                          <span className="text-ink-muted tabular-nums">
                             {detail.conducted - detail.absent}/{detail.conducted} ({detail.conducted > 0 ? (((detail.conducted - detail.absent) / detail.conducted) * 100).toFixed(0) : 0}%)
                           </span>
                         </td>
                         <td className="p-3 text-right">
                           {isMatched ? (
                             detail.matchedBy === 'ai' ? (
-                              <span className="inline-flex items-center gap-1 text-[10px] font-bold text-fuchsia-400 bg-fuchsia-500/10 px-2 py-0.5 rounded-full" title="Matched using optimized Gemini fallback">
-                                🧠 Synced via AI
+                              <span className="inline-flex items-center gap-1 text-[10px] font-bold text-trail-dark bg-trail-pale px-2 py-0.5 rounded-full" title="Matched using optimized Gemini fallback">
+                                Synced via AI
                               </span>
                             ) : (
-                              <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full" title="Matched instantly using fast heuristics">
+                              <span className="inline-flex items-center gap-1 text-[10px] font-bold text-sage-dark bg-sage-pale px-2 py-0.5 rounded-full" title="Matched instantly using fast heuristics">
                                 <CheckCircle size={10} /> Synced
                               </span>
                             )
                           ) : (
-                            <span className="inline-flex items-center gap-1 text-[10px] font-bold text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-full" title="To match this, add a subject with this name or acronym">
+                            <span className="inline-flex items-center gap-1 text-[10px] font-bold text-caution bg-caution-pale px-2 py-0.5 rounded-full" title="To match this, add a subject with this name or acronym">
                               <AlertTriangle size={10} /> Unmatched
                             </span>
                           )}
@@ -565,36 +565,36 @@ export default function AttendancePage() {
       )}
 
       {/* Add form */}
-      <div className="bg-white/[0.04] border border-white/[0.08] rounded-2xl p-4 sm:p-5 mb-5">
-        <p className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest mb-3">Add Subject</p>
+      <div className="bg-parchment border border-sand rounded-2xl p-4 sm:p-5 mb-5 shadow-sm">
+        <p className="text-[10px] font-bold text-ink-muted uppercase tracking-widest mb-3">Add subject</p>
         <form onSubmit={handleAdd} className="flex flex-col sm:flex-row gap-2.5">
           <input
             type="text" placeholder="Subject name" value={newName}
             onChange={e => setNewName(e.target.value)}
-            className="flex-1 bg-white/[0.05] border border-white/[0.08] text-white placeholder-zinc-600 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-violet-500/50 transition-all"
+            className="flex-1 bg-white border border-sand text-ink placeholder-ink-faint rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-ember transition-all"
             required
           />
           <input
             type="number" placeholder="Total classes" value={newTotal}
             onChange={e => setNewTotal(e.target.value)}
-            className="sm:w-40 bg-white/[0.05] border border-white/[0.08] text-white placeholder-zinc-600 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-violet-500/50 transition-all"
+            className="sm:w-40 bg-white border border-sand text-ink placeholder-ink-faint rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-ember transition-all"
             required
           />
           <button
             type="submit" disabled={adding}
-            className="flex items-center justify-center gap-2 px-5 py-2.5 bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 disabled:opacity-50 text-white rounded-xl text-sm font-semibold transition-all shadow-lg shadow-violet-500/20 whitespace-nowrap"
+            className="flex items-center justify-center gap-2 px-5 py-2.5 bg-ember hover:bg-ember-dark disabled:opacity-50 text-white rounded-xl text-sm font-bold transition-all shadow-sm whitespace-nowrap"
           >
             <Plus size={15} />{adding ? 'Adding…' : 'Add'}
           </button>
         </form>
-        {error && <p className="text-xs text-red-400 mt-2">{error}</p>}
+        {error && <p className="text-xs text-danger mt-2">{error}</p>}
       </div>
 
       {/* Subject cards */}
       {subjects.length === 0 ? (
-        <div className="bg-white/[0.04] border border-white/[0.08] rounded-2xl py-16 flex flex-col items-center gap-3">
-          <TrendingUp size={26} className="text-zinc-700" />
-          <p className="text-sm text-zinc-600">Add a subject to start tracking.</p>
+        <div className="bg-parchment border border-sand rounded-2xl py-16 flex flex-col items-center gap-3 shadow-sm">
+          <TrendingUp size={26} className="text-ink-faint" />
+          <p className="text-sm text-ink-muted">Add a subject to start tracking.</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

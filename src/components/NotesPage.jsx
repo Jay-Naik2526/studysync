@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
-  Sparkles, Download, FileText, BookOpen, Brain,
+  Compass, Download, FileText, BookOpen, Brain,
   ClipboardList, HelpCircle, ChevronDown, ChevronLeft, ChevronRight,
-  RotateCcw, CheckCircle, XCircle, Trophy, Eye, EyeOff, MessageSquare, Send, Loader2
+  RotateCcw, CheckCircle, XCircle, Trophy, Eye, EyeOff, MessageSquare, Send, Loader2,
+  Target, AlertTriangle
 } from 'lucide-react';
 import { notesAPI, subjectsAPI } from '../api';
 import ReactMarkdown from 'react-markdown';
@@ -48,7 +49,7 @@ function MarkdownRenderer({ content, isPrint = false }) {
   const sanitizedContent = preprocessMarkdown(content);
 
   return (
-    <div ref={ref} className={isPrint ? 'prose prose-slate max-w-none bg-white p-10' : 'markdown-dark'}>
+    <div ref={ref} className={isPrint ? 'prose prose-slate max-w-none bg-white p-10' : 'markdown-atlas'}>
       <ReactMarkdown
         remarkPlugins={[remarkMath, remarkGfm]}
         rehypePlugins={[[rehypeKatex, { throwOnError: false, strict: false, output: 'html' }]]}
@@ -97,17 +98,17 @@ function FlashcardView({ cards }) {
     <div className="flex flex-col items-center w-full max-w-2xl mx-auto">
       {/* Progress bar + counter */}
       <div className="w-full mb-6">
-        <div className="flex items-center justify-between text-xs text-zinc-500 mb-2">
-          <span className="font-semibold">{index + 1} <span className="text-zinc-700">/ {cards.length}</span></span>
+        <div className="flex items-center justify-between text-xs text-ink-muted mb-2">
+          <span className="font-bold tabular-nums">{index + 1} <span className="text-ink-faint">/ {cards.length}</span></span>
           <span className="flex items-center gap-1.5">
-            <CheckCircle size={12} className="text-emerald-400" />
-            <span className="text-emerald-400 font-semibold">{knownCount} known</span>
-            <span className="text-zinc-700 mx-1">·</span>
-            <span className="text-zinc-500">{cards.length - knownCount} left</span>
+            <CheckCircle size={12} className="text-sage-dark" />
+            <span className="text-sage-dark font-bold tabular-nums">{knownCount} known</span>
+            <span className="text-ink-faint mx-1">·</span>
+            <span className="text-ink-muted tabular-nums">{cards.length - knownCount} left</span>
           </span>
         </div>
-        <div className="w-full bg-white/[0.05] rounded-full h-1.5">
-          <div className="h-1.5 rounded-full bg-gradient-to-r from-violet-500 to-fuchsia-500 transition-all duration-500"
+        <div className="w-full bg-ink/10 rounded-full h-1.5">
+          <div className="h-1.5 rounded-full bg-ember transition-all duration-500"
             style={{ width: `${((index + 1) / cards.length) * 100}%` }} />
         </div>
       </div>
@@ -120,21 +121,21 @@ function FlashcardView({ cards }) {
       >
         <div className={`flip-card-inner w-full h-full ${flipped ? 'flipped' : ''}`}>
           {/* Front */}
-          <div className="flip-card-front absolute inset-0 bg-white/[0.05] border border-white/[0.10] rounded-2xl p-7 flex flex-col justify-between hover:border-violet-500/30 transition-colors">
+          <div className="flip-card-front absolute inset-0 bg-parchment border border-sand rounded-2xl p-7 flex flex-col justify-between hover:border-ember/40 transition-colors shadow-sm">
             <div className="flex items-center justify-between mb-3">
-              <span className="text-[10px] font-bold text-violet-400 uppercase tracking-widest">Question</span>
-              <span className="text-[10px] text-zinc-600 flex items-center gap-1">
+              <span className="text-[10px] font-bold text-ember-dark uppercase tracking-widest">Question</span>
+              <span className="text-[10px] text-ink-faint flex items-center gap-1">
                 <RotateCcw size={10} /> tap to flip
               </span>
             </div>
-            <p className="text-lg sm:text-xl font-semibold text-white leading-relaxed flex-1 flex items-center">
+            <p className="text-lg sm:text-xl font-display font-bold text-ink leading-relaxed flex-1 flex items-center">
               {card.question}
             </p>
             {card.hint && (
               <div className="mt-3">
                 <button
                   onClick={e => { e.stopPropagation(); setShowHint(v => !v); }}
-                  className="flex items-center gap-1.5 text-xs text-zinc-600 hover:text-zinc-400 transition-colors"
+                  className="flex items-center gap-1.5 text-xs text-ink-muted hover:text-ink transition-colors"
                 >
                   {showHint ? <EyeOff size={12} /> : <Eye size={12} />}
                   {showHint ? `Hint: ${card.hint}` : 'Show hint'}
@@ -143,31 +144,31 @@ function FlashcardView({ cards }) {
             )}
             {/* Corner badge */}
             {known.has(index) && (
-              <div className="absolute top-4 right-4 w-6 h-6 rounded-full bg-emerald-500/20 flex items-center justify-center">
-                <CheckCircle size={14} className="text-emerald-400" />
+              <div className="absolute top-4 right-4 w-6 h-6 rounded-full bg-sage-pale flex items-center justify-center">
+                <CheckCircle size={14} className="text-sage-dark" />
               </div>
             )}
           </div>
 
           {/* Back */}
-          <div className="flip-card-back absolute inset-0 bg-gradient-to-br from-violet-900/30 to-fuchsia-900/20 border border-violet-500/20 rounded-2xl p-7 flex flex-col justify-between">
+          <div className="flip-card-back absolute inset-0 bg-sage-pale border border-sage/40 rounded-2xl p-7 flex flex-col justify-between shadow-sm">
             <div className="flex items-center justify-between mb-3">
-              <span className="text-[10px] font-bold text-fuchsia-400 uppercase tracking-widest">Answer</span>
-              <span className="text-[10px] text-zinc-600 flex items-center gap-1">
+              <span className="text-[10px] font-bold text-sage-dark uppercase tracking-widest">Answer</span>
+              <span className="text-[10px] text-ink-faint flex items-center gap-1">
                 <RotateCcw size={10} /> tap to flip back
               </span>
             </div>
-            <p className="text-base sm:text-lg text-zinc-100 leading-relaxed flex-1 flex items-center">
+            <p className="text-base sm:text-lg text-ink leading-relaxed flex-1 flex items-center">
               {card.answer}
             </p>
             {/* Know it / Study more */}
             <div className="flex gap-3 mt-4" onClick={e => e.stopPropagation()}>
               <button onClick={markAgain}
-                className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-sm font-semibold hover:bg-red-500/20 transition-colors">
+                className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl bg-danger-pale border border-danger/25 text-danger text-sm font-bold hover:border-danger/50 transition-colors">
                 <XCircle size={15} /> Study more
               </button>
               <button onClick={markKnown}
-                className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-sm font-semibold hover:bg-emerald-500/20 transition-colors">
+                className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl bg-white border border-sage/40 text-sage-dark text-sm font-bold hover:border-sage transition-colors">
                 <CheckCircle size={15} /> Got it!
               </button>
             </div>
@@ -178,17 +179,17 @@ function FlashcardView({ cards }) {
       {/* Nav */}
       <div className="flex items-center gap-4 mt-6">
         <button onClick={() => go(-1)} disabled={index === 0}
-          className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-white/[0.05] border border-white/[0.08] text-zinc-400 text-sm font-medium hover:bg-white/[0.08] disabled:opacity-30 disabled:cursor-not-allowed transition-all">
+          className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-parchment border border-sand text-ink-muted text-sm font-medium hover:border-sand-dark disabled:opacity-40 disabled:cursor-not-allowed transition-all">
           <ChevronLeft size={16} /> Prev
         </button>
 
         <button onClick={() => setFlipped(f => !f)}
-          className="px-5 py-2.5 rounded-xl bg-violet-600/20 border border-violet-500/25 text-violet-300 text-sm font-semibold hover:bg-violet-600/30 transition-all flex items-center gap-2">
+          className="px-5 py-2.5 rounded-xl bg-ember-pale border border-ember/30 text-ember-dark text-sm font-bold hover:border-ember/60 transition-all flex items-center gap-2">
           <RotateCcw size={14} /> Flip
         </button>
 
         <button onClick={() => go(1)} disabled={index === cards.length - 1}
-          className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-white/[0.05] border border-white/[0.08] text-zinc-400 text-sm font-medium hover:bg-white/[0.08] disabled:opacity-30 disabled:cursor-not-allowed transition-all">
+          className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-parchment border border-sand text-ink-muted text-sm font-medium hover:border-sand-dark disabled:opacity-40 disabled:cursor-not-allowed transition-all">
           Next <ChevronRight size={16} />
         </button>
       </div>
@@ -197,16 +198,16 @@ function FlashcardView({ cards }) {
       <div className="flex flex-wrap items-center justify-center gap-1.5 mt-5 max-w-xs">
         {cards.map((_, i) => (
           <button key={i} onClick={() => { setIndex(i); setFlipped(false); setShowHint(false); }}
-            className={`w-2 h-2 rounded-full transition-all ${i === index ? 'bg-violet-400 scale-125' : known.has(i) ? 'bg-emerald-500' : 'bg-white/[0.12]'}`} />
+            className={`w-2 h-2 rounded-full transition-all ${i === index ? 'bg-ember scale-125' : known.has(i) ? 'bg-sage' : 'bg-ink/15'}`} />
         ))}
       </div>
 
       {knownCount === cards.length && (
         <div className="mt-6 flex flex-col items-center gap-3">
-          <div className="flex items-center gap-2 text-emerald-400 font-semibold text-sm">
+          <div className="flex items-center gap-2 text-sage-dark font-bold text-sm">
             <Trophy size={18} /> All {cards.length} cards mastered!
           </div>
-          <button onClick={restart} className="text-xs text-zinc-500 hover:text-zinc-300 transition-colors flex items-center gap-1">
+          <button onClick={restart} className="text-xs text-ink-muted hover:text-ink transition-colors flex items-center gap-1">
             <RotateCcw size={12} /> Reset deck
           </button>
         </div>
@@ -252,47 +253,47 @@ function QuizView({ questions }) {
 
   if (done) {
     const pct = Math.round((score / questions.length) * 100);
-    const grade = pct >= 90 ? { label: 'Excellent', color: '#34d399', icon: '🏆' }
-      : pct >= 70 ? { label: 'Good', color: '#a78bfa', icon: '🎯' }
-      : pct >= 50 ? { label: 'Keep Practicing', color: '#fbbf24', icon: '📚' }
-      : { label: 'Needs Work', color: '#f87171', icon: '💪' };
+    const grade = pct >= 90 ? { label: 'Summit reached', color: '#4A5A40', Icon: Trophy }
+      : pct >= 70 ? { label: 'Good climb', color: '#3E566C', Icon: Target }
+      : pct >= 50 ? { label: 'Keep practicing', color: '#A8842C', Icon: BookOpen }
+      : { label: 'Needs work', color: '#A93B2B', Icon: AlertTriangle };
 
     return (
       <div className="flex flex-col items-center w-full max-w-lg mx-auto py-8">
-        <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-violet-600/20 to-fuchsia-600/20 border border-violet-500/20 flex items-center justify-center text-4xl mb-5">
-          {grade.icon}
+        <div className="w-20 h-20 rounded-2xl bg-parchment border border-sand flex items-center justify-center mb-5 shadow-sm">
+          <grade.Icon size={32} style={{ color: grade.color }} />
         </div>
-        <h3 className="text-2xl font-black text-white mb-1">Quiz Complete!</h3>
-        <p className="text-zinc-500 text-sm mb-7">Here's how you did</p>
+        <h3 className="text-2xl font-display font-bold text-ink mb-1">Quiz complete!</h3>
+        <p className="text-ink-muted text-sm mb-7">Here's how you did</p>
 
         {/* Score ring */}
         <div className="relative mb-7">
           <svg width={120} height={120} className="-rotate-90">
-            <circle cx={60} cy={60} r={50} fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth={10} />
+            <circle cx={60} cy={60} r={50} fill="none" stroke="rgba(43,43,38,0.08)" strokeWidth={10} />
             <circle cx={60} cy={60} r={50} fill="none" stroke={grade.color} strokeWidth={10}
               strokeLinecap="round"
               strokeDasharray={`${2 * Math.PI * 50} ${2 * Math.PI * 50}`}
               style={{ strokeDashoffset: 2 * Math.PI * 50 - (pct / 100) * 2 * Math.PI * 50, transition: 'stroke-dashoffset 1s ease' }} />
           </svg>
           <div className="absolute inset-0 flex flex-col items-center justify-center">
-            <span className="text-3xl font-black text-white">{pct}%</span>
-            <span className="text-xs text-zinc-500 mt-0.5">{score}/{questions.length}</span>
+            <span className="text-3xl font-display font-bold text-ink tabular-nums">{pct}%</span>
+            <span className="text-xs text-ink-muted mt-0.5 tabular-nums">{score}/{questions.length}</span>
           </div>
         </div>
 
-        <p className="font-bold text-base mb-6" style={{ color: grade.color }}>{grade.label}</p>
+        <p className="font-display font-bold text-base mb-6" style={{ color: grade.color }}>{grade.label}</p>
 
         {/* Per-question breakdown */}
         <div className="w-full space-y-2 mb-7">
           {questions.map((q, i) => (
-            <div key={i} className={`flex items-start gap-3 p-3 rounded-xl border ${answers[i]?.correct ? 'bg-emerald-500/5 border-emerald-500/15' : 'bg-red-500/5 border-red-500/15'}`}>
+            <div key={i} className={`flex items-start gap-3 p-3 rounded-xl border ${answers[i]?.correct ? 'bg-sage-pale border-sage/30' : 'bg-danger-pale border-danger/25'}`}>
               {answers[i]?.correct
-                ? <CheckCircle size={16} className="text-emerald-400 flex-shrink-0 mt-0.5" />
-                : <XCircle size={16} className="text-red-400 flex-shrink-0 mt-0.5" />}
+                ? <CheckCircle size={16} className="text-sage-dark flex-shrink-0 mt-0.5" />
+                : <XCircle size={16} className="text-danger flex-shrink-0 mt-0.5" />}
               <div className="min-w-0">
-                <p className="text-xs text-zinc-300 font-medium leading-snug truncate">{q.question}</p>
+                <p className="text-xs text-ink font-medium leading-snug truncate">{q.question}</p>
                 {!answers[i]?.correct && (
-                  <p className="text-[10px] text-emerald-400 mt-0.5">✓ {q.correctAnswer}</p>
+                  <p className="text-[10px] text-sage-dark mt-0.5">✓ {q.correctAnswer}</p>
                 )}
               </div>
             </div>
@@ -300,8 +301,8 @@ function QuizView({ questions }) {
         </div>
 
         <button onClick={restart}
-          className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 text-white font-bold rounded-xl text-sm transition-all shadow-lg shadow-violet-500/20">
-          <RotateCcw size={14} /> Retake Quiz
+          className="flex items-center gap-2 px-6 py-3 bg-ember hover:bg-ember-dark text-white font-bold rounded-xl text-sm transition-all shadow-sm">
+          <RotateCcw size={14} /> Retake quiz
         </button>
       </div>
     );
@@ -310,22 +311,22 @@ function QuizView({ questions }) {
   return (
     <div className="w-full max-w-2xl mx-auto">
       {/* Progress */}
-      <div className="flex items-center justify-between text-xs text-zinc-500 mb-2">
-        <span className="font-semibold">Q{index + 1} <span className="text-zinc-700">/ {questions.length}</span></span>
+      <div className="flex items-center justify-between text-xs text-ink-muted mb-2">
+        <span className="font-bold tabular-nums">Q{index + 1} <span className="text-ink-faint">/ {questions.length}</span></span>
         <span className="flex items-center gap-3">
-          <span className="text-emerald-400 flex items-center gap-1"><CheckCircle size={11} /> {score} correct</span>
-          <span className="text-red-400 flex items-center gap-1"><XCircle size={11} /> {answers.length - score} wrong</span>
+          <span className="text-sage-dark flex items-center gap-1 tabular-nums"><CheckCircle size={11} /> {score} correct</span>
+          <span className="text-danger flex items-center gap-1 tabular-nums"><XCircle size={11} /> {answers.length - score} wrong</span>
         </span>
       </div>
-      <div className="w-full bg-white/[0.05] rounded-full h-1.5 mb-6">
-        <div className="h-1.5 rounded-full bg-gradient-to-r from-violet-500 to-fuchsia-500 transition-all duration-500"
+      <div className="w-full bg-ink/10 rounded-full h-1.5 mb-6">
+        <div className="h-1.5 rounded-full bg-ember transition-all duration-500"
           style={{ width: `${((index) / questions.length) * 100}%` }} />
       </div>
 
       {/* Question card */}
-      <div className="bg-white/[0.04] border border-white/[0.09] rounded-2xl p-5 sm:p-6 mb-4">
-        <p className="text-[10px] font-bold text-violet-400 uppercase tracking-widest mb-3">Question {index + 1}</p>
-        <p className="text-base sm:text-lg font-semibold text-white leading-relaxed">{q.question}</p>
+      <div className="bg-parchment border border-sand rounded-2xl p-5 sm:p-6 mb-4 shadow-sm">
+        <p className="text-[10px] font-bold text-ember-dark uppercase tracking-widest mb-3">Question {index + 1}</p>
+        <p className="text-base sm:text-lg font-display font-bold text-ink leading-relaxed">{q.question}</p>
       </div>
 
       {/* Options */}
@@ -333,11 +334,11 @@ function QuizView({ questions }) {
         {q.options.map((opt, i) => {
           const isSelected = selected === opt;
           const isCorrectOpt = opt === q.correctAnswer;
-          let style = 'bg-white/[0.04] border-white/[0.08] text-zinc-300 hover:border-violet-500/40 hover:bg-white/[0.07]';
+          let style = 'bg-parchment border-sand text-ink hover:border-ember/50 hover:bg-white/60';
           if (answered) {
-            if (isCorrectOpt) style = 'bg-emerald-500/10 border-emerald-500/40 text-emerald-300';
-            else if (isSelected) style = 'bg-red-500/10 border-red-500/40 text-red-300';
-            else style = 'bg-white/[0.02] border-white/[0.04] text-zinc-600';
+            if (isCorrectOpt) style = 'bg-sage-pale border-sage/50 text-sage-dark';
+            else if (isSelected) style = 'bg-danger-pale border-danger/40 text-danger';
+            else style = 'bg-map border-sand text-ink-faint';
           }
 
           return (
@@ -347,10 +348,10 @@ function QuizView({ questions }) {
               disabled={answered}
               className={`w-full flex items-start gap-3 px-4 py-3.5 rounded-xl border text-sm font-medium text-left transition-all ${style} ${answered ? 'cursor-default' : 'cursor-pointer'}`}
             >
-              <span className={`w-6 h-6 rounded-lg flex items-center justify-center text-xs font-black flex-shrink-0 mt-0.5 transition-colors
-                ${answered && isCorrectOpt ? 'bg-emerald-500/25 text-emerald-400'
-                  : answered && isSelected ? 'bg-red-500/25 text-red-400'
-                  : 'bg-white/[0.06] text-zinc-500'}`}>
+              <span className={`w-6 h-6 rounded-lg flex items-center justify-center text-xs font-bold flex-shrink-0 mt-0.5 transition-colors
+                ${answered && isCorrectOpt ? 'bg-sage/25 text-sage-dark'
+                  : answered && isSelected ? 'bg-danger/20 text-danger'
+                  : 'bg-ink/5 text-ink-muted'}`}>
                 {answered && isCorrectOpt ? <CheckCircle size={13} />
                   : answered && isSelected ? <XCircle size={13} />
                   : String.fromCharCode(65 + i)}
@@ -363,17 +364,17 @@ function QuizView({ questions }) {
 
       {/* Explanation (shown after answering) */}
       {answered && q.explanation && (
-        <div className={`rounded-xl border px-4 py-3.5 mb-5 ${isCorrect ? 'bg-emerald-500/8 border-emerald-500/20' : 'bg-amber-500/8 border-amber-500/20'}`}>
-          <p className="text-[10px] font-bold uppercase tracking-widest mb-1.5 text-zinc-500">Explanation</p>
-          <p className="text-sm text-zinc-300 leading-relaxed">{q.explanation}</p>
+        <div className={`rounded-xl border px-4 py-3.5 mb-5 ${isCorrect ? 'bg-sage-pale border-sage/30' : 'bg-caution-pale border-caution/30'}`}>
+          <p className="text-[10px] font-bold uppercase tracking-widest mb-1.5 text-ink-muted">Explanation</p>
+          <p className="text-sm text-ink leading-relaxed">{q.explanation}</p>
         </div>
       )}
 
       {/* Next */}
       {answered && (
         <button onClick={next}
-          className="w-full py-3 bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 text-white font-bold rounded-xl text-sm flex items-center justify-center gap-2 transition-all shadow-lg shadow-violet-500/20">
-          {index < questions.length - 1 ? <><span>Next Question</span><ChevronRight size={15} /></> : <><Trophy size={15} /><span>See Results</span></>}
+          className="w-full py-3 bg-ember hover:bg-ember-dark text-white font-bold rounded-xl text-sm flex items-center justify-center gap-2 transition-all shadow-sm">
+          {index < questions.length - 1 ? <><span>Next question</span><ChevronRight size={15} /></> : <><Trophy size={15} /><span>See results</span></>}
         </button>
       )}
     </div>
@@ -464,39 +465,39 @@ export default function NotesPage() {
   const TypeIcon = typeOptions.find(t => t.value === noteType)?.icon || BookOpen;
 
   const FormPanel = (
-    <div className="bg-white/[0.04] border border-white/[0.08] rounded-2xl p-5">
+    <div className="bg-parchment border border-sand rounded-2xl p-5 shadow-sm">
       <div className="flex items-center gap-2 mb-5">
-        <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-violet-600 to-fuchsia-600 flex items-center justify-center">
-          <Sparkles size={13} className="text-white" />
+        <div className="w-7 h-7 rounded-lg bg-ember flex items-center justify-center">
+          <Compass size={13} className="text-white" />
         </div>
-        <h2 className="text-sm font-bold text-white">Generate</h2>
+        <h2 className="text-sm font-display font-bold text-ink">Generate</h2>
       </div>
 
       <form onSubmit={handleGenerate} className="space-y-3.5">
         <div>
-          <label className="block text-[10px] font-bold text-zinc-600 uppercase tracking-widest mb-1.5">Subject</label>
+          <label className="block text-[10px] font-bold text-ink-muted uppercase tracking-widest mb-1.5">Subject</label>
           <div className="relative">
             <select name="subjectId" onChange={e => setSelectedSub(e.target.value)} required
-              className="w-full bg-white/[0.05] border border-white/[0.08] text-zinc-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-violet-500/50 appearance-none transition-all">
+              className="w-full bg-white border border-sand text-ink rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-ember appearance-none transition-all">
               <option value="">Select subject…</option>
               {subjects.map(s => <option key={s._id} value={s._id}>{s.name}</option>)}
             </select>
-            <ChevronDown size={13} className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-600 pointer-events-none" />
+            <ChevronDown size={13} className="absolute right-3 top-1/2 -translate-y-1/2 text-ink-faint pointer-events-none" />
           </div>
         </div>
 
         <div>
-          <label className="block text-[10px] font-bold text-zinc-600 uppercase tracking-widest mb-1.5">Topic</label>
+          <label className="block text-[10px] font-bold text-ink-muted uppercase tracking-widest mb-1.5">Topic</label>
           <input name="title" placeholder="e.g. Binary Search Trees" required
-            className="w-full bg-white/[0.05] border border-white/[0.08] text-zinc-200 placeholder-zinc-700 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-violet-500/50 transition-all" />
+            className="w-full bg-white border border-sand text-ink placeholder-ink-faint rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-ember transition-all" />
         </div>
 
         <div>
-          <label className="block text-[10px] font-bold text-zinc-600 uppercase tracking-widest mb-1.5">Type</label>
+          <label className="block text-[10px] font-bold text-ink-muted uppercase tracking-widest mb-1.5">Type</label>
           <div className="grid grid-cols-2 gap-2">
             {typeOptions.map(({ value, label, icon: Icon }) => (
               <button type="button" key={value} onClick={() => setNoteType(value)}
-                className={`flex items-center gap-2 px-3 py-2.5 rounded-xl text-xs font-medium transition-all border ${noteType === value ? 'bg-violet-600/25 border-violet-500/40 text-violet-300' : 'bg-white/[0.03] border-white/[0.06] text-zinc-500 hover:text-zinc-300 hover:bg-white/[0.06]'}`}>
+                className={`flex items-center gap-2 px-3 py-2.5 rounded-xl text-xs font-bold transition-all border ${noteType === value ? 'bg-ember-pale border-ember/40 text-ember-dark' : 'bg-white border-sand text-ink-muted hover:text-ink hover:border-sand-dark'}`}>
                 <Icon size={13} className="flex-shrink-0" /><span className="truncate">{label}</span>
               </button>
             ))}
@@ -505,33 +506,33 @@ export default function NotesPage() {
         </div>
 
         <div>
-          <label className="block text-[10px] font-bold text-zinc-600 uppercase tracking-widest mb-1.5">
-            Context <span className="normal-case font-normal text-zinc-700">(optional)</span>
+          <label className="block text-[10px] font-bold text-ink-muted uppercase tracking-widest mb-1.5">
+            Context <span className="normal-case font-normal text-ink-faint">(optional)</span>
           </label>
           <textarea name="description" placeholder="Syllabus, keywords, or context…"
-            className="w-full bg-white/[0.05] border border-white/[0.08] text-zinc-200 placeholder-zinc-700 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-violet-500/50 h-20 resize-none transition-all" />
+            className="w-full bg-white border border-sand text-ink placeholder-ink-faint rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-ember h-20 resize-none transition-all" />
         </div>
 
         <div>
-          <label className="block text-[10px] font-bold text-zinc-600 uppercase tracking-widest mb-1.5">
-            Files <span className="normal-case font-normal text-zinc-700">(optional)</span>
+          <label className="block text-[10px] font-bold text-ink-muted uppercase tracking-widest mb-1.5">
+            Files <span className="normal-case font-normal text-ink-faint">(optional)</span>
           </label>
           <input type="file" name="files" multiple
-            className="block w-full text-xs text-zinc-600 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:bg-violet-600/15 file:text-violet-400 file:font-medium file:cursor-pointer hover:file:bg-violet-600/25" />
+            className="block w-full text-xs text-ink-muted file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:bg-ember-pale file:text-ember-dark file:font-bold file:cursor-pointer hover:file:bg-ember/20" />
         </div>
 
         {loading && (
           <div className="space-y-1.5">
-            <div className="w-full bg-white/[0.05] rounded-full h-0.5 overflow-hidden">
-              <div className="h-full rounded-full bg-gradient-to-r from-violet-500 to-fuchsia-500 transition-all duration-300" style={{ width: `${progress}%` }} />
+            <div className="w-full bg-ink/10 rounded-full h-0.5 overflow-hidden">
+              <div className="h-full rounded-full bg-ember transition-all duration-300" style={{ width: `${progress}%` }} />
             </div>
-            <p className="text-[10px] text-zinc-600 text-center">Generating with AI…</p>
+            <p className="text-[10px] text-ink-muted text-center">Generating…</p>
           </div>
         )}
 
         <button type="submit" disabled={loading || !selectedSub}
-          className="w-full py-3 bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold rounded-xl text-sm flex items-center justify-center gap-2 transition-all shadow-lg shadow-violet-500/20">
-          <Sparkles size={14} />
+          className="w-full py-3 bg-ember hover:bg-ember-dark disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold rounded-xl text-sm flex items-center justify-center gap-2 transition-all shadow-sm">
+          <Compass size={14} />
           {loading ? 'Generating…' : 'Generate'}
         </button>
       </form>
@@ -539,24 +540,24 @@ export default function NotesPage() {
   );
 
   const OutputPanel = (
-    <div className="relative bg-white/[0.04] border border-white/[0.08] rounded-2xl flex flex-col"
+    <div className="relative bg-parchment border border-sand rounded-2xl flex flex-col shadow-sm"
       style={{ height: 'clamp(400px, calc(100vh - 180px), 900px)' }}>
-      <div className="flex items-center justify-between px-5 py-3.5 border-b border-white/[0.07] flex-shrink-0 gap-3">
+      <div className="flex items-center justify-between px-5 py-3.5 border-b border-sand flex-shrink-0 gap-3">
         <div className="flex items-center gap-2 min-w-0">
-          <button onClick={() => setShowForm(true)} className="lg:hidden text-zinc-600 hover:text-zinc-300 text-xs font-medium transition-colors mr-1 flex-shrink-0">← Form</button>
-          <span className="text-[10px] font-bold text-zinc-700 uppercase tracking-widest truncate">Output</span>
+          <button onClick={() => setShowForm(true)} className="lg:hidden text-ink-muted hover:text-ink text-xs font-medium transition-colors mr-1 flex-shrink-0">← Form</button>
+          <span className="text-[10px] font-bold text-ink-muted uppercase tracking-widest truncate">Output</span>
           {currentNote && (
-            <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full flex-shrink-0 ${
-              currentNote.type === 'flashcards' ? 'bg-violet-500/15 text-violet-400'
-              : currentNote.type === 'quiz' ? 'bg-amber-500/15 text-amber-400'
-              : 'bg-zinc-500/15 text-zinc-400'}`}>
+            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full flex-shrink-0 ${
+              currentNote.type === 'flashcards' ? 'bg-ember-pale text-ember-dark'
+              : currentNote.type === 'quiz' ? 'bg-caution-pale text-caution'
+              : 'bg-map text-ink-muted'}`}>
               {typeOptions.find(t => t.value === currentNote.type)?.label}
             </span>
           )}
         </div>
         {currentNote && !isInteractive && (
           <button onClick={downloadPDF}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 rounded-lg text-[11px] font-semibold text-white transition-all shadow-md shadow-violet-500/20 flex-shrink-0 whitespace-nowrap">
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-ember hover:bg-ember-dark rounded-lg text-[11px] font-bold text-white transition-all shadow-sm flex-shrink-0 whitespace-nowrap">
             <Download size={11} />PDF
           </button>
         )}
@@ -570,10 +571,10 @@ export default function NotesPage() {
             {/* Title for notes only */}
             {!isInteractive && (
               <div className="flex items-start gap-2.5 mb-5">
-                <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-violet-600/30 to-fuchsia-600/30 border border-violet-500/20 flex items-center justify-center flex-shrink-0 mt-0.5">
-                  <TypeIcon size={14} className="text-violet-400" />
+                <div className="w-8 h-8 rounded-xl bg-ember-pale border border-ember/25 flex items-center justify-center flex-shrink-0 mt-0.5">
+                  <TypeIcon size={14} className="text-ember-dark" />
                 </div>
-                <h2 className="text-base sm:text-lg font-black text-white leading-tight">{currentNote.title}</h2>
+                <h2 className="text-base sm:text-lg font-display font-bold text-ink leading-tight">{currentNote.title}</h2>
               </div>
             )}
 
@@ -584,8 +585,8 @@ export default function NotesPage() {
                   <div>
                     <div className="flex items-center justify-between mb-6">
                       <div>
-                        <h2 className="text-base font-black text-white">{currentNote.title}</h2>
-                        <p className="text-xs text-zinc-600 mt-0.5">{currentNote.content.length} cards · tap a card to flip</p>
+                        <h2 className="text-base font-display font-bold text-ink">{currentNote.title}</h2>
+                        <p className="text-xs text-ink-muted mt-0.5">{currentNote.content.length} cards · tap a card to flip</p>
                       </div>
                     </div>
                     <FlashcardView cards={currentNote.content} />
@@ -594,8 +595,8 @@ export default function NotesPage() {
                 : (
                   <div>
                     <div className="mb-6">
-                      <h2 className="text-base font-black text-white">{currentNote.title}</h2>
-                      <p className="text-xs text-zinc-600 mt-0.5">{currentNote.content.length} questions</p>
+                      <h2 className="text-base font-display font-bold text-ink">{currentNote.title}</h2>
+                      <p className="text-xs text-ink-muted mt-0.5">{currentNote.content.length} questions</p>
                     </div>
                     <QuizView questions={currentNote.content} />
                   </div>
@@ -604,59 +605,59 @@ export default function NotesPage() {
           </div>
         ) : (
           <div className="flex flex-col items-center justify-center h-full text-center py-16">
-            <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-violet-600/15 to-fuchsia-600/15 border border-violet-500/15 flex items-center justify-center mb-4">
-              <Sparkles size={20} className="text-violet-500/50" />
+            <div className="w-14 h-14 rounded-2xl bg-map border border-sand flex items-center justify-center mb-4">
+              <Compass size={20} className="text-ink-faint" />
             </div>
-            <p className="text-sm font-semibold text-zinc-500">Ready to generate</p>
-            <p className="text-xs text-zinc-700 mt-1.5 max-w-[220px]">Choose a subject and topic, then hit Generate.</p>
+            <p className="text-sm font-bold text-ink-muted">Ready to generate</p>
+            <p className="text-xs text-ink-faint mt-1.5 max-w-[220px]">Choose a subject and topic, then hit Generate.</p>
           </div>
         )}
       </div>
 
-      {/* Floating AI Chatbot overlay inside the OutputPanel */}
+      {/* Floating Basecamp chat overlay inside the OutputPanel */}
       {currentNote && !isInteractive && (
         <>
-          {/* Glowing chat toggle button */}
+          {/* Chat toggle button */}
           <div className="absolute bottom-5 right-5 z-40">
             <button
               onClick={() => setChatOpen(prev => !prev)}
-              aria-label="Ask AI Assistant"
-              className={`w-12 h-12 rounded-full text-white shadow-lg flex items-center justify-center transition-all duration-300 transform hover:scale-110 active:scale-95 neon-glow-violet
-                ${chatOpen 
-                  ? 'bg-gradient-to-r from-red-500 to-rose-600 hover:from-red-400 hover:to-rose-500 rotate-90' 
-                  : 'bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500'
+              aria-label="Ask Basecamp"
+              className={`w-12 h-12 rounded-full text-white shadow-md flex items-center justify-center transition-all duration-300 transform hover:scale-110 active:scale-95
+                ${chatOpen
+                  ? 'bg-ink hover:bg-ink/80 rotate-90'
+                  : 'bg-ember hover:bg-ember-dark'
                 }`}
             >
-              {chatOpen ? <XCircle size={20} /> : <MessageSquare size={18} className="animate-pulse" />}
+              {chatOpen ? <XCircle size={20} /> : <MessageSquare size={18} />}
             </button>
           </div>
 
           {/* Floating Slide-in chat window */}
           {chatOpen && (
-            <div className="absolute bottom-20 right-5 w-80 sm:w-[380px] h-[450px] rounded-2xl glass-panel border border-violet-500/20 shadow-2xl flex flex-col z-50 overflow-hidden transition-all duration-300">
+            <div className="absolute bottom-20 right-5 w-80 sm:w-[380px] h-[450px] rounded-2xl bg-parchment border border-sand shadow-xl flex flex-col z-50 overflow-hidden transition-all duration-300">
               {/* Chat Header */}
-              <div className="px-4 py-3 border-b border-white/[0.08] bg-white/[0.02] flex items-center justify-between">
+              <div className="px-4 py-3 border-b border-sand bg-map flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <Sparkles size={14} className="text-violet-400 animate-pulse" />
-                  <span className="text-[10px] font-bold text-white uppercase tracking-wider">AI Study Assistant</span>
+                  <Compass size={14} className="text-ember-dark" />
+                  <span className="text-[10px] font-bold text-ink uppercase tracking-wider">Basecamp</span>
                 </div>
-                <button onClick={() => setChatOpen(false)} className="text-zinc-500 hover:text-zinc-300 text-xs">Close</button>
+                <button onClick={() => setChatOpen(false)} className="text-ink-muted hover:text-ink text-xs">Close</button>
               </div>
-              
+
               {/* Chat History */}
               <div className="flex-1 overflow-y-auto custom-scrollbar p-4 space-y-3">
                 {chatHistory.length === 0 ? (
-                  <div className="text-center text-zinc-500 text-xs mt-20 space-y-2.5">
-                    <Brain size={24} className="mx-auto text-zinc-600 animate-bounce" />
+                  <div className="text-center text-ink-muted text-xs mt-20 space-y-2.5">
+                    <Brain size={24} className="mx-auto text-ink-faint" />
                     <p>Ask me anything about these study notes!</p>
                   </div>
                 ) : (
                   chatHistory.map((m, idx) => (
                     <div key={idx} className={`flex ${m.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
                       <div className={`max-w-[85%] rounded-2xl px-3.5 py-2 text-xs leading-relaxed ${
-                        m.sender === 'user' 
-                          ? 'bg-gradient-to-r from-violet-600 to-violet-700 text-white rounded-br-none' 
-                          : 'bg-white/[0.05] border border-white/[0.08] text-zinc-200 rounded-bl-none markdown-dark'
+                        m.sender === 'user'
+                          ? 'bg-ember text-white rounded-br-none'
+                          : 'bg-white border border-sand text-ink rounded-bl-none markdown-atlas'
                       }`}>
                         {m.sender === 'user' ? m.text : <ReactMarkdown>{m.text}</ReactMarkdown>}
                       </div>
@@ -665,8 +666,8 @@ export default function NotesPage() {
                 )}
                 {chatLoading && (
                   <div className="flex justify-start">
-                    <div className="bg-white/[0.04] border border-white/[0.06] text-zinc-500 rounded-2xl rounded-bl-none px-4 py-2.5 text-xs flex items-center gap-2">
-                      <Loader2 size={12} className="animate-spin text-violet-400" />
+                    <div className="bg-white border border-sand text-ink-muted rounded-2xl rounded-bl-none px-4 py-2.5 text-xs flex items-center gap-2">
+                      <Loader2 size={12} className="animate-spin text-ember-dark" />
                       <span>Thinking...</span>
                     </div>
                   </div>
@@ -674,7 +675,7 @@ export default function NotesPage() {
               </div>
 
               {/* Input Form */}
-              <form onSubmit={handleSendChat} className="p-3 border-t border-white/[0.08] bg-white/[0.01] flex gap-2">
+              <form onSubmit={handleSendChat} className="p-3 border-t border-sand bg-map flex gap-2">
                 <input
                   type="text"
                   value={chatMessage}
@@ -682,12 +683,12 @@ export default function NotesPage() {
                   placeholder="Ask a question..."
                   required
                   disabled={chatLoading}
-                  className="flex-1 bg-white/[0.05] border border-white/[0.08] text-zinc-200 placeholder-zinc-700 rounded-xl px-3 py-2 text-xs focus:outline-none focus:border-violet-500/50 transition-all disabled:opacity-50"
+                  className="flex-1 bg-white border border-sand text-ink placeholder-ink-faint rounded-xl px-3 py-2 text-xs focus:outline-none focus:border-ember transition-all disabled:opacity-50"
                 />
                 <button
                   type="submit"
                   disabled={chatLoading}
-                  className="p-2 bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 rounded-xl text-white transition-all transform hover:scale-105 active:scale-95 disabled:opacity-50"
+                  className="p-2 bg-ember hover:bg-ember-dark rounded-xl text-white transition-all transform hover:scale-105 active:scale-95 disabled:opacity-50"
                 >
                   <Send size={13} />
                 </button>
@@ -704,9 +705,9 @@ export default function NotesPage() {
       {/* Hidden PDF element */}
       <div className="hidden">
         <div id="printable-pdf-content" style={{ width: '750px', background: 'white', color: 'black' }}>
-          <div style={{ padding: '40px', borderBottom: '3px solid #7c3aed' }}>
-            <h1 style={{ fontSize: '24px', fontWeight: 900, color: '#1e1b4b', margin: 0 }}>{currentNote?.title}</h1>
-            <p style={{ color: '#9ca3af', marginTop: '6px', fontSize: '13px' }}>StudySync AI Notes</p>
+          <div style={{ padding: '40px', borderBottom: '3px solid #E76F51' }}>
+            <h1 style={{ fontSize: '24px', fontWeight: 700, color: '#2B2B26', margin: 0 }}>{currentNote?.title}</h1>
+            <p style={{ color: '#7A7566', marginTop: '6px', fontSize: '13px' }}>StudySync study notes</p>
           </div>
           <div style={{ padding: '40px' }}>
             {currentNote && (currentNote.type === 'detailed' || currentNote.type === 'short') && (
@@ -717,20 +718,20 @@ export default function NotesPage() {
       </div>
 
       <div className="mb-6">
-        <p className="text-[10px] font-bold text-violet-400 uppercase tracking-widest mb-1">AI-Powered</p>
-        <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight">Study Notes</h1>
+        <p className="text-[10px] font-bold text-ember-dark uppercase tracking-widest mb-1">Field notes</p>
+        <h1 className="text-2xl sm:text-3xl font-display font-bold text-ink tracking-tight">Study notes</h1>
       </div>
 
       {/* Mobile toggle */}
       <div className="lg:hidden space-y-4">
-        <div className="flex bg-white/[0.04] border border-white/[0.08] rounded-xl p-1 gap-1">
+        <div className="flex bg-parchment border border-sand rounded-xl p-1 gap-1">
           <button onClick={() => setShowForm(true)}
-            className={`flex-1 py-2 rounded-lg text-xs font-semibold transition-all ${showForm ? 'bg-white/[0.08] text-white' : 'text-zinc-500 hover:text-zinc-300'}`}>
+            className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all ${showForm ? 'bg-white text-ink shadow-sm' : 'text-ink-muted hover:text-ink'}`}>
             Generate
           </button>
           <button onClick={() => setShowForm(false)}
-            className={`flex-1 py-2 rounded-lg text-xs font-semibold transition-all ${!showForm ? 'bg-white/[0.08] text-white' : 'text-zinc-500 hover:text-zinc-300'}`}>
-            Output {currentNote && <span className="text-violet-400 ml-1">●</span>}
+            className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all ${!showForm ? 'bg-white text-ink shadow-sm' : 'text-ink-muted hover:text-ink'}`}>
+            Output {currentNote && <span className="text-ember-dark ml-1">●</span>}
           </button>
         </div>
         {showForm ? FormPanel : OutputPanel}

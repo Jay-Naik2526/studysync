@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { TrendingUp, CalendarCheck, CalendarX, BookOpen, AlertTriangle, CheckCircle, ArrowUpRight, Microsoft, Link, Unlink, RefreshCw, Loader2, X, Clock, HelpCircle } from 'lucide-react';
+import { TrendingUp, CalendarCheck, CalendarX, BookOpen, AlertTriangle, CheckCircle, ArrowUpRight, Link, Unlink, RefreshCw, Loader2, X, Clock, HelpCircle } from 'lucide-react';
 import { dashboardAPI, sapAPI } from '../api';
 
 function Ring({ pct, size = 110, stroke = 10, color }) {
@@ -8,7 +8,7 @@ function Ring({ pct, size = 110, stroke = 10, color }) {
   const offset = circ - (Math.min(pct, 100) / 100) * circ;
   return (
     <svg width={size} height={size} className="-rotate-90" style={{ minWidth: size }}>
-      <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth={stroke} />
+      <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="rgba(43,43,38,0.08)" strokeWidth={stroke} />
       <circle
         cx={size / 2} cy={size / 2} r={r} fill="none"
         stroke={color} strokeWidth={stroke} strokeLinecap="round"
@@ -19,36 +19,34 @@ function Ring({ pct, size = 110, stroke = 10, color }) {
   );
 }
 
-function GaugeCard({ label, pct, color, glow }) {
+function GaugeCard({ label, pct, color }) {
   return (
-    <div className="relative bg-white/[0.04] border border-white/[0.08] rounded-2xl p-5 flex flex-col items-center gap-3 hover:border-white/[0.14] transition-all overflow-hidden group">
-      <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity"
-        style={{ background: `radial-gradient(ellipse at center, ${glow} 0%, transparent 70%)` }} />
+    <div className="bg-parchment border border-sand rounded-2xl p-5 flex flex-col items-center gap-3 hover:border-sand-dark transition-all shadow-sm">
       <div className="relative">
         <Ring pct={pct} color={color} />
-        <span className="absolute inset-0 flex items-center justify-center text-xl font-black text-white">{pct}%</span>
+        <span className="absolute inset-0 flex items-center justify-center text-xl font-display font-bold text-ink tabular-nums">{pct}%</span>
       </div>
-      <p className="text-xs font-medium text-zinc-400 relative">{label}</p>
+      <p className="text-xs font-bold text-ink-muted">{label}</p>
     </div>
   );
 }
 
 function StatCard({ icon: Icon, label, value, accent }) {
   return (
-    <div className="bg-white/[0.04] border border-white/[0.08] rounded-2xl p-4 flex items-center gap-3 hover:border-white/[0.14] transition-all">
-      <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: accent + '18' }}>
+    <div className="bg-parchment border border-sand rounded-2xl p-4 flex items-center gap-3 hover:border-sand-dark transition-all shadow-sm">
+      <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: accent + '22' }}>
         <Icon size={16} style={{ color: accent }} />
       </div>
       <div className="min-w-0">
-        <p className="text-[10px] text-zinc-600 font-medium uppercase tracking-wide leading-none">{label}</p>
-        <p className="text-xl font-black text-white leading-tight mt-0.5">{value}</p>
+        <p className="text-[10px] text-ink-muted font-bold uppercase tracking-wide leading-none">{label}</p>
+        <p className="text-xl font-display font-bold text-ink leading-tight mt-0.5 tabular-nums">{value}</p>
       </div>
     </div>
   );
 }
 
 function BarChart({ data, color, valueKey = 'value', nameKey = 'name', unitSuffix = '' }) {
-  if (!data?.length) return <div className="flex items-center justify-center h-full text-zinc-700 text-xs">No data yet</div>;
+  if (!data?.length) return <div className="flex items-center justify-center h-full text-ink-faint text-xs">No data yet</div>;
   const max = Math.max(...data.map(d => d[valueKey] ?? 0), 1);
   return (
     <div className="flex items-end gap-1.5 h-full px-1 pt-2">
@@ -56,12 +54,12 @@ function BarChart({ data, color, valueKey = 'value', nameKey = 'name', unitSuffi
         const pct = ((item[valueKey] ?? 0) / max) * 100;
         return (
           <div key={i} className="flex flex-col items-center gap-1 flex-1 h-full justify-end group min-w-0">
-            <span className="text-[9px] text-zinc-600 font-semibold opacity-0 group-hover:opacity-100 transition-opacity truncate">
+            <span className="text-[9px] text-ink-muted font-bold opacity-0 group-hover:opacity-100 transition-opacity truncate tabular-nums">
               {item[valueKey]}{unitSuffix}
             </span>
             <div className="w-full max-w-[28px] mx-auto rounded-t-md transition-all duration-700"
-              style={{ height: `${Math.max(pct, 4)}%`, background: `linear-gradient(180deg, ${color} 0%, ${color}88 100%)` }} />
-            <span className="text-[9px] text-zinc-700 truncate w-full text-center">
+              style={{ height: `${Math.max(pct, 4)}%`, background: color }} />
+            <span className="text-[9px] text-ink-faint truncate w-full text-center">
               {(item[nameKey] || '').substring(0, 5)}
             </span>
           </div>
@@ -74,26 +72,26 @@ function BarChart({ data, color, valueKey = 'value', nameKey = 'name', unitSuffi
 // ── Microsoft Calendar Link Help Modal ──
 function MicrosoftHelpModal({ onClose }) {
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
-      <div className="bg-[#0d0c17] border border-white/[0.1] rounded-2xl p-6 w-full max-w-md shadow-2xl">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-ink/40 backdrop-blur-sm">
+      <div className="bg-parchment border border-sand rounded-2xl p-6 w-full max-w-md shadow-xl">
         <div className="flex items-center justify-between mb-5">
-          <h3 className="text-base font-bold text-white flex items-center gap-2">
-            <Clock size={16} className="text-fuchsia-400" /> How to find Calendar Feed URL
+          <h3 className="text-base font-display font-bold text-ink flex items-center gap-2">
+            <Clock size={16} className="text-ember-dark" /> How to find Calendar Feed URL
           </h3>
-          <button onClick={onClose} className="text-zinc-600 hover:text-zinc-300 transition-colors"><X size={18} /></button>
+          <button onClick={onClose} className="text-ink-faint hover:text-ink transition-colors"><X size={18} /></button>
         </div>
-        <div className="space-y-4 text-xs text-zinc-400 leading-relaxed">
+        <div className="space-y-4 text-xs text-ink-muted leading-relaxed">
           <p>Since your Teams assignment deadlines are hosted securely on your college Outlook account, follow these simple steps to sync them to StudySync in real-time:</p>
           <ol className="list-decimal pl-4 space-y-2">
-            <li>Open official <a href="https://outlook.office.com" target="_blank" rel="noreferrer" className="text-violet-400 underline">Outlook Web Web-App</a> and log in with your college credentials.</li>
-            <li>Click the ⚙️ **Settings Gear Icon** at the top right.</li>
-            <li>Navigate to **Calendar** ➡️ **Shared Calendars**.</li>
-            <li>Go to the **Publish a Calendar** section.</li>
-            <li>Select **Calendar** and set permissions to **Can view all details**.</li>
-            <li>Click **Publish**, copy the **ICS link** (starts with `https://` or `webcal://`) and paste it inside StudySync!</li>
+            <li>Open official <a href="https://outlook.office.com" target="_blank" rel="noreferrer" className="text-trail-dark underline">Outlook Web App</a> and log in with your college credentials.</li>
+            <li>Click the <strong className="text-ink">Settings gear icon</strong> at the top right.</li>
+            <li>Navigate to <strong className="text-ink">Calendar</strong> → <strong className="text-ink">Shared Calendars</strong>.</li>
+            <li>Go to the <strong className="text-ink">Publish a Calendar</strong> section.</li>
+            <li>Select <strong className="text-ink">Calendar</strong> and set permissions to <strong className="text-ink">Can view all details</strong>.</li>
+            <li>Click <strong className="text-ink">Publish</strong>, copy the <strong className="text-ink">ICS link</strong> (starts with <code className="bg-map border border-sand rounded px-1">https://</code> or <code className="bg-map border border-sand rounded px-1">webcal://</code>) and paste it inside StudySync!</li>
           </ol>
-          <div className="bg-violet-500/10 border border-violet-500/20 p-3 rounded-xl mt-2 text-violet-300">
-            💡 <strong>Why ICS?</strong> Bypasses campus firewalls securely and keeps all Teams & Outlook assignment deadlines auto-updating dynamically!
+          <div className="bg-sage-pale border border-sage/30 p-3 rounded-xl mt-2 text-sage-dark">
+            <strong>Why ICS?</strong> Bypasses campus firewalls securely and keeps all Teams &amp; Outlook assignment deadlines auto-updating dynamically!
           </div>
         </div>
       </div>
@@ -120,32 +118,32 @@ function CalendarModal({ onClose, onSaved }) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
-      <div className="bg-[#0d0c17] border border-white/[0.1] rounded-2xl p-6 w-full max-w-sm shadow-2xl">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-ink/40 backdrop-blur-sm">
+      <div className="bg-parchment border border-sand rounded-2xl p-6 w-full max-w-sm shadow-xl">
         <div className="flex items-center justify-between mb-5">
           <div>
-            <h3 className="text-base font-bold text-white flex items-center gap-1.5">
-              <Clock size={16} className="text-fuchsia-400" /> Connect Teams
+            <h3 className="text-base font-display font-bold text-ink flex items-center gap-1.5">
+              <Clock size={16} className="text-ember-dark" /> Connect Teams
             </h3>
-            <p className="text-xs text-zinc-500 mt-0.5">Sync upcoming assignment deadlines.</p>
+            <p className="text-xs text-ink-muted mt-0.5">Sync upcoming assignment deadlines.</p>
           </div>
-          <button onClick={onClose} className="text-zinc-600 hover:text-zinc-300 transition-colors"><X size={18} /></button>
+          <button onClick={onClose} className="text-ink-faint hover:text-ink transition-colors"><X size={18} /></button>
         </div>
         <form onSubmit={handleSave} className="space-y-3">
           <div>
             <div className="flex justify-between items-center mb-1.5">
-              <label className="block text-[10px] font-bold text-zinc-600 uppercase tracking-widest leading-none">Outlook ICS Calendar URL</label>
-              <button type="button" onClick={() => setShowHelp(true)} className="text-[10px] font-bold text-violet-400 flex items-center gap-0.5 leading-none">
+              <label className="block text-[10px] font-bold text-ink-muted uppercase tracking-widest leading-none">Outlook ICS Calendar URL</label>
+              <button type="button" onClick={() => setShowHelp(true)} className="text-[10px] font-bold text-ember-dark flex items-center gap-0.5 leading-none">
                 <HelpCircle size={10} /> Find URL
               </button>
             </div>
             <input type="url" placeholder="Paste webcal:// or https:// ICS link..." value={calUrl} onChange={e => setCalUrl(e.target.value)}
-              className="w-full bg-white/[0.05] border border-white/[0.08] text-white placeholder-zinc-600 rounded-xl px-3 py-2.5 text-xs focus:outline-none focus:border-violet-500/50" required />
+              className="w-full bg-white border border-sand text-ink placeholder-ink-faint rounded-xl px-3 py-2.5 text-xs focus:outline-none focus:border-ember" required />
           </div>
-          {err && <p className="text-xs text-red-400">{err}</p>}
+          {err && <p className="text-xs text-danger">{err}</p>}
           <button type="submit" disabled={saving}
-            className="w-full py-2.5 bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 disabled:opacity-50 text-white font-semibold rounded-xl text-xs transition-all shadow-lg shadow-violet-500/20">
-            {saving ? 'Connecting…' : 'Connect Teams Feed'}
+            className="w-full py-2.5 bg-ember hover:bg-ember-dark disabled:opacity-50 text-white font-bold rounded-xl text-xs transition-all shadow-sm">
+            {saving ? 'Connecting…' : 'Connect Teams feed'}
           </button>
         </form>
       </div>
@@ -217,15 +215,15 @@ export default function DashboardPage({ onNavigate }) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
         <div className="flex flex-col items-center gap-3">
-          <div className="w-9 h-9 rounded-full border-2 border-violet-500/30 border-t-violet-500 animate-spin" />
-          <p className="text-zinc-500 text-sm">Loading dashboard…</p>
+          <div className="w-9 h-9 rounded-full border-2 border-ember/25 border-t-ember animate-spin" />
+          <p className="text-ink-muted text-sm">Loading dashboard…</p>
         </div>
       </div>
     );
   }
 
   if (!data) {
-    return <div className="flex items-center justify-center min-h-[60vh] text-zinc-500 text-sm px-4 text-center">Failed to load. Please sign out and back in.</div>;
+    return <div className="flex items-center justify-center min-h-[60vh] text-ink-muted text-sm px-4 text-center">Failed to load. Please sign out and back in.</div>;
   }
 
   const { stats, charts, lowAttendanceSubjects } = data;
@@ -236,41 +234,41 @@ export default function DashboardPage({ onNavigate }) {
     <div className="max-w-5xl mx-auto px-4 py-8 sm:px-6 md:px-8">
       {/* Header */}
       <div className="mb-7">
-        <p className="text-[10px] font-bold text-violet-400 uppercase tracking-widest mb-1">Overview</p>
-        <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight">Dashboard</h1>
+        <p className="text-[10px] font-bold text-ember-dark uppercase tracking-widest mb-1">Base camp</p>
+        <h1 className="text-2xl sm:text-3xl font-display font-bold text-ink tracking-tight">Dashboard</h1>
       </div>
 
       {/* Row 1: Gauges + 4 stat cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-3">
         {/* Gauges span 2 cols on all sizes */}
         <div className="col-span-2 grid grid-cols-2 gap-3">
-          <GaugeCard label="Attendance" pct={stats.attendance} color="#a78bfa" glow="rgba(167,139,250,0.08)" />
-          <GaugeCard label="Avg. Marks" pct={stats.averageMarks} color="#f0abfc" glow="rgba(240,171,252,0.08)" />
+          <GaugeCard label="Attendance" pct={stats.attendance} color="#7C9070" />
+          <GaugeCard label="Avg. marks" pct={stats.averageMarks} color="#5B7C99" />
         </div>
         {/* Stat cards: 2×2 on mobile, each 1 col on sm+ */}
-        <StatCard icon={CalendarCheck} label="Present" value={stats.daysPresent} accent="#34d399" />
-        <StatCard icon={CalendarX} label="Absences" value={stats.absences} accent="#f87171" />
-        <StatCard icon={BookOpen} label="Subjects" value={stats.subjects} accent="#a78bfa" />
-        <StatCard icon={TrendingUp} label="Total Marks" value={stats.totalMarks} accent="#fbbf24" />
+        <StatCard icon={CalendarCheck} label="Present" value={stats.daysPresent} accent="#7C9070" />
+        <StatCard icon={CalendarX} label="Absences" value={stats.absences} accent="#A93B2B" />
+        <StatCard icon={BookOpen} label="Subjects" value={stats.subjects} accent="#5B7C99" />
+        <StatCard icon={TrendingUp} label="Total marks" value={stats.totalMarks} accent="#A8842C" />
       </div>
 
-      {/* Microsoft Teams Deadlines Alert Strip */}
-      <div className="bg-white/[0.04] border border-white/[0.08] rounded-2xl p-4 sm:p-5 mb-3">
+      {/* Microsoft Teams Deadlines Strip */}
+      <div className="bg-parchment border border-sand rounded-2xl p-4 sm:p-5 mb-3 shadow-sm">
         <div className="flex items-center justify-between gap-3 flex-wrap">
           <div className="flex items-center gap-3">
-            <div className={`w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 ${sapStatus?.microsoftCalendarUrl ? 'bg-fuchsia-500/15' : 'bg-zinc-800'}`}>
-              <Clock size={15} className={sapStatus?.microsoftCalendarUrl ? 'text-fuchsia-400' : 'text-zinc-600'} />
+            <div className={`w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 ${sapStatus?.microsoftCalendarUrl ? 'bg-sage-pale' : 'bg-map'}`}>
+              <Clock size={15} className={sapStatus?.microsoftCalendarUrl ? 'text-sage-dark' : 'text-ink-faint'} />
             </div>
             <div>
-              <p className="text-sm font-semibold text-white flex items-center gap-2">
-                Microsoft Teams Integration
-                {sapStatus?.microsoftCalendarUrl && <span className="text-[10px] font-bold text-fuchsia-400 bg-fuchsia-500/10 px-2 py-0.5 rounded-full">Connected</span>}
+              <p className="text-sm font-bold text-ink flex items-center gap-2">
+                Microsoft Teams integration
+                {sapStatus?.microsoftCalendarUrl && <span className="text-[10px] font-bold text-sage-dark bg-sage-pale px-2 py-0.5 rounded-full">Connected</span>}
               </p>
-              <p className="text-xs text-zinc-600 mt-0.5">
-                {sapStatus?.microsoftCalendarUrl 
+              <p className="text-xs text-ink-muted mt-0.5">
+                {sapStatus?.microsoftCalendarUrl
                   ? sapStatus.lastCalendarSync
                     ? `Synced successfully. Tracking ${deadlines.length} active deadline(s).`
-                    : 'Feed linked — Syncing assignment deadlines...'
+                    : 'Feed linked — syncing assignment deadlines...'
                   : 'Sync your university Teams & Outlook assignment deadlines in real-time.'}
               </p>
             </div>
@@ -280,52 +278,52 @@ export default function DashboardPage({ onNavigate }) {
               <>
                 <button
                   onClick={handleCalSync} disabled={syncingCal}
-                  className="flex items-center gap-1.5 px-4 py-2 bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 disabled:opacity-50 text-white rounded-xl text-xs font-semibold transition-all">
+                  className="flex items-center gap-1.5 px-4 py-2 bg-ember hover:bg-ember-dark disabled:opacity-50 text-white rounded-xl text-xs font-bold transition-all shadow-sm">
                   {syncingCal ? <Loader2 size={13} className="animate-spin" /> : <RefreshCw size={13} />}
                   {syncingCal ? 'Syncing…' : 'Sync'}
                 </button>
-                <button onClick={handleCalDisconnect} className="px-3 py-2 bg-white/[0.05] hover:bg-red-500/10 border border-white/[0.08] hover:border-red-500/20 rounded-xl transition-all">
-                  <Unlink size={13} className="text-zinc-500 hover:text-red-400" />
+                <button onClick={handleCalDisconnect} className="px-3 py-2 bg-white hover:bg-danger-pale border border-sand hover:border-danger/30 rounded-xl transition-all group">
+                  <Unlink size={13} className="text-ink-muted group-hover:text-danger" />
                 </button>
               </>
             ) : (
               <button onClick={() => setShowCalModal(true)}
-                className="flex items-center gap-1.5 px-4 py-2 bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 text-white rounded-xl text-xs font-semibold transition-all">
+                className="flex items-center gap-1.5 px-4 py-2 bg-ember hover:bg-ember-dark text-white rounded-xl text-xs font-bold transition-all shadow-sm">
                 <Link size={13} /> Link Teams
               </button>
             )}
           </div>
         </div>
-        
+
         {/* Deadlines Checklist Box */}
         {sapStatus?.microsoftCalendarUrl && deadlines.length > 0 && (
-          <div className="mt-4 border-t border-white/[0.06] pt-4">
-            <h4 className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-3">Upcoming Assignment Deadlines</h4>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-60 overflow-y-auto pr-1">
+          <div className="mt-4 border-t border-sand pt-4">
+            <h4 className="text-[10px] font-bold text-ink-muted uppercase tracking-widest mb-3">Upcoming assignment deadlines</h4>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-60 overflow-y-auto pr-1 custom-scrollbar">
               {deadlines.map((dl, idx) => {
                 const hoursLeft = Math.round(dl.remainingMs / (1000 * 60 * 60));
                 const daysLeft = Math.round(hoursLeft / 24);
                 const isOverdue = dl.remainingMs < 0;
-                
-                let colorClass = 'border-emerald-500/25 bg-emerald-500/5 text-emerald-400';
+
+                let colorClass = 'border-sage/30 bg-sage-pale text-sage-dark';
                 let timeText = `${daysLeft} days left`;
-                
+
                 if (isOverdue) {
-                  colorClass = 'border-zinc-500/20 bg-white/[0.02] text-zinc-500';
+                  colorClass = 'border-sand bg-map text-ink-faint';
                   timeText = 'Overdue';
                 } else if (hoursLeft <= 24) {
-                  colorClass = 'border-red-500/25 bg-red-500/5 text-red-400 animate-pulse';
+                  colorClass = 'border-danger/30 bg-danger-pale text-danger animate-pulse';
                   timeText = `${hoursLeft} hours left!`;
                 } else if (daysLeft <= 3) {
-                  colorClass = 'border-amber-500/25 bg-amber-500/5 text-amber-400';
+                  colorClass = 'border-caution/30 bg-caution-pale text-caution';
                   timeText = `${daysLeft} days left`;
                 }
 
                 return (
-                  <div key={idx} className={`flex items-center justify-between gap-3 border rounded-xl p-3 hover:border-white/[0.1] transition-all`}>
+                  <div key={idx} className="flex items-center justify-between gap-3 border border-sand bg-white/50 rounded-xl p-3 hover:border-sand-dark transition-all">
                     <div className="min-w-0">
-                      <p className="text-xs font-bold text-white truncate max-w-[200px]">{dl.title}</p>
-                      <p className="text-[10px] text-zinc-500 mt-0.5">{new Date(dl.dueDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</p>
+                      <p className="text-xs font-bold text-ink truncate max-w-[200px]">{dl.title}</p>
+                      <p className="text-[10px] text-ink-muted mt-0.5">{new Date(dl.dueDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</p>
                     </div>
                     <span className={`inline-flex items-center gap-1 text-[10px] font-bold border rounded-full px-2.5 py-0.5 ${colorClass}`}>
                       {timeText}
@@ -340,18 +338,18 @@ export default function DashboardPage({ onNavigate }) {
 
       {/* Row 2: Two charts side by side */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
-        <div className="bg-white/[0.04] border border-white/[0.08] rounded-2xl p-5 hover:border-white/[0.13] transition-all">
-          <p className="text-sm font-bold text-white mb-0.5">Skippable Classes</p>
-          <p className="text-[10px] text-zinc-600 mb-3">Remaining per subject</p>
+        <div className="bg-parchment border border-sand rounded-2xl p-5 hover:border-sand-dark transition-all shadow-sm">
+          <p className="text-sm font-display font-bold text-ink mb-0.5">Skippable classes</p>
+          <p className="text-[10px] text-ink-muted mb-3">Remaining per subject</p>
           <div className="h-28">
-            <BarChart data={skippableData} color="#34d399" valueKey="value" nameKey="name" />
+            <BarChart data={skippableData} color="#7C9070" valueKey="value" nameKey="name" />
           </div>
         </div>
-        <div className="bg-white/[0.04] border border-white/[0.08] rounded-2xl p-5 hover:border-white/[0.13] transition-all">
-          <p className="text-sm font-bold text-white mb-0.5">Marks by Subject</p>
-          <p className="text-[10px] text-zinc-600 mb-3">Score percentage</p>
+        <div className="bg-parchment border border-sand rounded-2xl p-5 hover:border-sand-dark transition-all shadow-sm">
+          <p className="text-sm font-display font-bold text-ink mb-0.5">Marks by subject</p>
+          <p className="text-[10px] text-ink-muted mb-3">Score percentage</p>
           <div className="h-28">
-            <BarChart data={marksData} color="#a78bfa" valueKey="value" nameKey="name" unitSuffix="%" />
+            <BarChart data={marksData} color="#5B7C99" valueKey="value" nameKey="name" unitSuffix="%" />
           </div>
         </div>
       </div>
@@ -359,28 +357,28 @@ export default function DashboardPage({ onNavigate }) {
       {/* Row 3: Alerts + Quick links */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         {/* Alerts */}
-        <div className="bg-white/[0.04] border border-white/[0.08] rounded-2xl p-5 hover:border-white/[0.13] transition-all">
-          <p className="text-sm font-bold text-white mb-3 flex items-center gap-2">
-            <AlertTriangle size={14} className="text-amber-400" />Attendance Alerts
+        <div className="bg-parchment border border-sand rounded-2xl p-5 hover:border-sand-dark transition-all shadow-sm">
+          <p className="text-sm font-display font-bold text-ink mb-3 flex items-center gap-2">
+            <AlertTriangle size={14} className="text-caution" />Attendance alerts
           </p>
           <div className="space-y-3">
             {lowAttendanceSubjects?.length > 0 ? (
               lowAttendanceSubjects.map((s, i) => (
                 <div key={i} className="space-y-1.5">
                   <div className="flex items-center justify-between gap-2">
-                    <span className="text-sm text-zinc-200 truncate">{s.name}</span>
-                    <span className="text-xs font-bold text-red-400 flex-shrink-0">{s.percentage.toFixed(1)}%</span>
+                    <span className="text-sm text-ink truncate">{s.name}</span>
+                    <span className="text-xs font-bold text-danger flex-shrink-0 tabular-nums">{s.percentage.toFixed(1)}%</span>
                   </div>
-                  <div className="w-full bg-white/[0.05] rounded-full h-1.5">
-                    <div className="h-1.5 rounded-full bg-gradient-to-r from-amber-500 to-red-500 transition-all" style={{ width: `${s.percentage}%` }} />
+                  <div className="w-full bg-ink/10 rounded-full h-1.5">
+                    <div className="h-1.5 rounded-full bg-danger transition-all" style={{ width: `${s.percentage}%` }} />
                   </div>
-                  <p className="text-[10px] text-zinc-700">{s.remainingSkippable} skips left</p>
+                  <p className="text-[10px] text-ink-faint">{s.remainingSkippable} skips left</p>
                 </div>
               ))
             ) : (
-              <div className="flex items-center gap-2 text-emerald-400">
+              <div className="flex items-center gap-2 text-sage-dark">
                 <CheckCircle size={15} />
-                <span className="text-sm font-medium">All subjects above 80%</span>
+                <span className="text-sm font-bold">All subjects above 80%</span>
               </div>
             )}
           </div>
@@ -389,22 +387,22 @@ export default function DashboardPage({ onNavigate }) {
         {/* Quick links 2×2 grid */}
         <div className="grid grid-cols-2 gap-3">
           {[
-            { label: 'Attendance', view: 'attendance', color: '#34d399', sub: 'Track classes' },
-            { label: 'Marks', view: 'marks', color: '#a78bfa', sub: 'Grades & tasks' },
-            { label: 'Subjects', view: 'subjects', color: '#60a5fa', sub: 'Manage subjects' },
-            { label: 'AI Notes', view: 'notes', color: '#f0abfc', sub: 'Generate notes' },
+            { label: 'Attendance', view: 'attendance', color: '#7C9070', sub: 'Track classes' },
+            { label: 'Marks', view: 'marks', color: '#5B7C99', sub: 'Grades & tasks' },
+            { label: 'Subjects', view: 'subjects', color: '#A8842C', sub: 'Manage subjects' },
+            { label: 'Notes', view: 'notes', color: '#E76F51', sub: 'Generate notes' },
           ].map(({ label, view, color, sub }) => (
             <button
               key={view}
               onClick={() => onNavigate(view)}
-              className="bg-white/[0.04] border border-white/[0.08] rounded-2xl p-4 text-left hover:border-white/[0.15] hover:bg-white/[0.06] transition-all group"
+              className="bg-parchment border border-sand rounded-2xl p-4 text-left hover:border-sand-dark hover:bg-white/60 transition-all group shadow-sm"
             >
               <div className="flex items-center justify-between mb-2">
                 <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: color }} />
-                <ArrowUpRight size={12} className="text-zinc-700 group-hover:text-zinc-400 transition-colors" />
+                <ArrowUpRight size={12} className="text-ink-faint group-hover:text-ink-muted transition-colors" />
               </div>
-              <p className="text-sm font-bold text-white leading-tight">{label}</p>
-              <p className="text-[10px] text-zinc-600 mt-0.5 leading-tight">{sub}</p>
+              <p className="text-sm font-display font-bold text-ink leading-tight">{label}</p>
+              <p className="text-[10px] text-ink-muted mt-0.5 leading-tight">{sub}</p>
             </button>
           ))}
         </div>

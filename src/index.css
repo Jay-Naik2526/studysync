@@ -5,111 +5,112 @@
 
 @layer base {
   html {
-    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    font-family: 'Atkinson Hyperlegible', system-ui, -apple-system, sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
 
   body {
-    background: #07070c;
+    background: #F4EEE0;
+    color: #2B2B26;
   }
 }
 
 .custom-scrollbar {
   scrollbar-width: thin;
-  scrollbar-color: rgba(255,255,255,0.08) transparent;
+  scrollbar-color: rgba(43,43,38,0.18) transparent;
 }
 
 .custom-scrollbar::-webkit-scrollbar { width: 4px; }
 .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
 .custom-scrollbar::-webkit-scrollbar-thumb {
-  background: rgba(255,255,255,0.08);
+  background: rgba(43,43,38,0.18);
   border-radius: 9999px;
 }
 
-/* ── Markdown dark renderer ───────────────────────────────────── */
-.markdown-dark { color: #d4d4d8; font-size: 0.9rem; line-height: 1.75; }
+/* ── Markdown atlas renderer (light, paper & ink) ─────────────── */
+.markdown-atlas { color: #3A3730; font-size: 0.9rem; line-height: 1.75; }
 
-.markdown-dark h1 { font-size: 1.6rem; font-weight: 900; color: #fff; margin: 1.6rem 0 0.8rem; line-height: 1.2; }
-.markdown-dark h2 { font-size: 1.25rem; font-weight: 800; color: #fff; margin: 1.4rem 0 0.6rem; line-height: 1.3; }
-.markdown-dark h3 { font-size: 1.05rem; font-weight: 700; color: #e4e4e7; margin: 1.2rem 0 0.5rem; }
-.markdown-dark h4 { font-size: 0.95rem; font-weight: 700; color: #a1a1aa; margin: 1rem 0 0.4rem; text-transform: uppercase; letter-spacing: 0.05em; }
+.markdown-atlas h1 { font-family: 'Bricolage Grotesque', sans-serif; font-size: 1.6rem; font-weight: 700; color: #2B2B26; margin: 1.6rem 0 0.8rem; line-height: 1.2; }
+.markdown-atlas h2 { font-family: 'Bricolage Grotesque', sans-serif; font-size: 1.25rem; font-weight: 700; color: #2B2B26; margin: 1.4rem 0 0.6rem; line-height: 1.3; }
+.markdown-atlas h3 { font-family: 'Bricolage Grotesque', sans-serif; font-size: 1.05rem; font-weight: 600; color: #3A3730; margin: 1.2rem 0 0.5rem; }
+.markdown-atlas h4 { font-size: 0.95rem; font-weight: 700; color: #7A7566; margin: 1rem 0 0.4rem; text-transform: uppercase; letter-spacing: 0.05em; }
 
-.markdown-dark p  { margin: 0.6rem 0; color: #d4d4d8; }
-.markdown-dark strong { color: #f4f4f5; font-weight: 700; }
-.markdown-dark em { color: #c4b5fd; font-style: italic; }
-.markdown-dark a  { color: #a78bfa; text-decoration: underline; }
+.markdown-atlas p  { margin: 0.6rem 0; color: #3A3730; }
+.markdown-atlas strong { color: #2B2B26; font-weight: 700; }
+.markdown-atlas em { color: #4A5A40; font-style: italic; }
+.markdown-atlas a  { color: #3E566C; text-decoration: underline; }
 
-.markdown-dark ul { list-style: disc; padding-left: 1.4rem; margin: 0.6rem 0; }
-.markdown-dark ol { list-style: decimal; padding-left: 1.4rem; margin: 0.6rem 0; }
-.markdown-dark li { margin: 0.25rem 0; color: #d4d4d8; }
+.markdown-atlas ul { list-style: disc; padding-left: 1.4rem; margin: 0.6rem 0; }
+.markdown-atlas ol { list-style: decimal; padding-left: 1.4rem; margin: 0.6rem 0; }
+.markdown-atlas li { margin: 0.25rem 0; color: #3A3730; }
 
-.markdown-dark hr { border: none; border-top: 1px solid rgba(255,255,255,0.08); margin: 1.5rem 0; }
+.markdown-atlas hr { border: none; border-top: 1px solid #DDD3B4; margin: 1.5rem 0; }
 
-.markdown-dark blockquote {
-  border-left: 3px solid #7c3aed;
-  background: rgba(124,58,237,0.08);
+.markdown-atlas blockquote {
+  border-left: 3px solid #7C9070;
+  background: #E7ECDF;
   padding: 0.75rem 1rem;
   margin: 1rem 0;
   border-radius: 0 0.5rem 0.5rem 0;
-  color: #c4b5fd;
+  color: #4A5A40;
 }
 
-.markdown-dark code {
-  background: rgba(255,255,255,0.07);
-  border: 1px solid rgba(255,255,255,0.1);
-  color: #c4b5fd;
+.markdown-atlas code {
+  background: #EFE7D3;
+  border: 1px solid #DDD3B4;
+  color: #A33D26;
   padding: 0.15em 0.4em;
   border-radius: 0.3rem;
   font-size: 0.85em;
   font-family: 'Fira Code', 'Consolas', monospace;
 }
 
-.markdown-dark pre {
-  background: rgba(255,255,255,0.05);
-  border: 1px solid rgba(255,255,255,0.08);
+.markdown-atlas pre {
+  background: #EFE7D3;
+  border: 1px solid #DDD3B4;
   border-radius: 0.75rem;
   padding: 1rem 1.25rem;
   overflow-x: auto;
   margin: 1rem 0;
 }
-.markdown-dark pre code {
+.markdown-atlas pre code {
   background: none;
   border: none;
   padding: 0;
-  color: #e4e4e7;
+  color: #2B2B26;
   font-size: 0.85rem;
 }
 
 /* KaTeX — suppress red error color, show gracefully */
-.markdown-dark .katex-error { color: #a78bfa !important; }
-.markdown-dark .katex { font-size: 1em; }
+.markdown-atlas .katex-error { color: #A33D26 !important; }
+.markdown-atlas .katex { font-size: 1em; }
 
 /* Tables */
-.markdown-dark table {
+.markdown-atlas table {
   width: 100%;
   border-collapse: collapse;
   margin: 1rem 0;
   font-size: 0.85rem;
   overflow: hidden;
   border-radius: 0.75rem;
-  border: 1px solid rgba(255,255,255,0.08);
+  border: 1px solid #DDD3B4;
 }
-.markdown-dark thead tr { background: rgba(124,58,237,0.2); }
-.markdown-dark th {
+.markdown-atlas thead tr { background: #E7ECDF; }
+.markdown-atlas th {
   padding: 0.6rem 0.9rem;
   text-align: left;
   font-weight: 700;
-  color: #e4e4e7;
-  border-bottom: 1px solid rgba(255,255,255,0.1);
+  color: #4A5A40;
+  border-bottom: 1px solid #DDD3B4;
 }
-.markdown-dark td {
+.markdown-atlas td {
   padding: 0.55rem 0.9rem;
-  color: #d4d4d8;
-  border-bottom: 1px solid rgba(255,255,255,0.05);
+  color: #3A3730;
+  border-bottom: 1px solid #E9E1CC;
 }
-.markdown-dark tbody tr:last-child td { border-bottom: none; }
-.markdown-dark tbody tr:hover { background: rgba(255,255,255,0.03); }
+.markdown-atlas tbody tr:last-child td { border-bottom: none; }
+.markdown-atlas tbody tr:hover { background: rgba(43,43,38,0.025); }
 
 /* Flashcard 3D flip */
 .flip-card { perspective: 1200px; }
@@ -127,36 +128,11 @@
 .flip-card-back { transform: rotateY(180deg); }
 
 .pdf-export-container {
-  font-family: 'Inter', 'Segoe UI', sans-serif;
+  font-family: 'Atkinson Hyperlegible', 'Segoe UI', sans-serif;
   line-height: 1.6;
 }
 
-/* ── Premium Glassmorphism & Micro-animations ────────────────── */
-
-.glass-panel {
-  background: rgba(13, 12, 23, 0.45);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  box-shadow: 
-    0 4px 30px rgba(0, 0, 0, 0.4),
-    inset 0 1px 1px rgba(255, 255, 255, 0.05);
-}
-
-.glass-panel-interactive {
-  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
-}
-
-.glass-panel-interactive:hover {
-  transform: translateY(-2px);
-  border-color: rgba(124, 58, 237, 0.3);
-  box-shadow: 
-    0 12px 30px rgba(0, 0, 0, 0.5),
-    0 0 15px rgba(124, 58, 237, 0.15),
-    inset 0 1px 1px rgba(255, 255, 255, 0.1);
-}
-
-/* Shimmer Animation for Skeleton Loaders */
+/* Shimmer animation for skeleton loaders (light surfaces) */
 @keyframes shimmer {
   0% {
     background-position: -200% 0;
@@ -169,20 +145,10 @@
 .animate-shimmer {
   background: linear-gradient(
     90deg,
-    rgba(255, 255, 255, 0.03) 25%,
-    rgba(255, 255, 255, 0.08) 50%,
-    rgba(255, 255, 255, 0.03) 75%
+    rgba(43, 43, 38, 0.05) 25%,
+    rgba(43, 43, 38, 0.11) 50%,
+    rgba(43, 43, 38, 0.05) 75%
   );
   background-size: 200% 100%;
   animation: shimmer 1.6s infinite linear;
 }
-
-/* Neon Active State Glows */
-.neon-glow-violet {
-  box-shadow: 0 0 15px rgba(124, 58, 237, 0.35);
-}
-
-.neon-glow-fuchsia {
-  box-shadow: 0 0 15px rgba(217, 70, 239, 0.35);
-}
-

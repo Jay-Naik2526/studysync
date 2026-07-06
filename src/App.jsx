@@ -43,7 +43,7 @@ function App() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-950 text-slate-400 flex items-center justify-center text-sm">
+      <div className="min-h-screen bg-paper text-ink-muted flex items-center justify-center text-sm">
         Loading…
       </div>
     );

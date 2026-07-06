@@ -33,81 +33,83 @@ export default function SubjectsPage() {
     finally { setAdding(false); }
   };
 
+  const inputClass = "w-full bg-white border border-sand text-ink placeholder-ink-faint rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-ember transition-all";
+
   return (
     <div className="max-w-2xl mx-auto px-4 py-8 sm:px-6 md:px-8">
       <div className="mb-7">
-        <p className="text-[10px] font-bold text-violet-400 uppercase tracking-widest mb-1">Config</p>
-        <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight">Subjects</h1>
+        <p className="text-[10px] font-bold text-ember-dark uppercase tracking-widest mb-1">Waypoints</p>
+        <h1 className="text-2xl sm:text-3xl font-display font-bold text-ink tracking-tight">Subjects</h1>
       </div>
 
       {/* Add form */}
-      <div className="bg-white/[0.04] border border-white/[0.08] rounded-2xl p-4 sm:p-5 mb-5">
-        <p className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest mb-4">Add New Subject</p>
+      <div className="bg-parchment border border-sand rounded-2xl p-4 sm:p-5 mb-5 shadow-sm">
+        <p className="text-[10px] font-bold text-ink-muted uppercase tracking-widest mb-4">Add new subject</p>
         <form onSubmit={handleAdd} className="space-y-3">
           <input
             type="text" placeholder="Subject name" value={name}
             onChange={e => setName(e.target.value)}
-            className="w-full bg-white/[0.05] border border-white/[0.08] text-white placeholder-zinc-600 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-violet-500/50 transition-all"
+            className={inputClass}
             required
           />
           <div className="grid grid-cols-2 gap-3">
             <div className="relative">
-              <Hash size={13} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-600" />
+              <Hash size={13} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-ink-faint" />
               <input
                 type="number" placeholder="Total classes" value={total}
                 onChange={e => setTotal(e.target.value)}
-                className="w-full bg-white/[0.05] border border-white/[0.08] text-white placeholder-zinc-600 rounded-xl pl-9 pr-4 py-3 text-sm focus:outline-none focus:border-violet-500/50 transition-all"
+                className={`${inputClass} pl-9`}
                 required
               />
             </div>
             <div className="relative">
-              <Award size={13} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-600" />
+              <Award size={13} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-ink-faint" />
               <input
                 type="number" placeholder="Total marks" value={totalMarks}
                 onChange={e => setTotalMarks(Number(e.target.value))}
-                className="w-full bg-white/[0.05] border border-white/[0.08] text-white placeholder-zinc-600 rounded-xl pl-9 pr-4 py-3 text-sm focus:outline-none focus:border-violet-500/50 transition-all"
+                className={`${inputClass} pl-9`}
                 required
               />
             </div>
           </div>
           <button
             type="submit" disabled={adding}
-            className="w-full py-3 bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 disabled:opacity-50 text-white font-semibold rounded-xl text-sm flex items-center justify-center gap-2 transition-all shadow-lg shadow-violet-500/20"
+            className="w-full py-3 bg-ember hover:bg-ember-dark disabled:opacity-50 text-white font-bold rounded-xl text-sm flex items-center justify-center gap-2 transition-all shadow-sm"
           >
-            <Plus size={15} />{adding ? 'Adding…' : 'Add Subject'}
+            <Plus size={15} />{adding ? 'Adding…' : 'Add subject'}
           </button>
-          {error && <p className="text-xs text-red-400">{error}</p>}
+          {error && <p className="text-xs text-danger">{error}</p>}
         </form>
       </div>
 
       {/* List */}
-      <div className="bg-white/[0.04] border border-white/[0.08] rounded-2xl overflow-hidden">
-        <div className="px-5 py-4 border-b border-white/[0.06] flex items-center justify-between">
-          <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Your Subjects</p>
-          <span className="text-xs text-zinc-700">{subjects.length} total</span>
+      <div className="bg-parchment border border-sand rounded-2xl overflow-hidden shadow-sm">
+        <div className="px-5 py-4 border-b border-sand flex items-center justify-between">
+          <p className="text-[10px] font-bold text-ink-muted uppercase tracking-widest">Your subjects</p>
+          <span className="text-xs text-ink-faint tabular-nums">{subjects.length} total</span>
         </div>
 
         {isLoading ? (
-          <div className="px-5 py-10 text-center text-sm text-zinc-600">Loading…</div>
+          <div className="px-5 py-10 text-center text-sm text-ink-muted">Loading…</div>
         ) : subjects.length === 0 ? (
           <div className="px-5 py-14 flex flex-col items-center gap-3">
-            <div className="w-11 h-11 rounded-2xl bg-white/[0.04] flex items-center justify-center">
-              <BookOpen size={18} className="text-zinc-700" />
+            <div className="w-11 h-11 rounded-2xl bg-map flex items-center justify-center">
+              <BookOpen size={18} className="text-ink-faint" />
             </div>
-            <p className="text-sm text-zinc-600">No subjects yet.</p>
+            <p className="text-sm text-ink-muted">No subjects yet.</p>
           </div>
         ) : (
-          <div className="divide-y divide-white/[0.04]">
+          <div className="divide-y divide-sand/60">
             {subjects.map((s, i) => (
-              <div key={s._id} className="px-4 sm:px-5 py-4 flex items-center justify-between hover:bg-white/[0.03] transition-colors gap-3">
+              <div key={s._id} className="px-4 sm:px-5 py-4 flex items-center justify-between hover:bg-ink/[0.02] transition-colors gap-3">
                 <div className="flex items-center gap-3 min-w-0">
-                  <div className="w-8 h-8 rounded-xl flex items-center justify-center text-xs font-black flex-shrink-0"
-                    style={{ background: `hsl(${(i * 47) % 360}, 55%, 22%)`, color: `hsl(${(i * 47) % 360}, 75%, 70%)` }}>
+                  <div className="w-8 h-8 rounded-xl flex items-center justify-center text-xs font-display font-bold flex-shrink-0"
+                    style={{ background: `hsl(${(i * 47) % 360}, 40%, 88%)`, color: `hsl(${(i * 47) % 360}, 35%, 30%)` }}>
                     {s.name.charAt(0).toUpperCase()}
                   </div>
                   <div className="min-w-0">
-                    <p className="text-sm font-semibold text-white truncate">{s.name}</p>
-                    <p className="text-[11px] text-zinc-600">{s.totalPlannedClasses} classes · {s.totalMarks} marks</p>
+                    <p className="text-sm font-bold text-ink truncate">{s.name}</p>
+                    <p className="text-[11px] text-ink-muted">{s.totalPlannedClasses} classes · {s.totalMarks} marks</p>
                   </div>
                 </div>
               </div>
