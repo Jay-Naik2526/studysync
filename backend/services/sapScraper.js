@@ -164,8 +164,10 @@ export async function parsePDFAttendance(pdfBuffer) {
 
     // Next line: "CourseName<section> BTech/CE/AIML/IT/CSDS..."
     const courseLine = lines[i + 1] || '';
-    // Extract course name — match anything before the section code ([TUP]\d) followed by BTech, B.Tech, B Tech, MBA, etc.
-    const courseMatch = courseLine.match(/^([\w\s&,.()\-\/]+?)\s*[TUP]\d\s+(?:B\.?\s*Tech|MBA|M\.?\s*Tech|B\.?\s*E|B\.?\s*Sc|B\.?\s*CA)/i);
+    // Extract course name — everything before the section code ([TUP]\d) glued to the end of the name
+    // (e.g. "Operating SystemsT2 ...", "3D PrintingP2 ..."). The text after the code varies freely
+    // (program, "Batch A ...", "Div B", "ALL" for electives), so don't assume anything about it.
+    const courseMatch = courseLine.match(/^([\w\s&,.()\-\/]+?)[TUP]\d(?=\s|$)/);
     if (!courseMatch) continue;
 
     const courseName = courseMatch[1].trim();
