@@ -11,7 +11,7 @@ const API_KEYS = [
 ].filter(Boolean);
 
 // Priority list as per your research
-const MODELS = ["gemini-flash-latest", "gemini-3-flash-preview", "gemini-3.1-pro-preview"];
+const MODELS = ["gemini-3.5-flash", "gemini-2.5-flash", "gemini-3.1-flash-lite", "gemini-2.5-pro"];
 
 export const generateStudyMaterials = async (fileBuffers, description, type) => {
   let sourceText = description || "";
@@ -146,11 +146,8 @@ Return ONLY the JSON array. No code fences, no preamble, no explanation.
 
       } catch (err) {
         console.error(`❌ FAILED: Model: ${modelName} | Error: ${err.message}`);
-        
-        if (err.message.includes("429") || err.message.includes("quota")) {
-          continue; 
-        }
-        throw err;
+        // Any failure (429 quota, 503 overload, 403 denied key, network) → try next model/key
+        continue;
       }
     }
   }
@@ -191,8 +188,7 @@ Student's New Question: ${userMessage}
         return result.response.text().trim();
       } catch (err) {
         console.error(`❌ [Chatbot] FAILED: ${modelName} | Error: ${err.message}`);
-        if (err.message.includes("429") || err.message.includes("quota")) continue;
-        throw err;
+        continue; // any failure → try next model/key
       }
     }
   }
@@ -239,8 +235,7 @@ You must produce a highly structured textbook-style study plan in Markdown conta
         return result.response.text().trim();
       } catch (err) {
         console.error(`❌ [Planner] FAILED: ${modelName} | Error: ${err.message}`);
-        if (err.message.includes("429") || err.message.includes("quota")) continue;
-        throw err;
+        continue; // any failure → try next model/key
       }
     }
   }
