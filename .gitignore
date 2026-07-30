@@ -8,3 +8,6 @@ backend/.env
 
 # Build output
 dist/
+# macOS AppleDouble metadata (created on non-native filesystems)
+._*
+.DS_Store
