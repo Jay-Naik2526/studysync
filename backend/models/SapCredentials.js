@@ -19,6 +19,20 @@ const sapCredentialsSchema = new mongoose.Schema({
   lastSyncDetails:    { type: Array,  default: [] },
   lastAttendanceDate: { type: Date,   default: null },
 
+  // Last-used report settings, remembered from manual syncs. The daily job runs with
+  // no browser attached, so it has no other way to know which semester to request —
+  // a user who has never synced manually is skipped until they do so once.
+  academicYear: { type: String, default: null },
+  semester:     { type: String, default: null },
+
+  // Daily auto-sync (opt-in — off until the user turns the toggle on)
+  autoSyncEnabled:    { type: Boolean, default: false },
+  lastAutoSync:       { type: Date,   default: null },
+  lastAutoSyncStatus: { type: String, enum: ['success', 'failed', null], default: null },
+  // Consecutive auto-sync failures. After 3 the job disables itself for this user so a
+  // changed SAP password can't cause repeated failed logins (and a portal lockout).
+  autoSyncFailures:   { type: Number, default: 0 },
+
   // Microsoft Calendar Feed Sync state
   microsoftCalendarUrl:    { type: String, default: null },
   lastCalendarSync:        { type: Date,   default: null },

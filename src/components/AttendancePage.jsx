@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { Plus, Trash2, CheckCircle, AlertTriangle, Download, FileText, TrendingUp, RefreshCw, Link, Unlink, X, Loader2 } from 'lucide-react';
+import { Plus, Trash2, CheckCircle, AlertTriangle, Download, FileText, TrendingUp, RefreshCw, Link, Unlink, X, Loader2, Clock } from 'lucide-react';
 import { subjectsAPI, sapAPI } from '../api';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -295,6 +295,20 @@ export default function AttendancePage() {
     }
   };
 
+  const handleToggleAutoSync = async () => {
+    const next = !sapStatus?.autoSyncEnabled;
+    // Optimistic flip so the switch feels instant; rolled back if the call fails.
+    setSapStatus(s => ({ ...s, autoSyncEnabled: next }));
+    try {
+      const { data } = await sapAPI.setAutoSync(next);
+      setSyncMsg(`✓ ${data.message}`);
+      fetchSapStatus();
+    } catch (e) {
+      setSapStatus(s => ({ ...s, autoSyncEnabled: !next }));
+      setSyncMsg(`✗ ${e.response?.data?.message || 'Could not change auto-sync.'}`);
+    }
+  };
+
   const handleSapDisconnect = async () => {
     if (!window.confirm('Remove SAP credentials?')) return;
     await sapAPI.disconnect();
@@ -439,6 +453,47 @@ export default function AttendancePage() {
                 <option value="">Select…</option>
                 {SEMESTER_ROMAN.map(r => <option key={r} value={r}>Semester {r}</option>)}
               </select>
+            </div>
+          </div>
+        )}
+
+        {/* Daily auto-sync — opt-in. The nightly job needs a saved semester, which
+            only a completed manual sync provides, so the switch stays locked until then. */}
+        {sapStatus?.connected && (
+          <div className="mt-3 pt-3 border-t border-sand">
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <p className="text-xs font-bold text-ink flex items-center gap-1.5">
+                  <Clock size={12} className="text-ink-muted flex-shrink-0" />
+                  Daily auto-sync
+                </p>
+                <p className="text-[11px] text-ink-muted mt-0.5">
+                  {sapStatus.autoSyncReady
+                    ? 'Refreshes your attendance every night at 5:00 AM, so it is ready in the morning.'
+                    : 'Run one manual sync first — that saves your semester so the daily sync knows what to fetch.'}
+                </p>
+                {sapStatus.autoSyncEnabled && sapStatus.lastAutoSync && (
+                  <p className={`text-[11px] font-medium mt-1 ${sapStatus.lastAutoSyncStatus === 'failed' ? 'text-danger' : 'text-sage-dark'}`}>
+                    Last auto-sync: {new Date(sapStatus.lastAutoSync).toLocaleString()}
+                    {sapStatus.lastAutoSyncStatus === 'failed' && ' — failed'}
+                  </p>
+                )}
+              </div>
+
+              <button
+                role="switch"
+                aria-checked={Boolean(sapStatus.autoSyncEnabled)}
+                aria-label="Daily auto-sync"
+                disabled={!sapStatus.autoSyncReady}
+                onClick={handleToggleAutoSync}
+                title={!sapStatus.autoSyncReady ? 'Run one manual sync first' : undefined}
+                className={`relative w-11 h-6 rounded-full flex-shrink-0 transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${
+                  sapStatus.autoSyncEnabled ? 'bg-sage' : 'bg-sand-dark'
+                }`}>
+                <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow-sm transition-transform ${
+                  sapStatus.autoSyncEnabled ? 'translate-x-5' : 'translate-x-0'
+                }`} />
+              </button>
             </div>
           </div>
         )}

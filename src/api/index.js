@@ -65,6 +65,7 @@ export const sapAPI = {
   saveCredentials: (data)  => api.post('/sap/credentials', data),
   getStatus:       ()      => api.get('/sap/status'),
   sync:            (data)  => api.post('/sap/sync', data),
+  setAutoSync:     (enabled) => api.patch('/sap/auto-sync', { enabled }),
   disconnect:      ()      => api.delete('/sap/credentials'),
   saveCalendarUrl: (data)  => api.post('/sap/calendar', data),
   getDeadlines:    ()      => api.get('/sap/deadlines'),

@@ -1,0 +1,42 @@
+name: Daily SAP attendance sync
+
+# 23:30 UTC = 05:00 AM IST. The SAP portal is closed 7:00 AM – 6:00 PM IST, so this
+# lands inside the open window and leaves attendance fresh for the whole college day.
+# The request also wakes the backend if its host has idled it to sleep.
+on:
+  schedule:
+    - cron: '30 23 * * *'
+  workflow_dispatch:        # lets you trigger a run by hand from the Actions tab
+
+jobs:
+  trigger-sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger the nightly sync
+        env:
+          BACKEND_URL: ${{ secrets.BACKEND_URL }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          if [ -z "$BACKEND_URL" ] || [ -z "$CRON_SECRET" ]; then
+            echo "::error::BACKEND_URL and CRON_SECRET repository secrets must both be set."
+            exit 1
+          fi
+
+          # A sleeping host can take a while to boot, so allow a generous connect time.
+          # The endpoint returns as soon as the queue starts; it does not wait for it.
+          response=$(curl -sS -w '\n%{http_code}' -X POST \
+            --max-time 180 \
+            -H "x-cron-secret: $CRON_SECRET" \
+            -H 'Content-Type: application/json' \
+            "$BACKEND_URL/api/sap/cron/run")
+
+          body=$(echo "$response" | sed '$d')
+          code=$(echo "$response" | tail -n1)
+
+          echo "HTTP $code"
+          echo "$body"
+
+          if [ "$code" != "200" ]; then
+            echo "::error::Sync trigger failed with HTTP $code"
+            exit 1
+          fi

@@ -164,10 +164,28 @@ export async function parsePDFAttendance(pdfBuffer) {
 
     // Next line: "CourseName<section> BTech/CE/AIML/IT/CSDS..."
     const courseLine = lines[i + 1] || '';
-    // Extract course name — everything before the section code ([TUP]\d) glued to the end of the name
-    // (e.g. "Operating SystemsT2 ...", "3D PrintingP2 ..."). The text after the code varies freely
-    // (program, "Batch A ...", "Div B", "ALL" for electives), so don't assume anything about it.
-    const courseMatch = courseLine.match(/^([\w\s&,.()\-\/]+?)[TUP]\d(?=\s|$)/);
+
+    // SAP glues a section code (letter + digits — "T2", "P2", "U1") onto the end of the
+    // course name. Everything AFTER that code varies completely between programs: a
+    // program name, "Div B", "Batch A1", "ALL" for open electives, or nothing at all
+    // ("Management Through MoviesT2"). So we anchor only on the code and never assume
+    // anything about the trailing text.
+    //
+    // pdf-parse sometimes concatenates the date/time columns onto this same line, which
+    // would hide the code at the end of the string — strip that noise off first.
+    const cleanCourseLine = courseLine
+      .replace(/[a-z]{3}\s+\d{1,2},\s+\d{4}.*$/i, '')
+      .replace(/\d{1,2}:\d{2}:\d{2}\s*[AP]M.*$/i, '')
+      .trim();
+
+    // Primary: the known SAP codes (Theory / Practical / Tutorial / Lab), which may be
+    // glued to the name or separated by a space, and may have multiple digits.
+    // Fallback: any uppercase letter + digits glued directly onto a word, so unfamiliar
+    // course codes from other programs still parse. The fallback requires the code to be
+    // glued (no space) so trailing section text like "Div B1" can never be mistaken for it.
+    const courseMatch =
+      cleanCourseLine.match(/^(.*?\S)\s*[TUPL]\d+(?=\s|$)/) ||
+      cleanCourseLine.match(/^(.*?[A-Za-z])[A-Z]\d+(?=\s|$)/);
     if (!courseMatch) continue;
 
     const courseName = courseMatch[1].trim();
@@ -665,6 +683,25 @@ export async function scrapeSAPAttendance(username, password, subjects, options 
       if (loginOk) {
         console.log('✅ Login successful!');
       } else {
+        // Tell a genuinely wrong password apart from a wrong CAPTCHA. SAP states the
+        // reason in its logon error area. A wrong password will never succeed on retry,
+        // so fail immediately with a clear message instead of burning three more login
+        // attempts — which is also what risks tripping the portal's lockout.
+        const lower = html.toLowerCase();
+        if (/name or password is incorrect|password is incorrect|password was incorrect|invalid user|authentication failed|logon failed/.test(lower)) {
+          const badCreds = new Error(
+            'Your SAP username or password is incorrect. Please reconnect your SAP account with the correct password.'
+          );
+          badCreds.code = 'BAD_CREDENTIALS';
+          throw badCreds;
+        }
+        if (/user is locked|account is locked|has been locked/.test(lower)) {
+          const locked = new Error(
+            'Your SAP account is locked. Please contact the college admin, then reconnect your account.'
+          );
+          locked.code = 'ACCOUNT_LOCKED';
+          throw locked;
+        }
         console.log('  ❌ Wrong captcha — refreshing…');
         await page.evaluate(() => { window.__captchaText = ''; });
         await page.click('#refresh').catch(() => {});
@@ -995,6 +1032,11 @@ export async function scrapeSAPAttendance(username, password, subjects, options 
     await progress('Submitting the attendance request…');
     interceptedPDF = null;
     downloadedPDF  = null;
+    // Clear the stored PDF URL too. It was previously left set, so a URL captured
+    // earlier in the session could be re-fetched by "Priority 3" below and mistaken
+    // for this submission's report — one source of syncs that completed but returned
+    // the wrong (or an empty) document.
+    pdfResponseURL = null;
 
     // Read back the date inputs right before submitting, to confirm the
     // values really stuck (both should show dd.mm.yyyy).
@@ -1164,6 +1206,17 @@ export async function scrapeSAPAttendance(username, password, subjects, options 
     // ── 6. Parse PDF + match subjects ────────────────────────────
     const { courseMap, latestAttendanceDate } = await parsePDFAttendance(pdfBuffer);
     console.log('📊 Courses found:', Object.keys(courseMap).join(', ') || '(none)');
+
+    // SAP sometimes hands back a valid PDF that contains no attendance rows at all
+    // (a placeholder or a report generated before its data was ready), even though
+    // every step above succeeded. Reporting that as a successful sync is what produced
+    // the "completed, but 0 courses matched" result. Flag it as retryable instead so
+    // the caller re-runs the whole scrape rather than the user doing it by hand.
+    if (Object.keys(courseMap).length === 0) {
+      const emptyErr = new Error('SAP returned an attendance report with no rows in it.');
+      emptyErr.retryable = true;
+      throw emptyErr;
+    }
 
     const results = [];
     for (const [pdfName, data] of Object.entries(courseMap)) {

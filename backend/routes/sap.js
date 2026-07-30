@@ -1,8 +1,8 @@
 import express from 'express';
 import { authMiddleware }   from '../middleware/auth.js';
 import SapCredentials       from '../models/SapCredentials.js';
-import Subject              from '../models/Subject.js';
-import { encryptCredential, decryptCredential, scrapeSAPAttendance } from '../services/sapScraper.js';
+import { encryptCredential } from '../services/sapScraper.js';
+import { runSyncForUser, runDailyAutoSync, isPortalOpen } from '../services/syncRunner.js';
 
 const router = express.Router();
 
@@ -42,6 +42,11 @@ router.get('/status', authMiddleware, async (req, res) => {
     lastSyncMessage:         creds.lastSyncMessage,
     lastSyncDetails:         creds.lastSyncDetails || [],
     lastAttendanceDate:      creds.lastAttendanceDate,
+    autoSyncEnabled:         creds.autoSyncEnabled,
+    lastAutoSync:            creds.lastAutoSync,
+    lastAutoSyncStatus:      creds.lastAutoSyncStatus,
+    // The toggle needs a saved semester to work with
+    autoSyncReady:           Boolean(creds.semester),
     microsoftCalendarUrl:    creds.microsoftCalendarUrl,
     lastCalendarSync:        creds.lastCalendarSync,
     lastCalendarSyncMessage: creds.lastCalendarSyncMessage,
@@ -83,87 +88,7 @@ router.post('/sync', authMiddleware, async (req, res) => {
   // Run in background
   (async () => {
     try {
-      const username = decryptCredential(creds.encryptedUsername);
-      const password = decryptCredential(creds.encryptedPassword);
-
-      // Get this user's StudySync subjects
-      const subjects = await Subject.find({ user: req.user.id });
-      if (!subjects.length) {
-        creds.lastSyncStatus   = 'failed';
-        creds.lastSyncProgress = '';
-        creds.lastSyncMessage  = 'No subjects found in StudySync. Add subjects first.';
-        await creds.save();
-        return;
-      }
-
-      const { results, syncedAt, latestAttendanceDate } = await scrapeSAPAttendance(
-        username, password, subjects, {
-          academicYear,
-          semester,
-          // Persist each step so the frontend's status polling can show it live
-          onProgress: async (msg) => {
-            creds.lastSyncProgress = msg;
-            await creds.save().catch(() => {});
-          },
-        }
-      );
-
-      creds.lastSyncProgress = 'Updating your subjects…';
-      await creds.save().catch(() => {});
-
-
-
-      // Update matched subjects
-      let updated = 0, skipped = 0;
-      const details = [];
-
-      for (const r of results) {
-        let finalMatched = r.autoMatched;
-        let finalSubjectId = r.subjectId;
-        let finalSubjectName = r.subjectName;
-        let finalConfidence = r.confidence;
-        let matchedBy = 'heuristics';
-
-
-
-        if (finalMatched && finalSubjectId) {
-          await Subject.findByIdAndUpdate(finalSubjectId, {
-            conductedClasses: r.conducted,
-            absentClasses:    r.absent,
-          });
-          updated++;
-          details.push({
-            pdfName: r.pdfName,
-            subjectName: finalSubjectName,
-            status: 'synced',
-            conducted: r.conducted,
-            absent: r.absent,
-            confidence: finalConfidence,
-            matchedBy: matchedBy
-          });
-        } else {
-          skipped++;
-          details.push({
-            pdfName: r.pdfName,
-            subjectName: r.subjectName || '(Unmatched)',
-            status: 'unmatched',
-            conducted: r.conducted,
-            absent: r.absent,
-            confidence: r.confidence,
-            matchedBy: 'none'
-          });
-        }
-      }
-
-      creds.lastSync            = syncedAt;
-      creds.lastSyncStatus      = 'success';
-      creds.lastSyncProgress    = '';
-      creds.lastSyncMessage     = `Updated ${updated} subject(s). ${skipped} course(s) from SAP could not be matched — add more subjects with matching names.`;
-      creds.lastSyncDetails     = details;
-      creds.lastAttendanceDate  = latestAttendanceDate;
-      await creds.save();
-
-      console.log(`✅ SAP sync complete: ${updated} updated, ${skipped} unmatched`);
+      await runSyncForUser(creds, { academicYear, semester, source: 'manual' });
     } catch (err) {
       console.error('SAP sync error:', err.message);
       creds.lastSyncStatus   = 'failed';
@@ -172,6 +97,53 @@ router.post('/sync', authMiddleware, async (req, res) => {
       await creds.save();
     }
   })();
+});
+
+// ── PATCH /api/sap/auto-sync — turn the nightly job on/off ────────
+router.patch('/auto-sync', authMiddleware, async (req, res) => {
+  const { enabled } = req.body;
+  if (typeof enabled !== 'boolean')
+    return res.status(400).json({ message: '`enabled` must be true or false.' });
+
+  const creds = await SapCredentials.findOne({ userId: req.user.id });
+  if (!creds) return res.status(404).json({ message: 'No SAP credentials found. Connect your portal first.' });
+
+  // The job runs headless with no browser to read settings from, so it needs a
+  // semester on file. That only gets saved by a successful manual sync.
+  if (enabled && !creds.semester) {
+    return res.status(400).json({
+      message: 'Run one manual sync first — that saves your semester so the daily sync knows what to fetch.',
+    });
+  }
+
+  creds.autoSyncEnabled = enabled;
+  if (enabled) creds.autoSyncFailures = 0; // fresh start when re-enabling
+  await creds.save();
+
+  res.json({
+    message: enabled
+      ? 'Daily auto-sync is on. Your attendance will refresh overnight.'
+      : 'Daily auto-sync is off.',
+    autoSyncEnabled: creds.autoSyncEnabled,
+  });
+});
+
+// ── POST /api/sap/cron/run — nightly job entry point ──────────────
+// Called by the scheduled GitHub Action, not by the app. Protected by a shared
+// secret rather than a user session, since there is no user behind the request.
+router.post('/cron/run', async (req, res) => {
+  const secret = process.env.CRON_SECRET;
+  if (!secret) return res.status(503).json({ message: 'CRON_SECRET is not configured on the server.' });
+  if (req.get('x-cron-secret') !== secret) return res.status(401).json({ message: 'Unauthorized.' });
+
+  if (!isPortalOpen()) {
+    return res.json({ ran: false, reason: 'SAP portal is closed right now (7:00 AM – 6:00 PM IST).' });
+  }
+
+  // Respond immediately — the queue takes far longer than any HTTP timeout allows.
+  res.json({ started: true, message: 'Daily auto-sync started.' });
+
+  runDailyAutoSync().catch(err => console.error('Daily auto-sync crashed:', err));
 });
 
 // ── DELETE /api/sap/credentials — disconnect SAP ──────────────────
