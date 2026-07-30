@@ -1,6 +1,6 @@
 {
     "version": 2,
     "rewrites": [
-      { "source": "/api/(.*)", "destination": "https://studysync.zeabur.app/api/$1" }
+      { "source": "/api/(.*)", "destination": "https://jaynaik2526-studysync-backend.hf.space/api/$1" }
     ]
   }
