@@ -148,22 +148,30 @@ function matchSubject(pdfName, subjects) {
 //   Line 3: <date>   (e.g. "Jan 2, 2026")
 //   Line 4: <times>  (e.g. "9:00:01 AM10:00:00 AM")
 //   Line 5: <P|A>
-export async function parsePDFAttendance(pdfBuffer) {
-  const pdfParse = requireCJS('pdf-parse');
-  const { text } = await pdfParse(pdfBuffer);
-  console.log('📃 PDF text (first 2000 chars):\n' + text.substring(0, 2000));
-
+// Walks the extracted lines and tallies each course's conducted/absent counts.
+//
+// `strictLayout: true`  — the documented SAP layout (sequence number and attendance
+//                         letter each alone on their own line). Precise, few false hits.
+// `strictLayout: false` — same row logic, but tolerant of pdf-parse merging columns:
+//                         the sequence number may be glued to the course name and the
+//                         attendance letter may trail the times column.
+export function collectAttendanceRows(lines, { strictLayout }) {
   const map = {};
 
-  // Tokenize: strip blank lines, trim each line
-  const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
-
   for (let i = 0; i < lines.length; i++) {
-    // A row starts with a bare sequence number
-    if (!/^\d+$/.test(lines[i])) continue;
+    let courseLine;
+    let cursor; // index where this row's remaining columns start
 
-    // Next line: "CourseName<section> BTech/CE/AIML/IT/CSDS..."
-    const courseLine = lines[i + 1] || '';
+    if (strictLayout) {
+      // A row starts with a bare sequence number; the course is on the next line.
+      if (!/^\d+$/.test(lines[i])) continue;
+      courseLine = lines[i + 1] || '';
+      cursor = i + 2;
+    } else {
+      // No sequence-number assumption — treat this line itself as the course line.
+      courseLine = lines[i];
+      cursor = i + 1;
+    }
 
     // SAP glues a section code (letter + digits — "T2", "P2", "U1") onto the end of the
     // course name. Everything AFTER that code varies completely between programs: a
@@ -188,45 +196,82 @@ export async function parsePDFAttendance(pdfBuffer) {
       cleanCourseLine.match(/^(.*?[A-Za-z])[A-Z]\d+(?=\s|$)/);
     if (!courseMatch) continue;
 
-    const courseName = courseMatch[1].trim();
+    let courseName = courseMatch[1].trim();
+
+    // In tolerant mode the sequence number may be stuck to the front of the name. Only
+    // strip leading digits when a capital+lowercase word follows ("1Leading" → "Leading"),
+    // so genuine names that open with a digit ("3D Printing") are left alone.
+    if (!strictLayout) courseName = courseName.replace(/^\d{1,3}(?=[A-Z][a-z])/, '');
+
     if (courseName.length < 3) continue;
 
-    // Scan the next few lines for a bare "P", "A" or "NU" (the attendance marker)
     let attendance = null;
     let dateStr = null;
 
     // First check if the date was concatenated onto the end of the courseName line itself
     const concatenatedDateMatch = courseLine.match(/([a-z]{3}\s+\d{1,2},\s+\d{4})/i);
-    if (concatenatedDateMatch) {
-      dateStr = concatenatedDateMatch[1];
-    }
+    if (concatenatedDateMatch) dateStr = concatenatedDateMatch[1];
 
-    for (let j = i + 2; j <= i + 6 && j < lines.length; j++) {
-      // Find date in adjacent row rows if not already found (e.g. "Jan 2, 2026" or "May 31, 2026")
+    for (let j = cursor; j <= cursor + 4 && j < lines.length; j++) {
+      // Find date in adjacent rows if not already found (e.g. "Jan 2, 2026" or "May 31, 2026")
       // Also handles dates concatenated with times like "Jan 2, 202612:00:01 PM"
       const dateMatch = lines[j].match(/([a-z]{3}\s+\d{1,2},\s+\d{4})/i);
-      if (dateMatch && !dateStr) {
-        dateStr = dateMatch[1];
-      }
-      if (/^[PA]$/.test(lines[j]) || lines[j] === 'NU') {
-        attendance = lines[j];
-        break;
-      }
+      if (dateMatch && !dateStr) dateStr = dateMatch[1];
+
+      const marker = strictLayout
+        ? (/^(?:[PA]|NU)$/.test(lines[j]) ? lines[j] : null)
+        // Tolerant: the letter may trail the times column, e.g. "9:00:01 AM10:00:00 AM P"
+        : ((lines[j].match(/(?:^|\s)(P|A|NU)$/) || [])[1] || null);
+
+      if (marker) { attendance = marker; break; }
+
       // Stop scanning if we hit the next row number
-      if (/^\d+$/.test(lines[j]) && j > i + 2) break;
+      if (/^\d+$/.test(lines[j]) && j > cursor) break;
     }
 
     // If attendance is 'NU' (Not Updated), we still parse it as a valid row (with zero action on absent counting)
     if (!attendance) continue;
 
     if (!map[courseName]) map[courseName] = { conducted: 0, absent: 0, dates: [] };
-    
+
     // NU (Not Updated) classes are planned but not conducted yet — we do not count them as conducted
     if (attendance !== 'NU') {
       map[courseName].conducted++;
       if (attendance === 'A') map[courseName].absent++;
     }
     if (dateStr) map[courseName].dates.push(dateStr);
+  }
+
+  return map;
+}
+
+export async function parsePDFAttendance(pdfBuffer) {
+  const pdfParse = requireCJS('pdf-parse');
+  const { text } = await pdfParse(pdfBuffer);
+  console.log('📃 PDF text (first 2000 chars):\n' + text.substring(0, 2000));
+
+  // Tokenize: strip blank lines, trim each line
+  const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+
+  // Pass 1 — the usual SAP layout, where every row begins with a bare sequence number
+  // on its own line and the attendance letter sits alone on its own line too.
+  let map = collectAttendanceRows(lines, { strictLayout: true });
+
+  // Pass 2 — pdf-parse does not always break the table into lines the same way. The
+  // sequence number can end up glued to the course name, or the attendance letter tacked
+  // onto the end of the times column. Those layouts used to make every single row fail
+  // its checks, so a perfectly good report came back "empty". Rescan without the layout
+  // assumptions before believing that.
+  if (Object.keys(map).length === 0) {
+    console.warn(`⚠ Strict row scan matched nothing across ${lines.length} line(s) — rescanning with a tolerant layout.`);
+    map = collectAttendanceRows(lines, { strictLayout: false });
+    if (Object.keys(map).length > 0) {
+      console.log(`  ✓ Tolerant scan recovered ${Object.keys(map).length} course(s).`);
+    } else {
+      // Nothing worked — dump more of the text so the cause is visible in the logs.
+      console.error('❌ Both scans found no attendance rows. Full extracted text follows:');
+      console.error(text.substring(0, 4000));
+    }
   }
 
   // Determine the latest attendance date across all parsed rows
@@ -1213,7 +1258,10 @@ export async function scrapeSAPAttendance(username, password, subjects, options 
     // the "completed, but 0 courses matched" result. Flag it as retryable instead so
     // the caller re-runs the whole scrape rather than the user doing it by hand.
     if (Object.keys(courseMap).length === 0) {
-      const emptyErr = new Error('SAP returned an attendance report with no rows in it.');
+      const emptyErr = new Error(
+        'SAP returned an attendance report with no rows in it. If this keeps happening, ' +
+        'check that the Semester and Academic Year you selected match the ones you are currently studying.'
+      );
       emptyErr.retryable = true;
       throw emptyErr;
     }
