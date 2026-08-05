@@ -250,7 +250,8 @@ export default function ClassCountPage() {
     pending:   acc.pending + b.pending,
   }), { expected: 0, conducted: 0, pending: 0 }), [rows]);
 
-  const startValid = Boolean(parseDateInput(semesterStart));
+  const startValid  = Boolean(parseDateInput(semesterStart));
+  const needsResync = rows.some(({ backlog }) => backlog.splitMissing);
 
   if (loading) {
     return (
@@ -297,6 +298,20 @@ export default function ClassCountPage() {
               : `${weeksElapsed.toFixed(1)} weeks of classes so far, counted up to ${effectiveAsOf.toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })}.`}
         </p>
       </div>
+
+      {/* Subjects last synced before the lecture/lab split existed carry only a combined
+          total, so every session falls into the lecture column until the next sync. */}
+      {needsResync && (
+        <div className="mb-5 flex items-start gap-2 bg-caution-pale border border-caution/30 rounded-xl px-3 py-2.5">
+          <AlertTriangle size={14} className="text-caution mt-0.5 flex-shrink-0" />
+          <p className="text-[11px] text-ink leading-relaxed">
+            <strong>Labs are showing as 0.</strong> These subjects were last synced before
+            StudySync could tell lectures and labs apart, so everything is counted as a lecture.
+            Run a SAP sync from the Attendance page (the portal is open 6 PM–7 AM IST) and the
+            split will fill in.
+          </p>
+        </div>
+      )}
 
       {subjects.length > 0 && (
         <div className="grid grid-cols-3 gap-2 mb-5">
