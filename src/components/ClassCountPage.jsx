@@ -1,23 +1,23 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { Calculator, CalendarClock, BookOpen, FlaskConical, AlertTriangle, Loader2, RefreshCw } from 'lucide-react';
-import { subjectsAPI } from '../api';
+import { Calculator, CalendarClock, BookOpen, FlaskConical, AlertTriangle, Loader2 } from 'lucide-react';
+import { subjectsAPI, sapAPI } from '../api';
 
 const ROMAN = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII'];
 const DAY_MS = 24 * 60 * 60 * 1000;
 
-// Odd semesters (I, III, V, VII) run Jul–Nov; even ones run Jan–Apr. Used only as the
-// starting suggestion — the user can set any end date they like.
-function defaultSemesterEnd() {
+// Mirrors the backend's semester windows: odd semesters (I, III, V, VII) start mid-July,
+// even ones start in the first week of January. Only a starting suggestion — editable.
+function defaultSemesterStart() {
   const ay  = localStorage.getItem('sap_academicYear') || '';
   const sem = localStorage.getItem('sap_semester') || '';
   const m = ay.match(/(\d{4}).*?(\d{4})/);
   const startYear = m ? parseInt(m[1], 10) : new Date().getFullYear();
   const endYear   = m ? parseInt(m[2], 10) : startYear + 1;
   const semNum = ROMAN.indexOf(String(sem).toUpperCase()) + 1; // 0 when unknown
-  return semNum && semNum % 2 === 0 ? `${endYear}-04-30` : `${startYear}-11-30`;
+  return semNum && semNum % 2 === 0 ? `${endYear}-01-02` : `${startYear}-07-13`;
 }
 
-// Midnight-local parse of a yyyy-mm-dd value. Avoids `new Date('2026-11-30')` which is
+// Midnight-local parse of a yyyy-mm-dd value. Avoids `new Date('2026-07-13')` which is
 // parsed as UTC and can land on the previous day in IST.
 function parseDateInput(value) {
   const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value || '');
@@ -27,58 +27,44 @@ function parseDateInput(value) {
 }
 
 /**
- * Projects one subject forward from what SAP has already recorded.
+ * Works out how many classes a subject OWES you.
  *
- * `weeksRemaining` is fractional on purpose — with 10 days left a subject running 3
- * lectures a week still has ~4 more, and flooring to whole weeks would report zero.
+ * Expected = weekly rate × weeks elapsed. Anything SAP has not recorded as conducted in
+ * that window is a class that should have run but didn't — a cancelled lecture, an absent
+ * professor, a holiday. That difference is the pending backlog.
  */
-export function projectSubject(subject, weeksRemaining, thresholdPct) {
+export function computeBacklog(subject, weeksElapsed) {
   const weeklyLectures = Math.max(0, subject.weeklyLectures || 0);
   const weeklyLabs     = Math.max(0, subject.weeklyLabs || 0);
 
   let condLec = subject.conductedLectures || 0;
   let condLab = subject.conductedLabs || 0;
-  let absLec  = subject.absentLectures || 0;
-  let absLab  = subject.absentLabs || 0;
 
-  // Subjects synced before the split existed have only the combined totals. Rather than
-  // showing zeroes, treat the whole total as lectures and flag it so the UI can say why.
+  // Subjects synced before the lecture/lab split existed carry only a combined total.
+  // Count it all as lectures and let the UI explain why.
   const totalConducted = subject.conductedClasses || 0;
-  const totalAbsent    = subject.absentClasses || 0;
   const splitMissing   = (condLec + condLab) === 0 && totalConducted > 0;
-  if (splitMissing) { condLec = totalConducted; absLec = totalAbsent; }
+  if (splitMissing) condLec = totalConducted;
 
-  const conducted = condLec + condLab;
-  const absent    = Math.min(absLec + absLab, conducted); // absent can never exceed conducted
-  const attended  = conducted - absent;
+  const expectedLectures = Math.round(weeklyLectures * weeksElapsed);
+  const expectedLabs     = Math.round(weeklyLabs * weeksElapsed);
 
-  const pendingLectures = Math.round(weeklyLectures * weeksRemaining);
-  const pendingLabs     = Math.round(weeklyLabs * weeksRemaining);
-  const pending         = pendingLectures + pendingLabs;
+  // Shortfall in each kind separately — a subject can be behind on labs while its
+  // lectures are fully up to date, and averaging the two would hide that.
+  const pendingLectures = Math.max(0, expectedLectures - condLec);
+  const pendingLabs     = Math.max(0, expectedLabs - condLab);
 
-  const projectedTotal = conducted + pending;
-  const t = thresholdPct / 100;
-
-  // Attending every remaining class is the best case.
-  const bestCasePct = projectedTotal > 0 ? ((attended + pending) / projectedTotal) * 100 : null;
-
-  // How many of the remaining classes can still be skipped and still finish on target.
-  // Capped at `pending` — you cannot skip more classes than are left.
-  const canMiss = Math.max(0, Math.min(pending, Math.floor((attended + pending) - t * projectedTotal)));
-
-  // The flip side: the minimum of the remaining that must be attended.
-  const mustAttendRaw = Math.ceil(t * projectedTotal - attended);
-  const mustAttend    = Math.min(Math.max(0, mustAttendRaw), pending);
-  const reachable     = mustAttendRaw <= pending;
+  // The opposite case: extra sessions were run to catch up, or the weekly rate is low.
+  const extraLectures = Math.max(0, condLec - expectedLectures);
+  const extraLabs     = Math.max(0, condLab - expectedLabs);
 
   return {
     conductedLectures: condLec, conductedLabs: condLab,
-    conducted, absent, attended,
-    pendingLectures, pendingLabs, pending,
-    projectedTotal,
-    currentPct: conducted > 0 ? (attended / conducted) * 100 : null,
-    bestCasePct,
-    canMiss, mustAttend, reachable, splitMissing,
+    conducted: condLec + condLab,
+    expectedLectures, expectedLabs, expected: expectedLectures + expectedLabs,
+    pendingLectures, pendingLabs, pending: pendingLectures + pendingLabs,
+    extraLectures, extraLabs, extra: extraLectures + extraLabs,
+    splitMissing,
   };
 }
 
@@ -89,8 +75,8 @@ function NumberField({ label, icon: Icon, value, onCommit }) {
   useEffect(() => { setDraft(String(value ?? 0)); }, [value]);
 
   const commit = () => {
-    const n = Math.max(0, Math.min(50, Math.floor(Number(draft))));
-    const safe = Number.isFinite(n) ? n : 0;
+    const n = Math.floor(Number(draft));
+    const safe = Number.isFinite(n) ? Math.max(0, Math.min(50, n)) : 0;
     setDraft(String(safe));
     if (safe !== (value ?? 0)) onCommit(safe);
   };
@@ -112,12 +98,8 @@ function NumberField({ label, icon: Icon, value, onCommit }) {
   );
 }
 
-function SubjectRow({ subject, projection, onSave }) {
-  const p = projection;
-  const pctColor = p.currentPct === null ? 'text-ink-faint'
-    : p.currentPct >= 75 ? 'text-sage-dark'
-    : p.currentPct >= 65 ? 'text-caution' : 'text-danger';
-
+function SubjectRow({ subject, backlog, onSave }) {
+  const b = backlog;
   const noRate = (subject.weeklyLectures || 0) + (subject.weeklyLabs || 0) === 0;
 
   return (
@@ -126,17 +108,18 @@ function SubjectRow({ subject, projection, onSave }) {
         <div className="min-w-0">
           <p className="text-sm font-bold text-ink truncate">{subject.name}</p>
           <p className="text-[11px] text-ink-muted mt-0.5">
-            {p.conducted} held so far
-            <span className="text-ink-faint"> · {p.conductedLectures} lec / {p.conductedLabs} lab</span>
-            {p.absent > 0 && <span className="text-danger font-medium"> · {p.absent} missed</span>}
+            {b.conducted} conducted
+            <span className="text-ink-faint"> · {b.conductedLectures} lec / {b.conductedLabs} lab</span>
           </p>
         </div>
-        <div className="text-right flex-shrink-0">
-          <p className={`text-lg font-display font-bold ${pctColor}`}>
-            {p.currentPct === null ? '—' : `${p.currentPct.toFixed(1)}%`}
-          </p>
-          <p className="text-[10px] text-ink-muted">now</p>
-        </div>
+        {!noRate && (
+          <div className="text-right flex-shrink-0">
+            <p className={`text-lg font-display font-bold ${b.pending > 0 ? 'text-caution' : 'text-sage-dark'}`}>
+              {b.pending}
+            </p>
+            <p className="text-[10px] text-ink-muted">pending</p>
+          </div>
+        )}
       </div>
 
       <div className="flex flex-wrap gap-2 mb-3">
@@ -148,44 +131,46 @@ function SubjectRow({ subject, projection, onSave }) {
 
       {noRate ? (
         <p className="text-[11px] text-ink-muted bg-map rounded-lg px-3 py-2">
-          Enter how many lectures and labs this subject has each week to project the classes left.
+          Enter how many lectures and labs this subject has each week to see what is pending.
         </p>
       ) : (
         <div className="bg-map rounded-xl p-3">
-          <div className="grid grid-cols-3 gap-2 text-center mb-3">
+          <div className="grid grid-cols-3 gap-2 text-center mb-2">
             <div>
-              <p className="text-base font-display font-bold text-trail-dark">{p.pending}</p>
-              <p className="text-[10px] text-ink-muted leading-tight">left<br />({p.pendingLectures} lec / {p.pendingLabs} lab)</p>
+              <p className="text-base font-display font-bold text-ink">{b.expected}</p>
+              <p className="text-[10px] text-ink-muted leading-tight">should have<br />happened</p>
             </div>
             <div>
-              <p className="text-base font-display font-bold text-ink">{p.projectedTotal}</p>
-              <p className="text-[10px] text-ink-muted leading-tight">total by<br />end</p>
+              <p className="text-base font-display font-bold text-trail-dark">{b.conducted}</p>
+              <p className="text-[10px] text-ink-muted leading-tight">actually<br />conducted</p>
             </div>
             <div>
-              <p className="text-base font-display font-bold text-sage-dark">
-                {p.bestCasePct === null ? '—' : `${p.bestCasePct.toFixed(1)}%`}
+              <p className={`text-base font-display font-bold ${b.pending > 0 ? 'text-caution' : 'text-sage-dark'}`}>
+                {b.pending}
               </p>
-              <p className="text-[10px] text-ink-muted leading-tight">if you<br />attend all</p>
+              <p className="text-[10px] text-ink-muted leading-tight">pending<br />(not taken)</p>
             </div>
           </div>
 
-          {!p.reachable ? (
-            <p className="text-[11px] font-medium text-danger bg-danger-pale rounded-lg px-3 py-2 flex items-start gap-1.5">
-              <AlertTriangle size={12} className="mt-0.5 flex-shrink-0" />
-              Even attending every remaining class ends at {p.bestCasePct?.toFixed(1)}% — below your target.
-            </p>
-          ) : p.canMiss > 0 ? (
-            <p className="text-[11px] font-medium text-sage-dark bg-sage-pale rounded-lg px-3 py-2">
-              You can still miss <strong>{p.canMiss}</strong> of the {p.pending} remaining
-              {' '}(attend at least {p.mustAttend}).
-            </p>
-          ) : (
-            <p className="text-[11px] font-medium text-caution bg-caution-pale rounded-lg px-3 py-2">
-              Attend <strong>all {p.pending}</strong> remaining to stay on target.
+          {/* Per-kind breakdown — labs and lectures fall behind independently */}
+          <div className="flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-ink-muted border-t border-sand pt-2">
+            <span className="flex items-center gap-1">
+              <BookOpen size={10} /> Lectures: {b.conductedLectures}/{b.expectedLectures}
+              {b.pendingLectures > 0 && <strong className="text-caution">· {b.pendingLectures} pending</strong>}
+            </span>
+            <span className="flex items-center gap-1">
+              <FlaskConical size={10} /> Labs: {b.conductedLabs}/{b.expectedLabs}
+              {b.pendingLabs > 0 && <strong className="text-caution">· {b.pendingLabs} pending</strong>}
+            </span>
+          </div>
+
+          {b.extra > 0 && (
+            <p className="text-[11px] font-medium text-sage-dark mt-2">
+              {b.extra} extra session{b.extra > 1 ? 's' : ''} beyond the weekly plan — likely make-up classes.
             </p>
           )}
 
-          {p.splitMissing && (
+          {b.splitMissing && (
             <p className="text-[10px] text-ink-muted mt-2">
               Counted as lectures — run a SAP sync to split lectures and labs properly.
             </p>
@@ -198,23 +183,26 @@ function SubjectRow({ subject, projection, onSave }) {
 
 export default function ClassCountPage() {
   const [subjects, setSubjects] = useState([]);
+  const [asOfDate, setAsOfDate] = useState(null); // how far the SAP data actually goes
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
-  const [semesterEnd, setSemesterEnd] = useState(
-    () => localStorage.getItem('cc_semesterEnd') || defaultSemesterEnd()
-  );
-  const [threshold, setThreshold] = useState(
-    () => Number(localStorage.getItem('cc_threshold')) || 75
+  const [semesterStart, setSemesterStart] = useState(
+    () => localStorage.getItem('cc_semesterStart') || defaultSemesterStart()
   );
 
-  useEffect(() => { localStorage.setItem('cc_semesterEnd', semesterEnd); }, [semesterEnd]);
-  useEffect(() => { localStorage.setItem('cc_threshold', String(threshold)); }, [threshold]);
+  useEffect(() => { localStorage.setItem('cc_semesterStart', semesterStart); }, [semesterStart]);
 
-  const fetchSubjects = useCallback(async () => {
+  const fetchAll = useCallback(async () => {
     try {
-      const { data } = await subjectsAPI.getAll();
-      setSubjects(data);
+      const [subs, status] = await Promise.allSettled([subjectsAPI.getAll(), sapAPI.getStatus()]);
+      if (subs.status === 'rejected') throw subs.reason;
+      setSubjects(subs.value.data);
+      // Measure elapsed weeks against the last date SAP has data for, not today —
+      // otherwise a report that is a few days behind shows phantom pending classes.
+      if (status.status === 'fulfilled' && status.value.data?.lastAttendanceDate) {
+        setAsOfDate(new Date(status.value.data.lastAttendanceDate));
+      }
       setError('');
     } catch {
       setError('Could not load subjects.');
@@ -223,7 +211,7 @@ export default function ClassCountPage() {
     }
   }, []);
 
-  useEffect(() => { fetchSubjects(); }, [fetchSubjects]);
+  useEffect(() => { fetchAll(); }, [fetchAll]);
 
   const handleSave = async (id, patch) => {
     // Optimistic — the field already shows the new value, so keep the list in step
@@ -232,41 +220,37 @@ export default function ClassCountPage() {
       await subjectsAPI.update(id, patch);
     } catch {
       setError('Could not save. Check your connection and try again.');
-      fetchSubjects(); // roll back to whatever the server actually has
+      fetchAll(); // roll back to whatever the server actually has
     }
   };
 
-  const weeksRemaining = useMemo(() => {
-    const end = parseDateInput(semesterEnd);
-    if (!end) return 0;
+  const { weeksElapsed, effectiveAsOf } = useMemo(() => {
+    const start = parseDateInput(semesterStart);
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    // End date is inclusive — a semester ending today still has today's classes.
-    const days = (end.getTime() - today.getTime()) / DAY_MS + 1;
-    return Math.max(0, days / 7);
-  }, [semesterEnd]);
+
+    // Never measure past today, even if SAP lists future (not-yet-held) sessions.
+    let asOf = asOfDate && !isNaN(asOfDate) ? new Date(asOfDate) : today;
+    asOf.setHours(0, 0, 0, 0);
+    if (asOf > today) asOf = today;
+
+    if (!start || asOf < start) return { weeksElapsed: 0, effectiveAsOf: asOf };
+    const days = (asOf.getTime() - start.getTime()) / DAY_MS + 1; // inclusive of both ends
+    return { weeksElapsed: Math.max(0, days / 7), effectiveAsOf: asOf };
+  }, [semesterStart, asOfDate]);
 
   const rows = useMemo(
-    () => subjects.map(s => ({ subject: s, projection: projectSubject(s, weeksRemaining, threshold) })),
-    [subjects, weeksRemaining, threshold]
+    () => subjects.map(s => ({ subject: s, backlog: computeBacklog(s, weeksElapsed) })),
+    [subjects, weeksElapsed]
   );
 
-  const totals = useMemo(() => {
-    const t = rows.reduce((acc, { projection: p }) => ({
-      conducted: acc.conducted + p.conducted,
-      attended:  acc.attended + p.attended,
-      pending:   acc.pending + p.pending,
-      projected: acc.projected + p.projectedTotal,
-    }), { conducted: 0, attended: 0, pending: 0, projected: 0 });
+  const totals = useMemo(() => rows.reduce((acc, { backlog: b }) => ({
+    expected:  acc.expected + b.expected,
+    conducted: acc.conducted + b.conducted,
+    pending:   acc.pending + b.pending,
+  }), { expected: 0, conducted: 0, pending: 0 }), [rows]);
 
-    return {
-      ...t,
-      currentPct:  t.conducted > 0 ? (t.attended / t.conducted) * 100 : null,
-      bestCasePct: t.projected > 0 ? ((t.attended + t.pending) / t.projected) * 100 : null,
-    };
-  }, [rows]);
-
-  const endDateValid = Boolean(parseDateInput(semesterEnd));
+  const startValid = Boolean(parseDateInput(semesterStart));
 
   if (loading) {
     return (
@@ -279,13 +263,13 @@ export default function ClassCountPage() {
   return (
     <div className="max-w-3xl mx-auto px-4 sm:px-6 pt-8">
       <div className="mb-7">
-        <p className="text-[10px] font-bold text-ember-dark uppercase tracking-widest mb-1">Distance remaining</p>
+        <p className="text-[10px] font-bold text-ember-dark uppercase tracking-widest mb-1">Backlog</p>
         <h1 className="text-2xl sm:text-3xl font-display font-bold text-ink tracking-tight flex items-center gap-2">
           <Calculator size={22} className="text-ink-muted" /> Class count
         </h1>
         <p className="text-xs text-ink-muted mt-1.5">
-          Classes already held come from your SAP attendance. Add how many run each week and
-          this projects how many are still left.
+          Compares how many classes should have run by now against how many SAP says actually
+          happened. The gap is what your professors still owe you.
         </p>
       </div>
 
@@ -293,51 +277,33 @@ export default function ClassCountPage() {
         <div className="mb-4 flex items-start gap-2 text-xs font-medium text-danger bg-danger-pale border border-danger/20 rounded-xl px-3 py-2">
           <AlertTriangle size={13} className="mt-0.5 flex-shrink-0" />
           <span className="flex-1">{error}</span>
-          <button onClick={fetchSubjects} className="underline flex-shrink-0">Retry</button>
+          <button onClick={fetchAll} className="underline flex-shrink-0">Retry</button>
         </div>
       )}
 
-      {/* Settings */}
       <div className="bg-parchment border border-sand rounded-2xl p-4 sm:p-5 mb-5 shadow-sm">
-        <div className="flex flex-wrap gap-3">
-          <label className="flex-1 min-w-[150px]">
-            <span className="flex items-center gap-1 text-[10px] font-bold text-ink-muted uppercase tracking-widest mb-1">
-              <CalendarClock size={11} /> Semester ends
-            </span>
-            <input type="date" value={semesterEnd} onChange={e => setSemesterEnd(e.target.value)}
-              className={`w-full px-3 py-2 bg-white border rounded-lg text-sm text-ink focus:outline-none focus:border-ember ${endDateValid ? 'border-sand' : 'border-danger'}`} />
-          </label>
-          <label className="flex-1 min-w-[150px]">
-            <span className="block text-[10px] font-bold text-ink-muted uppercase tracking-widest mb-1">
-              Attendance target
-            </span>
-            <select value={threshold} onChange={e => setThreshold(Number(e.target.value))}
-              className="w-full px-3 py-2 bg-white border border-sand rounded-lg text-sm text-ink focus:outline-none focus:border-ember">
-              {[70, 75, 80, 85].map(v => <option key={v} value={v}>{v}%</option>)}
-            </select>
-          </label>
-        </div>
+        <label className="block">
+          <span className="flex items-center gap-1 text-[10px] font-bold text-ink-muted uppercase tracking-widest mb-1">
+            <CalendarClock size={11} /> Semester started on
+          </span>
+          <input type="date" value={semesterStart} onChange={e => setSemesterStart(e.target.value)}
+            className={`w-full sm:w-56 px-3 py-2 bg-white border rounded-lg text-sm text-ink focus:outline-none focus:border-ember ${startValid ? 'border-sand' : 'border-danger'}`} />
+        </label>
         <p className="text-[11px] text-ink-muted mt-2">
-          {!endDateValid
-            ? 'Pick a valid end date to project the remaining classes.'
-            : weeksRemaining <= 0
-              ? 'That date has passed — nothing left to project. Set a later date if the semester is still running.'
-              : `About ${weeksRemaining.toFixed(1)} weeks of classes left.`}
+          {!startValid
+            ? 'Pick a valid start date.'
+            : weeksElapsed <= 0
+              ? 'That date is in the future — no classes counted yet.'
+              : `${weeksElapsed.toFixed(1)} weeks of classes so far, counted up to ${effectiveAsOf.toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })}.`}
         </p>
       </div>
 
-      {/* Totals */}
       {subjects.length > 0 && (
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-5">
+        <div className="grid grid-cols-3 gap-2 mb-5">
           {[
-            { label: 'Held', value: totals.conducted, color: 'text-ink' },
-            { label: 'Left', value: totals.pending, color: 'text-trail-dark' },
-            { label: 'Total by end', value: totals.projected, color: 'text-ink' },
-            {
-              label: 'If you attend all',
-              value: totals.bestCasePct === null ? '—' : `${totals.bestCasePct.toFixed(1)}%`,
-              color: 'text-sage-dark',
-            },
+            { label: 'Should have', value: totals.expected, color: 'text-ink' },
+            { label: 'Conducted', value: totals.conducted, color: 'text-trail-dark' },
+            { label: 'Pending', value: totals.pending, color: totals.pending > 0 ? 'text-caution' : 'text-sage-dark' },
           ].map(({ label, value, color }) => (
             <div key={label} className="bg-parchment border border-sand rounded-xl p-3 text-center shadow-sm">
               <p className={`text-xl font-display font-bold ${color}`}>{value}</p>
@@ -347,7 +313,6 @@ export default function ClassCountPage() {
         </div>
       )}
 
-      {/* Subjects */}
       {subjects.length === 0 ? (
         <div className="bg-parchment border border-sand rounded-2xl p-8 text-center shadow-sm">
           <p className="text-sm font-bold text-ink mb-1">No subjects yet</p>
@@ -355,16 +320,15 @@ export default function ClassCountPage() {
         </div>
       ) : (
         <div className="space-y-3">
-          {rows.map(({ subject, projection }) => (
-            <SubjectRow key={subject._id} subject={subject} projection={projection} onSave={handleSave} />
+          {rows.map(({ subject, backlog }) => (
+            <SubjectRow key={subject._id} subject={subject} backlog={backlog} onSave={handleSave} />
           ))}
         </div>
       )}
 
-      <p className="flex items-start gap-1.5 text-[11px] text-ink-muted mt-5 mb-2">
-        <RefreshCw size={11} className="mt-0.5 flex-shrink-0" />
-        These are estimates — they assume every week runs the full timetable, so holidays and
-        cancelled classes will shift the real numbers.
+      <p className="text-[11px] text-ink-muted mt-5 mb-2">
+        Estimates — the weekly rate is assumed to hold every week, so public holidays and exam
+        weeks will also show up as pending.
       </p>
     </div>
   );
