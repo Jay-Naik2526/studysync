@@ -93,6 +93,11 @@ export async function runSyncForUser(creds, opts = {}) {
       await Subject.findByIdAndUpdate(r.subjectId, {
         conductedClasses: r.conducted,
         absentClasses:    r.absent,
+        // Keep the lecture/lab split in step with the totals on every sync
+        conductedLectures: r.conductedLectures ?? 0,
+        absentLectures:    r.absentLectures ?? 0,
+        conductedLabs:     r.conductedLabs ?? 0,
+        absentLabs:        r.absentLabs ?? 0,
       });
       updated++;
       details.push({

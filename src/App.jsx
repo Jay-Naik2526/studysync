@@ -3,6 +3,7 @@ import AuthPage from './components/AuthPage';
 import Layout from './components/Layout';
 import DashboardPage from './components/DashboardPage';
 import AttendancePage from './components/AttendancePage';
+import ClassCountPage from './components/ClassCountPage';
 import MarksPage from './components/MarksPage';
 import SubjectsPage from './components/SubjectsPage';
 import NotesPage from './components/NotesPage';
@@ -57,6 +58,7 @@ function App() {
     <Layout currentView={view} onNavigate={onNavigate} onLogout={handleLogout} user={user}>
       {view === 'dashboard' && <DashboardPage onNavigate={onNavigate} />}
       {view === 'attendance' && <AttendancePage onNavigate={onNavigate} />}
+      {view === 'classcount' && <ClassCountPage onNavigate={onNavigate} />}
       {view === 'marks' && <MarksPage onNavigate={onNavigate} />}
       {view === 'subjects' && <SubjectsPage onNavigate={onNavigate} />}
       {view === 'notes' && <NotesPage onNavigate={onNavigate} />}

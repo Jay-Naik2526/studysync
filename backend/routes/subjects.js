@@ -24,7 +24,10 @@ router.post('/', authMiddleware, async (req, res) => {
 
 router.put('/:id', authMiddleware, async (req, res) => {
   try {
-    const { name, portalName, conductedClasses, absentClasses, totalPlannedClasses, totalMarks } = req.body;
+    const {
+      name, portalName, conductedClasses, absentClasses, totalPlannedClasses, totalMarks,
+      weeklyLectures, weeklyLabs,
+    } = req.body;
     const updateData = {};
     if (name !== undefined) updateData.name = name;
     if (portalName !== undefined) updateData.portalName = portalName;
@@ -32,6 +35,12 @@ router.put('/:id', authMiddleware, async (req, res) => {
     if (absentClasses !== undefined) updateData.absentClasses = absentClasses;
     if (totalPlannedClasses !== undefined) updateData.totalPlannedClasses = totalPlannedClasses;
     if (totalMarks !== undefined) updateData.totalMarks = totalMarks;
+
+    // Weekly rates drive the Class Count projections. Clamp to a sane non-negative
+    // integer so a stray value can never produce a negative or NaN projection.
+    const asCount = (v) => Math.max(0, Math.min(50, Math.floor(Number(v)) || 0));
+    if (weeklyLectures !== undefined) updateData.weeklyLectures = asCount(weeklyLectures);
+    if (weeklyLabs !== undefined) updateData.weeklyLabs = asCount(weeklyLabs);
 
     const updatedSubject = await Subject.findOneAndUpdate(
       { _id: req.params.id, user: req.user.id },

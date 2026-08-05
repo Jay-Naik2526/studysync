@@ -192,11 +192,17 @@ export function collectAttendanceRows(lines, { strictLayout }) {
     // course codes from other programs still parse. The fallback requires the code to be
     // glued (no space) so trailing section text like "Div B1" can never be mistaken for it.
     const courseMatch =
-      cleanCourseLine.match(/^(.*?\S)\s*[TUPL]\d+(?=\s|$)/) ||
-      cleanCourseLine.match(/^(.*?[A-Za-z])[A-Z]\d+(?=\s|$)/);
+      cleanCourseLine.match(/^(.*?\S)\s*([TUPL])\d+(?=\s|$)/) ||
+      cleanCourseLine.match(/^(.*?[A-Za-z])([A-Z])\d+(?=\s|$)/);
     if (!courseMatch) continue;
 
     let courseName = courseMatch[1].trim();
+
+    // The section code also says what KIND of session this row is:
+    // P = Practical, L = Lab → a lab slot; T = Theory, U = Tutorial → a lecture slot.
+    // Anything unfamiliar is treated as a lecture, which is the common case.
+    const sectionCode = courseMatch[2].toUpperCase();
+    const kind = (sectionCode === 'P' || sectionCode === 'L') ? 'lab' : 'lecture';
 
     // In tolerant mode the sequence number may be stuck to the front of the name. Only
     // strip leading digits when a capital+lowercase word follows ("1Leading" → "Leading"),
@@ -232,12 +238,22 @@ export function collectAttendanceRows(lines, { strictLayout }) {
     // If attendance is 'NU' (Not Updated), we still parse it as a valid row (with zero action on absent counting)
     if (!attendance) continue;
 
-    if (!map[courseName]) map[courseName] = { conducted: 0, absent: 0, dates: [] };
+    if (!map[courseName]) map[courseName] = {
+      conducted: 0, absent: 0, dates: [],
+      // Same tallies split by session kind, so the Class Count page can project
+      // lectures and labs separately (they run at different weekly rates).
+      lecture: { conducted: 0, absent: 0 },
+      lab:     { conducted: 0, absent: 0 },
+    };
 
     // NU (Not Updated) classes are planned but not conducted yet — we do not count them as conducted
     if (attendance !== 'NU') {
       map[courseName].conducted++;
-      if (attendance === 'A') map[courseName].absent++;
+      map[courseName][kind].conducted++;
+      if (attendance === 'A') {
+        map[courseName].absent++;
+        map[courseName][kind].absent++;
+      }
     }
     if (dateStr) map[courseName].dates.push(dateStr);
   }
@@ -266,10 +282,20 @@ export function mergeTruncatedCourseNames(map) {
     if (target) {
       merged[target].conducted += map[name].conducted;
       merged[target].absent    += map[name].absent;
+      for (const kind of ['lecture', 'lab']) {
+        merged[target][kind].conducted += map[name][kind].conducted;
+        merged[target][kind].absent    += map[name][kind].absent;
+      }
       merged[target].dates.push(...map[name].dates);
       console.log(`  ↔ Merged "${name}" into "${target}" (same course, truncated differently by SAP)`);
     } else {
-      merged[name] = { ...map[name], dates: [...map[name].dates] };
+      // Deep-copy the per-kind tallies so later merges cannot mutate the source map
+      merged[name] = {
+        ...map[name],
+        dates:   [...map[name].dates],
+        lecture: { ...map[name].lecture },
+        lab:     { ...map[name].lab },
+      };
     }
   }
 
@@ -1312,6 +1338,11 @@ export async function scrapeSAPAttendance(username, password, subjects, options 
         conducted:   data.conducted,
         absent:      data.absent,
         present:     data.conducted - data.absent,
+        // Split by session kind for the Class Count projections
+        conductedLectures: data.lecture.conducted,
+        absentLectures:    data.lecture.absent,
+        conductedLabs:     data.lab.conducted,
+        absentLabs:        data.lab.absent,
         autoMatched: confidence >= 0.6,
       });
     }
