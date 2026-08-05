@@ -245,6 +245,37 @@ export function collectAttendanceRows(lines, { strictLayout }) {
   return map;
 }
 
+// SAP truncates the course name to fit its column, and it truncates the SAME course to
+// different lengths depending on the row — the theory row reads "Image and Video ProceT2"
+// while the lab row reads "Image and Video ProcP2". Those arrive here as two separate
+// courses and update two separate subjects, so fold the truncated variants back together.
+//
+// The merge is deliberately narrow: a shorter name is only absorbed when the longer one
+// CONTINUES ITS LAST WORD ("Proc" → "Proce"). If the longer name starts a new word
+// ("Physics" vs "Physics II"), those are genuinely different courses and stay separate.
+export function mergeTruncatedCourseNames(map) {
+  // Longest first, so the most complete spelling becomes the surviving name.
+  const names = Object.keys(map).sort((a, b) => b.length - a.length);
+  const merged = {};
+
+  for (const name of names) {
+    const target = Object.keys(merged).find(
+      kept => kept.startsWith(name) && kept[name.length] !== ' '
+    );
+
+    if (target) {
+      merged[target].conducted += map[name].conducted;
+      merged[target].absent    += map[name].absent;
+      merged[target].dates.push(...map[name].dates);
+      console.log(`  ↔ Merged "${name}" into "${target}" (same course, truncated differently by SAP)`);
+    } else {
+      merged[name] = { ...map[name], dates: [...map[name].dates] };
+    }
+  }
+
+  return merged;
+}
+
 export async function parsePDFAttendance(pdfBuffer) {
   const pdfParse = requireCJS('pdf-parse');
   const { text } = await pdfParse(pdfBuffer);
@@ -273,6 +304,10 @@ export async function parsePDFAttendance(pdfBuffer) {
       console.error(text.substring(0, 4000));
     }
   }
+
+  // Fold SAP's differently-truncated spellings of the same course back together, so a
+  // subject's lecture and lab rows land on one subject instead of two.
+  map = mergeTruncatedCourseNames(map);
 
   // Determine the latest attendance date across all parsed rows
   let maxDate = null;
