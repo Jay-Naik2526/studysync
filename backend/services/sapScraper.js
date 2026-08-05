@@ -254,8 +254,12 @@ export function collectAttendanceRows(lines, { strictLayout }) {
         map[courseName].absent++;
         map[courseName][kind].absent++;
       }
+      // Only a row that carries a real mark dates the report. NU rows are scheduled but
+      // unmarked — often today's or a future session — so letting them set "data marked
+      // up to" overstates how current the data is and inflates the Class Count backlog
+      // with sessions nobody has recorded yet.
+      if (dateStr) map[courseName].dates.push(dateStr);
     }
-    if (dateStr) map[courseName].dates.push(dateStr);
   }
 
   return map;
