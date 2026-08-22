@@ -12,6 +12,9 @@ import todosRoutes from './routes/todos.js';
 import dashboardRoutes from './routes/dashboard.js';
 import notesRoutes from './routes/notes.js';
 import sapRoutes   from './routes/sap.js';
+import profileRoutes from './routes/profile.js';
+import mentorRoutes from './routes/mentor.js';
+import applicationsRoutes from './routes/applications.js';
 
 dotenv.config();
 const app = express();
@@ -48,6 +51,9 @@ app.use('/api/dashboard', authMiddleware, dashboardRoutes);
 app.use('/api/subjects', authMiddleware, subjectsRoutes);
 app.use('/api/grades', authMiddleware, gradesRoutes);
 app.use('/api/todos', authMiddleware, todosRoutes);
+app.use('/api/profile', authMiddleware, profileRoutes);
+app.use('/api/mentor', authMiddleware, mentorRoutes);
+app.use('/api/applications', applicationsRoutes);
 
 /** * CRITICAL UPDATE: Removed authMiddleware from here.
  * It must be placed AFTER multer in /routes/notes.js to avoid 404/413 errors on Vercel.

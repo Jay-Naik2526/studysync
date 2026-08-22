@@ -1,8 +1,8 @@
 import React from 'react';
-import { LayoutDashboard, CalendarDays, Calculator, BarChart2, BookOpen, FileText, Compass, LogOut } from 'lucide-react';
+import { LayoutDashboard, CalendarDays, Calculator, BarChart2, BookOpen, FileText, Compass, LogOut, Users, Inbox, UserCircle } from 'lucide-react';
 import ContourBackdrop from './ContourBackdrop';
 
-const navItems = [
+const studentNavItems = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { id: 'attendance', label: 'Attendance', icon: CalendarDays },
   { id: 'classcount', label: 'Classes', icon: Calculator },
@@ -10,9 +10,21 @@ const navItems = [
   { id: 'subjects', label: 'Subjects', icon: BookOpen },
   { id: 'notes', label: 'Notes', icon: FileText },
   { id: 'planner', label: 'Planner', icon: Compass },
+  { id: 'applications', label: 'Apps', icon: Inbox },
+  { id: 'profile', label: 'Profile', icon: UserCircle },
+];
+
+const mentorNavItems = [
+  { id: 'mentor-dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { id: 'mentees', label: 'Mentees', icon: Users },
+  { id: 'mentor-applications', label: 'Inbox', icon: Inbox },
+  { id: 'profile', label: 'Profile', icon: UserCircle },
 ];
 
 export default function Layout({ currentView, onNavigate, onLogout, user, children }) {
+  const role = user?.role || 'student';
+  const navItems = role === 'mentor' ? mentorNavItems : studentNavItems;
+
   return (
     <div className="min-h-screen bg-paper text-ink font-sans relative overflow-x-hidden">
       <ContourBackdrop />

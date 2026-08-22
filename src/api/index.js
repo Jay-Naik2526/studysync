@@ -71,4 +71,29 @@ export const sapAPI = {
   getDeadlines:    ()      => api.get('/sap/deadlines'),
 };
 
+export const profileAPI = {
+  get:            ()     => api.get('/profile'),
+  update:         (data) => api.patch('/profile', data),
+  joinMentor:     (code) => api.post('/profile/join-mentor', { code }),
+  leaveMentor:    ()     => api.delete('/profile/mentor'),
+  regenerateCode: ()     => api.post('/profile/regenerate-code'),
+};
+
+export const mentorAPI = {
+  getOverview:      ()               => api.get('/mentor/overview'),
+  getMentees:       ()               => api.get('/mentor/mentees'),
+  getMentee:        (id)             => api.get(`/mentor/mentees/${id}`),
+  removeMentee:     (id)             => api.delete(`/mentor/mentees/${id}`),
+  getApplications:  (status)         => api.get('/mentor/applications', { params: { status } }),
+  decideApplication:(id, data)       => api.patch(`/mentor/applications/${id}`, data),
+  regenerateCode:   ()               => api.post('/mentor/code/regenerate'),
+};
+
+export const applicationsAPI = {
+  submit:   (formData) => api.post('/applications', formData, { headers: { 'Content-Type': 'multipart/form-data' } }),
+  getAll:   (status)   => api.get('/applications', { params: { status } }),
+  getOne:   (id)       => api.get(`/applications/${id}`),
+  withdraw: (id)       => api.patch(`/applications/${id}/withdraw`),
+};
+
 export default api;
