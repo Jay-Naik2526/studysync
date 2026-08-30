@@ -62,11 +62,12 @@ router.post('/login', async (req, res) => {
         const isMatch = await bcrypt.compare(password, user.password);
         if (!isMatch) return res.status(400).json({ message: 'Invalid credentials.' });
 
-        // The token is created with 'userId'
+        // The token is created with 'userId'.
+        // No expiry: sessions used to silently die after 7 days, and because the frontend
+        // had no 401 handling the failure surfaced as "sync failed" rather than "signed
+        // out". Tokens now stay valid until the user signs out or JWT_SECRET is rotated.
         const payload = { userId: user.id };
-        const token = jwt.sign(payload, process.env.JWT_SECRET || 'your_default_secret_key', {
-            expiresIn: '7d',
-        });
+        const token = jwt.sign(payload, process.env.JWT_SECRET || 'your_default_secret_key');
 
         const userObj = {
             id: user.id,

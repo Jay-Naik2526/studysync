@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Compass, Mail, Lock, User, ArrowRight, AlertCircle, Shield, Building2, BadgeCheck } from 'lucide-react';
 import { authAPI } from '../api';
 import ContourBackdrop from './ContourBackdrop';
@@ -15,6 +15,16 @@ export default function AuthPage({ onLogin }) {
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
+
+  // Show why the user landed back here when the API rejected a stale token,
+  // instead of bouncing them to a blank login form with no explanation.
+  useEffect(() => {
+    const msg = sessionStorage.getItem('authMessage');
+    if (msg) {
+      setError(msg);
+      sessionStorage.removeItem('authMessage');
+    }
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();

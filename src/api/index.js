@@ -20,6 +20,28 @@ api.interceptors.request.use(config => {
   return Promise.reject(error);
 });
 
+// If the server ever rejects our token, sign out cleanly instead of letting the 401
+// surface as a confusing feature-level error ("Sync failed", "Could not load subjects").
+// Tokens no longer expire, but they can still be invalidated by a JWT_SECRET rotation or
+// a deleted account, and a stale token in localStorage would otherwise break every page
+// with no hint that the fix is simply to log in again.
+api.interceptors.response.use(
+  response => response,
+  error => {
+    const status = error.response?.status;
+    const url = error.config?.url || '';
+    const isAuthCall = url.includes('/auth/login') || url.includes('/auth/register');
+
+    if (status === 401 && !isAuthCall && localStorage.getItem('token')) {
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      sessionStorage.setItem('authMessage', 'Your session ended. Please sign in again.');
+      window.location.reload();
+    }
+    return Promise.reject(error);
+  }
+);
+
 export const authAPI = {
     login: (credentials) => api.post('/auth/login', credentials),
     register: (userData) => api.post('/auth/register', userData),
