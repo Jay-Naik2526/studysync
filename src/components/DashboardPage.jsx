@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { TrendingUp, CalendarCheck, CalendarX, BookOpen, AlertTriangle, CheckCircle, ArrowUpRight, Link, Unlink, RefreshCw, Loader2, X, Clock, HelpCircle } from 'lucide-react';
 import { dashboardAPI, sapAPI } from '../api';
+import { ATTENDANCE_THRESHOLD } from '../constants';
 
 function Ring({ pct, size = 110, stroke = 10, color }) {
   const r = size / 2 - stroke / 2;
@@ -378,7 +379,7 @@ export default function DashboardPage({ onNavigate }) {
             ) : (
               <div className="flex items-center gap-2 text-sage-dark">
                 <CheckCircle size={15} />
-                <span className="text-sm font-bold">All subjects above 80%</span>
+                <span className="text-sm font-bold">All subjects above {ATTENDANCE_THRESHOLD}%</span>
               </div>
             )}
           </div>

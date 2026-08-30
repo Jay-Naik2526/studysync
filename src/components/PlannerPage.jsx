@@ -7,6 +7,7 @@ import remarkGfm from 'remark-gfm';
 import rehypeKatex from 'rehype-katex';
 import html2pdf from 'html2pdf.js';
 import { SkeletonPlanner } from './SkeletonLoader';
+import { ATTENDANCE_THRESHOLD } from '../constants';
 
 function MarkdownRenderer({ content, isPrint = false }) {
   return (
@@ -368,7 +369,7 @@ export default function PlannerPage() {
                             }`}
                           >
                             {selectedSubjectObj.conductedClasses > 0 && ((selectedSubjectObj.conductedClasses - selectedSubjectObj.absentClasses) / selectedSubjectObj.conductedClasses) < 0.8
-                              ? 'Below 80% — at risk'
+                              ? `Below ${ATTENDANCE_THRESHOLD}% — at risk`
                               : 'On track'
                             }
                           </p>

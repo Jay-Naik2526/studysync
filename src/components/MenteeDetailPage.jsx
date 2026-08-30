@@ -5,6 +5,7 @@ import {
   ClockIcon
 } from 'lucide-react';
 import { mentorAPI } from '../api';
+import { ATTENDANCE_THRESHOLD } from '../constants';
 
 const TYPE_LABELS = {
   sick_leave: 'Sick Leave',
@@ -38,7 +39,7 @@ function SubjectAttendanceRow({ subject }) {
         <p className={`text-base font-display font-bold ${
           pct === null ? 'text-ink-faint' :
           atRisk ? 'text-danger' :
-          pct < 80 ? 'text-caution' : 'text-sage-dark'
+          pct < ATTENDANCE_THRESHOLD ? 'text-caution' : 'text-sage-dark'
         }`}>
           {pct !== null ? `${Math.round(pct)}%` : '—'}
         </p>
@@ -143,7 +144,7 @@ export default function MenteeDetailPage({ studentId, onBack }) {
           </div>
           <div className="text-right flex-shrink-0">
             <p className={`text-2xl font-display font-bold ${
-              pct === null ? 'text-ink-faint' : atRisk ? 'text-danger' : pct < 80 ? 'text-caution' : 'text-sage-dark'
+              pct === null ? 'text-ink-faint' : atRisk ? 'text-danger' : pct < ATTENDANCE_THRESHOLD ? 'text-caution' : 'text-sage-dark'
             }`}>
               {pct !== null ? `${Math.round(pct)}%` : '—'}
             </p>

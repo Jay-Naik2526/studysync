@@ -3,6 +3,7 @@ import { Plus, Trash2, CheckCircle, AlertTriangle, Download, FileText, TrendingU
 import { subjectsAPI, sapAPI } from '../api';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import { ATTENDANCE_THRESHOLD } from '../constants';
 
 function Ring({ pct, color, size = 52, stroke = 5 }) {
   const r = size / 2 - stroke / 2;
@@ -32,7 +33,7 @@ function SubjectCard({ subject, onUpdate, onDelete }) {
   const present = Math.max(simulatedConducted - simulatedAbsent, 0);
 
   const pct = simulatedConducted > 0 ? (present / simulatedConducted) * 100 : 0;
-  const onTrack = pct >= 80;
+  const onTrack = pct >= ATTENDANCE_THRESHOLD;
   const maxSkip = Math.floor(totalPlannedClasses * 0.2);
   const canSkip = Math.max(maxSkip - simulatedAbsent, 0);
 
@@ -63,7 +64,7 @@ function SubjectCard({ subject, onUpdate, onDelete }) {
             <div className="flex items-center gap-1.5 mt-0.5">
               {onTrack
                 ? <><CheckCircle size={10} className="text-sage-dark flex-shrink-0" /><span className="text-[11px] text-sage-dark">On track</span></>
-                : <><AlertTriangle size={10} className="text-danger flex-shrink-0" /><span className="text-[11px] text-danger">Below 80%</span></>
+                : <><AlertTriangle size={10} className="text-danger flex-shrink-0" /><span className="text-[11px] text-danger">Below {ATTENDANCE_THRESHOLD}%</span></>
               }
               {isSimulating && (
                 <span className="text-[9px] font-bold text-trail-dark bg-trail/15 px-1.5 py-0.5 rounded uppercase tracking-wider">Simulating</span>
@@ -147,7 +148,7 @@ function SummaryStrip({ subjects }) {
     const overall = tc > 0 ? ((tc - ta) / tc) * 100 : 0;
     const good = subjects.filter(s => {
       const p = s.conductedClasses > 0 ? ((s.conductedClasses - s.absentClasses) / s.conductedClasses) * 100 : 100;
-      return p >= 80;
+      return p >= ATTENDANCE_THRESHOLD;
     }).length;
     return { overall, good, atRisk: subjects.length - good };
   }, [subjects]);
@@ -342,7 +343,7 @@ export default function AttendancePage() {
       const p = Math.max(s.conductedClasses - s.absentClasses, 0);
       const pct = s.conductedClasses > 0 ? (p / s.conductedClasses) * 100 : 100;
       const ms = Math.floor(s.totalPlannedClasses * 0.2);
-      return [s.name, pct.toFixed(2), pct >= 80 ? 'On Track' : 'At Risk', s.conductedClasses, p, s.absentClasses, s.totalPlannedClasses, ms, Math.max(ms - s.absentClasses, 0)].join(',');
+      return [s.name, pct.toFixed(2), pct >= ATTENDANCE_THRESHOLD ? 'On Track' : 'At Risk', s.conductedClasses, p, s.absentClasses, s.totalPlannedClasses, ms, Math.max(ms - s.absentClasses, 0)].join(',');
     });
     const blob = new Blob([['Subject,Att%,Status,Conducted,Present,Absent,Planned,MaxSkip,RemSkip', ...rows].join('\n')], { type: 'text/csv' });
     Object.assign(document.createElement('a'), { href: URL.createObjectURL(blob), download: 'attendance.csv' }).click();
@@ -357,7 +358,7 @@ export default function AttendancePage() {
         const p = Math.max(s.conductedClasses - s.absentClasses, 0);
         const pct = s.conductedClasses > 0 ? (p / s.conductedClasses) * 100 : 100;
         const ms = Math.floor(s.totalPlannedClasses * 0.2);
-        return [s.name, `${pct.toFixed(1)}%`, pct >= 80 ? 'On Track' : 'At Risk', s.conductedClasses, p, s.absentClasses, ms, Math.max(ms - s.absentClasses, 0)];
+        return [s.name, `${pct.toFixed(1)}%`, pct >= ATTENDANCE_THRESHOLD ? 'On Track' : 'At Risk', s.conductedClasses, p, s.absentClasses, ms, Math.max(ms - s.absentClasses, 0)];
       }),
       startY: 22, theme: 'striped', headStyles: { fillColor: [124, 144, 112] },
     });

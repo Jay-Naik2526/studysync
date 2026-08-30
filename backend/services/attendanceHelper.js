@@ -2,7 +2,11 @@ import Subject from '../models/Subject.js';
 import Grade from '../models/Grade.js';
 import SapCredentials from '../models/SapCredentials.js';
 
-const AT_RISK_THRESHOLD = 75;
+// The college mandates 80% attendance. This is the single source of truth for the
+// backend; the frontend mirrors it in src/constants.js. They must stay equal — a
+// mismatch previously made the mentor dashboard report a 77% student as safe while
+// the UI beside it coloured them at risk.
+export const AT_RISK_THRESHOLD = 80;
 
 /**
  * Compute attendance stats for a single subject.

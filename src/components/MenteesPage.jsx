@@ -4,6 +4,7 @@ import {
   GraduationCap, Clock, Inbox
 } from 'lucide-react';
 import { mentorAPI } from '../api';
+import { ATTENDANCE_THRESHOLD } from '../constants';
 
 function MenteeRow({ mentee, onClick }) {
   const pct = mentee.attendance?.percentage;
@@ -50,7 +51,7 @@ function MenteeRow({ mentee, onClick }) {
           <p className={`text-lg font-display font-bold ${
             pct === null ? 'text-ink-faint' :
             atRisk ? 'text-danger' :
-            pct < 80 ? 'text-caution' : 'text-sage-dark'
+            pct < ATTENDANCE_THRESHOLD ? 'text-caution' : 'text-sage-dark'
           }`}>
             {pct !== null && pct !== undefined ? `${Math.round(pct)}%` : '—'}
           </p>
