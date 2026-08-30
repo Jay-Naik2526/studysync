@@ -3,7 +3,7 @@ import {
   Inbox, Loader2, AlertTriangle, CheckCircle, XCircle, Clock,
   FileText, Paperclip, Eye, MessageSquare, Filter
 } from 'lucide-react';
-import { mentorAPI } from '../api';
+import { mentorAPI, applicationsAPI } from '../api';
 
 const TYPE_LABELS = {
   sick_leave: 'Sick Leave',
@@ -216,11 +216,13 @@ export default function MentorApplicationsPage() {
     }
   };
 
-  const handleViewAttachment = (appId) => {
-    const url = `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api'}/applications/${appId}/attachment`;
-    const token = localStorage.getItem('token');
-    // Open in new tab with auth
-    window.open(`${url}?token=${token}`, '_blank');
+  const handleViewAttachment = async (appId) => {
+    try {
+      const res = await applicationsAPI.getAttachmentUrl(appId);
+      if (res.data?.url) window.open(res.data.url, '_blank');
+    } catch {
+      setError('Could not load attachment.');
+    }
   };
 
   if (loading) {

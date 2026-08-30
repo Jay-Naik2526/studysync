@@ -32,7 +32,7 @@ function MenteeRow({ mentee, onClick }) {
               </span>
             )}
           </div>
-          <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 mt-0.5">
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 mt-0.5 overflow-x-auto">
             {mentee.rollNo && (
               <span className="text-[11px] text-ink-muted">{mentee.rollNo}</span>
             )}

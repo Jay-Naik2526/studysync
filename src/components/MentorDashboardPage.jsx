@@ -145,7 +145,7 @@ export default function MentorDashboardPage({ onNavigate }) {
       )}
 
       {/* Stats */}
-      <div className="grid grid-cols-3 gap-3 mb-5">
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-5">
         <StatTile
           label="Mentees"
           value={overview?.menteeCount ?? 0}

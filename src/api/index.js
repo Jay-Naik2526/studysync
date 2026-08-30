@@ -112,10 +112,11 @@ export const mentorAPI = {
 };
 
 export const applicationsAPI = {
-  submit:   (formData) => api.post('/applications', formData, { headers: { 'Content-Type': 'multipart/form-data' } }),
-  getAll:   (status)   => api.get('/applications', { params: { status } }),
-  getOne:   (id)       => api.get(`/applications/${id}`),
-  withdraw: (id)       => api.patch(`/applications/${id}/withdraw`),
+  submit:           (formData) => api.post('/applications', formData, { headers: { 'Content-Type': 'multipart/form-data' } }),
+  getAll:           (status)   => api.get('/applications', { params: { status } }),
+  getOne:           (id)       => api.get(`/applications/${id}`),
+  withdraw:         (id)       => api.patch(`/applications/${id}/withdraw`),
+  getAttachmentUrl: (id)       => api.get(`/applications/${id}/attachment`),
 };
 
 export default api;

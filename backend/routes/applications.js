@@ -7,10 +7,10 @@ import { uploadToCloudinary, getSignedUrl, deleteFromCloudinary } from '../servi
 
 const router = express.Router();
 
-// Multer: memory storage, max 5 MB
+// Multer: memory storage, max 5 MB, max 1 file
 const upload = multer({
   storage: multer.memoryStorage(),
-  limits: { fileSize: 5 * 1024 * 1024 },
+  limits: { fileSize: 5 * 1024 * 1024, files: 1 },
 });
 
 // Allowed MIME types and their magic bytes
@@ -32,7 +32,8 @@ function verifyMagicBytes(buffer, mimetype) {
 
 // ── POST /api/applications ──────────────────────────────────────
 // Submit a new application. Multipart when attachment is present.
-router.post('/', upload.single('attachment'), authMiddleware, async (req, res) => {
+// AUTH FIRST, then multer — so unauthenticated uploads never buffer into memory.
+router.post('/', authMiddleware, upload.single('attachment'), async (req, res) => {
   try {
     const student = await User.findById(req.user.id);
     if (!student || student.role !== 'student') {
@@ -186,42 +187,18 @@ router.patch('/:id/withdraw', authMiddleware, async (req, res) => {
 });
 
 // ── GET /api/applications/:id/attachment ─────────────────────────
-// Streams/redirects to a signed URL. Authorized for owner student OR assigned mentor only.
-// NOTE: This endpoint is opened in a new browser tab via window.open(), so the
-// Authorization header is not available. We accept the JWT from ?token= as a fallback.
-router.get('/:id/attachment', async (req, res) => {
+// Returns a short-lived signed Cloudinary URL as JSON. No query-string tokens.
+// Authorized for owner student OR assigned mentor only.
+router.get('/:id/attachment', authMiddleware, async (req, res) => {
   try {
-    // Inline auth: header first, then query param fallback (for new-tab opens)
-    const { default: jwt } = await import('jsonwebtoken');
-    const { default: UserModel } = await import('../models/User.js');
-
-    const headerToken = req.header('Authorization')?.replace('Bearer ', '');
-    const token = headerToken || req.query.token;
-
-    if (!token) {
-      return res.status(401).json({ message: 'No token, authorization denied' });
-    }
-
-    let decoded;
-    try {
-      decoded = jwt.verify(token, process.env.JWT_SECRET || 'your_default_secret_key');
-    } catch {
-      return res.status(401).json({ message: 'Token is not valid' });
-    }
-
-    const user = await UserModel.findById(decoded.userId || decoded.id).select('_id role');
-    if (!user) {
-      return res.status(401).json({ message: 'User not found' });
-    }
-
     const application = await Application.findById(req.params.id);
     if (!application) {
       return res.status(404).json({ message: 'Application not found.' });
     }
 
     // Authorization: owning student OR assigned mentor
-    const isOwner = application.student.toString() === user._id.toString();
-    const isMentor = application.mentor.toString() === user._id.toString();
+    const isOwner = application.student.toString() === req.user.id.toString();
+    const isMentor = application.mentor.toString() === req.user.id.toString();
 
     if (!isOwner && !isMentor) {
       return res.status(403).json({ message: 'Not authorized to view this attachment.' });
@@ -231,14 +208,15 @@ router.get('/:id/attachment', async (req, res) => {
       return res.status(404).json({ message: 'No attachment on this application.' });
     }
 
-    // Generate a signed URL valid for ~60 seconds
-    const signedUrl = getSignedUrl(
+    // Return a signed URL valid for ~60 seconds — the frontend opens this URL directly.
+    // Much safer than putting the JWT in a query string.
+    const url = getSignedUrl(
       application.attachment.publicId,
       application.attachment.format,
       60
     );
 
-    res.redirect(signedUrl);
+    res.json({ url });
   } catch (error) {
     console.error('GET /applications/:id/attachment error:', error);
     res.status(500).json({ message: 'Server error' });
