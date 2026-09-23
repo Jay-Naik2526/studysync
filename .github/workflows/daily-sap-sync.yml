@@ -1,12 +1,18 @@
 name: Daily SAP attendance sync
 
-# 23:30 UTC = 05:00 AM IST. The SAP portal is closed 7:00 AM – 6:00 PM IST, so this
-# lands inside the open window and leaves attendance fresh for the whole college day.
+# 20:00 UTC = 01:30 AM IST. The SAP portal is closed 7:00 AM – 6:00 PM IST.
+# GitHub routinely starts scheduled runs 1–2h late (the old 05:00 IST slot was firing
+# at ~07:00 IST, right as the portal closed), so aim well inside the open window.
 # The request also wakes the backend if its host has idled it to sleep.
 on:
   schedule:
-    - cron: '30 23 * * *'
+    - cron: '0 20 * * *'
   workflow_dispatch:        # lets you trigger a run by hand from the Actions tab
+    inputs:
+      all_users:
+        description: 'Sync every connected user, not just those with auto-sync on'
+        type: boolean
+        default: false
 
 jobs:
   trigger-sync:
@@ -16,6 +22,7 @@ jobs:
         env:
           BACKEND_URL: ${{ secrets.BACKEND_URL }}
           CRON_SECRET: ${{ secrets.CRON_SECRET }}
+          ALL_USERS: ${{ inputs.all_users || false }}
         run: |
           if [ -z "$BACKEND_URL" ] || [ -z "$CRON_SECRET" ]; then
             echo "::error::BACKEND_URL and CRON_SECRET repository secrets must both be set."
@@ -28,6 +35,7 @@ jobs:
             --max-time 180 \
             -H "x-cron-secret: $CRON_SECRET" \
             -H 'Content-Type: application/json' \
+            -d "{\"all\": $ALL_USERS}" \
             "$BACKEND_URL/api/sap/cron/run")
 
           body=$(echo "$response" | sed '$d')

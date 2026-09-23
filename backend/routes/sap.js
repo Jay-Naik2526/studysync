@@ -143,7 +143,8 @@ router.post('/cron/run', async (req, res) => {
   // Respond immediately — the queue takes far longer than any HTTP timeout allows.
   res.json({ started: true, message: 'Daily auto-sync started.' });
 
-  runDailyAutoSync().catch(err => console.error('Daily auto-sync crashed:', err));
+  // { "all": true } syncs every connected user, not just those with auto-sync on
+  runDailyAutoSync({ includeAll: req.body?.all === true }).catch(err => console.error('Daily auto-sync crashed:', err));
 });
 
 // ── DELETE /api/sap/credentials — disconnect SAP ──────────────────

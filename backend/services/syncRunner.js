@@ -134,19 +134,25 @@ export async function runSyncForUser(creds, opts = {}) {
 
 // A sync stuck in 'running' for longer than this is treated as dead (crash/restart)
 const STALE_LOCK_MS = 30 * 60 * 1000;
-// Don't re-sync someone who already synced recently
-const MIN_HOURS_BETWEEN_SYNCS = 12;
 // Give the portal a breather between users
 const GAP_BETWEEN_USERS_MS = 15 * 1000;
 const MAX_CONSECUTIVE_FAILURES = 3;
+
+// Users whose last sync hit a wrong password or a locked account. Re-trying them in a
+// bulk run only risks (another) portal lockout, so they're left alone until they reconnect.
+const PERMANENT_FAILURE_MSG = /password is incorrect|account is locked/i;
+// Set by the failure streak below — these users opted in and should be switched back on.
+const STREAK_DISABLED_MSG = /^Auto-sync turned off after/;
 
 /**
  * Nightly job: sync every user who opted in, strictly one at a time.
  *
  * Sequential by design — each scrape drives a full Chromium instance for ~90s, so
  * running them together would exhaust memory on a small container.
+ *
+ * @param {object} opts  { includeAll: also sync users who have auto-sync off }
  */
-export async function runDailyAutoSync() {
+export async function runDailyAutoSync({ includeAll = false } = {}) {
   const startedAt = Date.now();
 
   if (!isPortalOpen()) {
@@ -155,12 +161,11 @@ export async function runDailyAutoSync() {
     return { ran: false, reason: msg, total: 0, succeeded: 0, failed: 0, skipped: 0 };
   }
 
-  const candidates = await SapCredentials.find({
-    autoSyncEnabled: true,
-    semester: { $ne: null },
-  });
+  const candidates = await SapCredentials.find(
+    includeAll ? { semester: { $ne: null } } : { autoSyncEnabled: true, semester: { $ne: null } }
+  );
 
-  console.log(`🌙 Daily auto-sync starting — ${candidates.length} user(s) opted in.`);
+  console.log(`🌙 ${includeAll ? 'Full' : 'Daily auto-'}sync starting — ${candidates.length} user(s).`);
 
   let succeeded = 0, failed = 0, skipped = 0;
 
@@ -176,12 +181,13 @@ export async function runDailyAutoSync() {
       }
     }
 
-    // Already up to date
-    if (creds.lastSync && Date.now() - new Date(creds.lastSync).getTime() < MIN_HOURS_BETWEEN_SYNCS * 3600_000) {
-      console.log(`  ⏭ ${creds.userId}: synced less than ${MIN_HOURS_BETWEEN_SYNCS}h ago — skipping.`);
+    if (includeAll && PERMANENT_FAILURE_MSG.test(creds.lastSyncMessage || '')) {
+      console.log(`  ⏭ ${creds.userId}: wrong password / locked account on file — skipping.`);
       skipped++;
       continue;
     }
+
+    const optedIn = creds.autoSyncEnabled || STREAK_DISABLED_MSG.test(creds.lastSyncMessage || '');
 
     // The portal may close mid-run on a long queue
     if (!isPortalOpen()) {
@@ -199,11 +205,35 @@ export async function runDailyAutoSync() {
       creds.lastAutoSync       = new Date();
       creds.lastAutoSyncStatus = 'success';
       creds.autoSyncFailures   = 0;
+      if (optedIn) creds.autoSyncEnabled = true;
       await creds.save();
       succeeded++;
     } catch (err) {
+      // The portal closing mid-scrape is our timing, not the user's problem. Don't count
+      // it toward their failure streak, or one late run disables auto-sync for everyone.
+      if (!isPortalOpen()) {
+        creds.lastSyncStatus   = creds.lastSync ? 'success' : 'failed';
+        creds.lastSyncProgress = '';
+        await creds.save().catch(() => {});
+        console.log(`  ⏹ ${creds.userId}: SAP portal closed mid-sync — stopping the queue here.`);
+        skipped++;
+        break;
+      }
+
       failed++;
       const permanent = isPermanentFailure(err);
+
+      // Someone who never turned auto-sync on: just report the error, leave their settings be
+      if (!optedIn) {
+        creds.lastSyncStatus   = 'failed';
+        creds.lastSyncProgress = '';
+        creds.lastSyncMessage  = err.message;
+        await creds.save().catch(() => {});
+        console.error(`  ❌ ${creds.userId}: ${err.message}`);
+        await new Promise(r => setTimeout(r, GAP_BETWEEN_USERS_MS));
+        continue;
+      }
+
       creds.autoSyncFailures   = (creds.autoSyncFailures || 0) + 1;
       creds.lastAutoSync       = new Date();
       creds.lastAutoSyncStatus = 'failed';
