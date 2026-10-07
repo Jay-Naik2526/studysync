@@ -213,6 +213,16 @@ export function collectAttendanceRows(lines, { strictLayout }) {
 
     let attendance = null;
     let dateStr = null;
+    const times = [];
+    const DATE_RE = /[a-z]{3}\s+\d{1,2},\s+\d{4}/ig;
+    // Remove the date first — glued on ("Aug 3, 202610:00:01 AM") its year digits would
+    // otherwise run into the hour.
+    const pushTimes = (text) => {
+      for (const t of text.replace(DATE_RE, ' ').matchAll(/(\d{1,2}):(\d{2}):\d{2}\s*([AP])M/gi)) {
+        times.push((parseInt(t[1], 10) % 12) * 60 + parseInt(t[2], 10) + (t[3].toUpperCase() === 'P' ? 720 : 0));
+      }
+    };
+    pushTimes(courseLine);
 
     // First check if the date was concatenated onto the end of the courseName line itself
     const concatenatedDateMatch = courseLine.match(/([a-z]{3}\s+\d{1,2},\s+\d{4})/i);
@@ -223,6 +233,10 @@ export function collectAttendanceRows(lines, { strictLayout }) {
       // Also handles dates concatenated with times like "Jan 2, 202612:00:01 PM"
       const dateMatch = lines[j].match(/([a-z]{3}\s+\d{1,2},\s+\d{4})/i);
       if (dateMatch && !dateStr) dateStr = dateMatch[1];
+
+      // Start/end times — the two may share a line ("12:00:01 PM1:00:00 PM") or be split
+      // across two. Used to join back-to-back lab hours into one session.
+      pushTimes(lines[j]);
 
       const marker = strictLayout
         ? (/^(?:[PA]|NU)$/.test(lines[j]) ? lines[j] : null)
@@ -243,7 +257,7 @@ export function collectAttendanceRows(lines, { strictLayout }) {
       // Same tallies split by session kind, so the Class Count page can project
       // lectures and labs separately (they run at different weekly rates).
       lecture: { conducted: 0, absent: 0 },
-      lab:     { conducted: 0, absent: 0 },
+      lab:     { conducted: 0, absent: 0, slots: [] },
     };
 
     // NU (Not Updated) classes are planned but not conducted yet — we do not count them as conducted
@@ -254,6 +268,7 @@ export function collectAttendanceRows(lines, { strictLayout }) {
         map[courseName].absent++;
         map[courseName][kind].absent++;
       }
+      if (kind === 'lab') map[courseName].lab.slots.push({ date: dateStr, start: times[0] ?? null, end: times[1] ?? null });
       // Only a row that carries a real mark dates the report. NU rows are scheduled but
       // unmarked — often today's or a future session — so letting them set "data marked
       // up to" overstates how current the data is and inflates the Class Count backlog
@@ -262,7 +277,32 @@ export function collectAttendanceRows(lines, { strictLayout }) {
     }
   }
 
+  for (const info of Object.values(map)) {
+    info.lab.sessions = countLabSessions(info.lab.slots, info.lab.conducted);
+    delete info.lab.slots;
+  }
+
   return map;
+}
+
+// A lab is usually a 2-hour block that SAP lists as two 1-hour rows. Join rows on the same
+// day whose times touch (next start within a minute of the previous end) into one session.
+// Rows without readable times can't be joined, so each counts as its own session.
+export function countLabSessions(slots, rowCount) {
+  if (!slots.length) return rowCount;
+  let sessions = 0;
+  const byDay = {};
+  for (const sl of slots) (byDay[sl.date || '?'] ||= []).push(sl);
+  for (const day of Object.values(byDay)) {
+    const timed = day.filter(sl => sl.start !== null).sort((a, b) => a.start - b.start);
+    sessions += day.length - timed.length;
+    let prevEnd = null;
+    for (const sl of timed) {
+      if (prevEnd === null || sl.start - prevEnd > 1) sessions++;
+      prevEnd = sl.end ?? sl.start + 60;
+    }
+  }
+  return sessions;
 }
 
 // SAP truncates the course name to fit its column, and it truncates the SAME course to
@@ -290,6 +330,7 @@ export function mergeTruncatedCourseNames(map) {
         merged[target][kind].conducted += map[name][kind].conducted;
         merged[target][kind].absent    += map[name][kind].absent;
       }
+      merged[target].lab.sessions += map[name].lab.sessions;
       merged[target].dates.push(...map[name].dates);
       console.log(`  ↔ Merged "${name}" into "${target}" (same course, truncated differently by SAP)`);
     } else {
@@ -1346,6 +1387,7 @@ export async function scrapeSAPAttendance(username, password, subjects, options 
         conductedLectures: data.lecture.conducted,
         absentLectures:    data.lecture.absent,
         conductedLabs:     data.lab.conducted,
+        conductedLabSessions: data.lab.sessions,
         absentLabs:        data.lab.absent,
         autoMatched: confidence >= 0.6,
       });

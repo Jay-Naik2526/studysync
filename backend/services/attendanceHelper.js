@@ -79,6 +79,7 @@ export async function buildMenteeSummary(studentId, { includeSubjects = false, i
       conductedLectures: s.conductedLectures || 0,
       absentLectures: s.absentLectures || 0,
       conductedLabs: s.conductedLabs || 0,
+      conductedLabSessions: s.conductedLabSessions || 0,
       absentLabs: s.absentLabs || 0,
       weeklyLectures: s.weeklyLectures || 0,
       weeklyLabs: s.weeklyLabs || 0,

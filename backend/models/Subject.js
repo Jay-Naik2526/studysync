@@ -15,6 +15,9 @@ const subjectSchema = new mongoose.Schema({
   absentLectures:    { type: Number, default: 0 },
   conductedLabs:     { type: Number, default: 0 },
   absentLabs:        { type: Number, default: 0 },
+  // Lab hours back-to-back count as ONE lab (a 2-hour lab = 2 SAP rows = 1 session).
+  // conductedLabs stays in hours so attendance matches SAP; this drives Class Count.
+  conductedLabSessions: { type: Number, default: 0 },
 
   // How many of each run per week — entered by the user on the Class Count page.
   weeklyLectures: { type: Number, default: 0 },

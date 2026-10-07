@@ -38,12 +38,15 @@ export function computeBacklog(subject, weeksElapsed) {
   const weeklyLabs     = Math.max(0, subject.weeklyLabs || 0);
 
   let condLec = subject.conductedLectures || 0;
-  let condLab = subject.conductedLabs || 0;
+  // Labs are counted as sessions: a 2-hour lab is two back-to-back SAP rows but ONE lab.
+  // Subjects synced before sessions were tracked only have the hourly total, so halve it.
+  const labHours = subject.conductedLabs || 0;
+  let condLab = subject.conductedLabSessions || (labHours > 0 ? Math.ceil(labHours / 2) : 0);
 
   // Subjects synced before the lecture/lab split existed carry only a combined total.
   // Count it all as lectures and let the UI explain why.
   const totalConducted = subject.conductedClasses || 0;
-  const splitMissing   = (condLec + condLab) === 0 && totalConducted > 0;
+  const splitMissing   = (condLec + labHours) === 0 && totalConducted > 0;
   if (splitMissing) condLec = totalConducted;
 
   const expectedLectures = Math.round(weeklyLectures * weeksElapsed);
@@ -109,7 +112,7 @@ function SubjectRow({ subject, backlog, onSave }) {
           <p className="text-sm font-bold text-ink truncate">{subject.name}</p>
           <p className="text-[11px] text-ink-muted mt-0.5">
             {b.conducted} conducted
-            <span className="text-ink-faint"> · {b.conductedLectures} lec / {b.conductedLabs} lab</span>
+            <span className="text-ink-faint"> · {b.conductedLectures} lectures + {b.conductedLabs} labs</span>
           </p>
         </div>
         {!noRate && (
@@ -125,7 +128,7 @@ function SubjectRow({ subject, backlog, onSave }) {
       <div className="flex flex-wrap gap-2 mb-3">
         <NumberField label="Lectures / week" icon={BookOpen}
           value={subject.weeklyLectures} onCommit={v => onSave(subject._id, { weeklyLectures: v })} />
-        <NumberField label="Labs / week" icon={FlaskConical}
+        <NumberField label="Labs / week (2 hrs = 1)" icon={FlaskConical}
           value={subject.weeklyLabs} onCommit={v => onSave(subject._id, { weeklyLabs: v })} />
       </div>
 
@@ -248,7 +251,8 @@ export default function ClassCountPage() {
     expected:  acc.expected + b.expected,
     conducted: acc.conducted + b.conducted,
     pending:   acc.pending + b.pending,
-  }), { expected: 0, conducted: 0, pending: 0 }), [rows]);
+    extra:     acc.extra + b.extra,
+  }), { expected: 0, conducted: 0, pending: 0, extra: 0 }), [rows]);
 
   const startValid  = Boolean(parseDateInput(semesterStart));
   const needsResync = rows.some(({ backlog }) => backlog.splitMissing);
@@ -326,6 +330,13 @@ export default function ClassCountPage() {
             </div>
           ))}
         </div>
+      )}
+
+      {subjects.length > 0 && totals.extra > 0 && (
+        <p className="text-[11px] text-ink-muted -mt-3 mb-5">
+          Conducted includes {totals.extra} extra session{totals.extra > 1 ? 's' : ''} beyond the weekly plan,
+          so Should have − Conducted + Extra = Pending ({totals.expected} − {totals.conducted} + {totals.extra} = {totals.pending}).
+        </p>
       )}
 
       {subjects.length === 0 ? (

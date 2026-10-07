@@ -97,6 +97,7 @@ export async function runSyncForUser(creds, opts = {}) {
         conductedLectures: r.conductedLectures ?? 0,
         absentLectures:    r.absentLectures ?? 0,
         conductedLabs:     r.conductedLabs ?? 0,
+        conductedLabSessions: r.conductedLabSessions ?? 0,
         absentLabs:        r.absentLabs ?? 0,
       });
       updated++;
