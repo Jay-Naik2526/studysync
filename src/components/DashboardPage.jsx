@@ -289,7 +289,7 @@ export default function DashboardPage({ onNavigate }) {
               </>
             ) : (
               <button onClick={() => setShowCalModal(true)}
-                className="flex items-center gap-1.5 px-4 py-2 bg-ember hover:bg-ember-dark text-white rounded-xl text-xs font-bold transition-all shadow-sm">
+                className="flex items-center gap-1.5 px-4 py-2.5 sm:py-2 bg-ember hover:bg-ember-dark text-white rounded-xl text-xs font-bold transition-all shadow-sm">
                 <Link size={13} /> Link Teams
               </button>
             )}

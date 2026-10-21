@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { LayoutDashboard, CalendarDays, Calculator, BarChart2, BookOpen, FileText, Compass, CalendarRange, LogOut, Users, Inbox, UserCircle, MoreHorizontal, X } from 'lucide-react';
+import { LayoutDashboard, ClipboardCheck, CalendarDays, Calculator, BarChart2, BookOpen, FileText, Compass, LogOut, Users, Inbox, UserCircle, MoreHorizontal, X } from 'lucide-react';
 import ContourBackdrop from './ContourBackdrop';
+import { InstallBanner, OfflineBar } from './InstallApp';
 
 const studentNavItems = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { id: 'attendance', label: 'Attendance', icon: CalendarDays },
-  { id: 'calendar', label: 'Calendar', icon: CalendarRange },
+  { id: 'attendance', label: 'Attendance', icon: ClipboardCheck },
+  { id: 'calendar', label: 'Calendar', icon: CalendarDays },
   { id: 'classcount', label: 'Classes', icon: Calculator },
   { id: 'marks', label: 'Marks', icon: BarChart2 },
   { id: 'subjects', label: 'Subjects', icon: BookOpen },
@@ -22,6 +23,8 @@ const mentorNavItems = [
   { id: 'profile', label: 'Profile', icon: UserCircle },
 ];
 
+// The floating pill holds every item on one line, which needs ~1100px. Below 1180px the
+// bottom bar is used instead (tablets, small laptops, split-screen windows).
 // Slots available in the mobile bar. When everything (nav + sign out) fits, we show it
 // all; otherwise the last slot becomes "More" and the overflow goes into a sheet.
 const MOBILE_SLOTS = 5;
@@ -56,17 +59,19 @@ export default function Layout({ currentView, onNavigate, onLogout, user, childr
   const go = (id) => { setSheetOpen(false); onNavigate(id); };
 
   return (
-    <div className="min-h-screen bg-paper text-ink font-sans relative overflow-x-hidden">
+    <div className="min-h-screen min-h-dvh bg-paper text-ink font-sans relative overflow-x-hidden">
       <ContourBackdrop />
+      <OfflineBar />
 
       {/* Page content — bottom padding clears the fixed nav on every breakpoint */}
-      <div className="relative z-10 pb-28 lg:pb-32">
+      <div className="relative z-10 pb-28 min-[1180px]:pb-32">
+        <InstallBanner />
         {children}
       </div>
 
       {/* ══ Mobile / tablet: full-width bottom bar (below lg) ══ */}
       <nav
-        className="lg:hidden fixed bottom-0 inset-x-0 z-50 bg-parchment/95 backdrop-blur border-t border-sand shadow-[0_-2px_16px_-8px_rgba(43,43,38,0.25)]"
+        className="min-[1180px]:hidden fixed bottom-0 inset-x-0 z-50 bg-parchment/95 backdrop-blur border-t border-sand shadow-[0_-2px_16px_-8px_rgba(43,43,38,0.25)]"
         style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
       >
         <div className="grid" style={{ gridTemplateColumns: `repeat(${MOBILE_SLOTS}, minmax(0, 1fr))` }}>
@@ -113,7 +118,7 @@ export default function Layout({ currentView, onNavigate, onLogout, user, childr
 
       {/* ══ Mobile "More" sheet ══ */}
       {sheetOpen && (
-        <div className="lg:hidden fixed inset-0 z-[60]" role="dialog" aria-modal="true" aria-label="More pages">
+        <div className="min-[1180px]:hidden fixed inset-0 z-[60]" role="dialog" aria-modal="true" aria-label="More pages">
           <button
             aria-label="Close menu"
             onClick={() => setSheetOpen(false)}
@@ -166,7 +171,7 @@ export default function Layout({ currentView, onNavigate, onLogout, user, childr
       )}
 
       {/* ══ Desktop: floating pill (lg and up, where every label fits) ══ */}
-      <nav className="hidden lg:flex fixed bottom-5 left-1/2 -translate-x-1/2 z-50 items-center gap-0.5 p-1.5 rounded-full bg-parchment/95 backdrop-blur border border-sand shadow-lg shadow-ink/10"
+      <nav className="hidden min-[1180px]:flex fixed bottom-5 left-1/2 -translate-x-1/2 z-50 items-center gap-0.5 p-1.5 rounded-full bg-parchment/95 backdrop-blur border border-sand shadow-lg shadow-ink/10"
         style={{ maxWidth: 'calc(100vw - 24px)' }}>
 
         {navItems.map(({ id, label, icon: Icon }) => {

@@ -57,7 +57,7 @@ export default function AuthPage({ onLogin }) {
   const inputClass = "w-full bg-white border border-sand text-ink placeholder-ink-faint rounded-xl pl-10 pr-4 py-3 text-sm focus:outline-none focus:border-ember transition-all";
 
   return (
-    <div className="min-h-screen bg-paper font-sans flex items-center justify-center p-4 relative overflow-hidden">
+    <div className="min-h-screen min-h-dvh bg-paper font-sans flex items-center justify-center p-4 relative overflow-hidden">
       <ContourBackdrop />
 
       <div className="relative z-10 w-full max-w-sm">

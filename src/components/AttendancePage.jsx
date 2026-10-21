@@ -74,7 +74,8 @@ function SubjectCard({ subject, onUpdate, onDelete }) {
         </div>
         <button
           onClick={() => { if (window.confirm(`Delete "${name}"?`)) onDelete(_id); }}
-          className="text-ink-faint hover:text-danger transition-colors p-1 flex-shrink-0 ml-2"
+          aria-label={`Delete ${name}`}
+          className="text-ink-faint hover:text-danger transition-colors p-2.5 -m-1.5 flex-shrink-0 ml-1"
         >
           <Trash2 size={14} />
         </button>
@@ -107,20 +108,20 @@ function SubjectCard({ subject, onUpdate, onDelete }) {
           )}
         </div>
         <div className="grid grid-cols-2 gap-2 text-xs">
-          <div className="flex items-center justify-between bg-sage-pale border border-sage/25 rounded-lg p-1.5 px-2">
+          <div className="flex flex-col items-start gap-1.5 sm:flex-row sm:items-center sm:justify-between bg-sage-pale border border-sage/25 rounded-lg p-2 sm:p-1.5 sm:px-2">
             <span className="text-[11px] text-sage-dark">Attend next:</span>
             <div className="flex items-center gap-1.5 font-bold text-ink">
-              <button disabled={simAttended <= 0} onClick={() => setSimAttended(prev => Math.max(0, prev - 1))} className="w-5 h-5 bg-white border border-sand hover:border-sand-dark rounded flex items-center justify-center disabled:opacity-30">-</button>
-              <span className="w-4 text-center text-xs tabular-nums">{simAttended}</span>
-              <button onClick={() => setSimAttended(prev => prev + 1)} className="w-5 h-5 bg-white border border-sand hover:border-sand-dark rounded flex items-center justify-center">+</button>
+              <button disabled={simAttended <= 0} onClick={() => setSimAttended(prev => Math.max(0, prev - 1))} className="w-9 h-9 sm:w-5 sm:h-5 text-base sm:text-xs bg-white border border-sand hover:border-sand-dark rounded-lg sm:rounded flex items-center justify-center disabled:opacity-30">-</button>
+              <span className="w-6 sm:w-4 text-center text-sm sm:text-xs tabular-nums">{simAttended}</span>
+              <button onClick={() => setSimAttended(prev => prev + 1)} className="w-9 h-9 sm:w-5 sm:h-5 text-base sm:text-xs bg-white border border-sand hover:border-sand-dark rounded-lg sm:rounded flex items-center justify-center">+</button>
             </div>
           </div>
-          <div className="flex items-center justify-between bg-danger-pale border border-danger/20 rounded-lg p-1.5 px-2">
+          <div className="flex flex-col items-start gap-1.5 sm:flex-row sm:items-center sm:justify-between bg-danger-pale border border-danger/20 rounded-lg p-2 sm:p-1.5 sm:px-2">
             <span className="text-[11px] text-danger">Skip next:</span>
             <div className="flex items-center gap-1.5 font-bold text-ink">
-              <button disabled={simAbsent <= 0} onClick={() => setSimAbsent(prev => Math.max(0, prev - 1))} className="w-5 h-5 bg-white border border-sand hover:border-sand-dark rounded flex items-center justify-center disabled:opacity-30">-</button>
-              <span className="w-4 text-center text-xs tabular-nums">{simAbsent}</span>
-              <button onClick={() => setSimAbsent(prev => prev + 1)} className="w-5 h-5 bg-white border border-sand hover:border-sand-dark rounded flex items-center justify-center">+</button>
+              <button disabled={simAbsent <= 0} onClick={() => setSimAbsent(prev => Math.max(0, prev - 1))} className="w-9 h-9 sm:w-5 sm:h-5 text-base sm:text-xs bg-white border border-sand hover:border-sand-dark rounded-lg sm:rounded flex items-center justify-center disabled:opacity-30">-</button>
+              <span className="w-6 sm:w-4 text-center text-sm sm:text-xs tabular-nums">{simAbsent}</span>
+              <button onClick={() => setSimAbsent(prev => prev + 1)} className="w-9 h-9 sm:w-5 sm:h-5 text-base sm:text-xs bg-white border border-sand hover:border-sand-dark rounded-lg sm:rounded flex items-center justify-center">+</button>
             </div>
           </div>
         </div>
@@ -375,10 +376,10 @@ export default function AttendancePage() {
         </div>
         {subjects.length > 0 && (
           <div className="flex gap-2 mt-1 flex-shrink-0">
-            <button onClick={exportCsv} className="flex items-center gap-1.5 px-3 py-2 bg-white hover:bg-map border border-sand rounded-xl text-xs font-medium text-ink-muted hover:text-ink transition-all">
+            <button onClick={exportCsv} aria-label="Export CSV" className="flex items-center justify-center gap-1.5 min-w-[40px] min-h-[40px] sm:min-h-0 px-3 py-2 bg-white hover:bg-map border border-sand rounded-xl text-xs font-medium text-ink-muted hover:text-ink transition-all">
               <Download size={12} /><span className="hidden sm:inline">CSV</span>
             </button>
-            <button onClick={exportPdf} className="flex items-center gap-1.5 px-3 py-2 bg-white hover:bg-map border border-sand rounded-xl text-xs font-medium text-ink-muted hover:text-ink transition-all">
+            <button onClick={exportPdf} aria-label="Export PDF" className="flex items-center justify-center gap-1.5 min-w-[40px] min-h-[40px] sm:min-h-0 px-3 py-2 bg-white hover:bg-map border border-sand rounded-xl text-xs font-medium text-ink-muted hover:text-ink transition-all">
               <FileText size={12} /><span className="hidden sm:inline">PDF</span>
             </button>
           </div>
@@ -421,11 +422,11 @@ export default function AttendancePage() {
                 <button
                   onClick={handleSapSync} disabled={syncing || !semester}
                   title={!semester ? 'Select Semester/Trimester first' : undefined}
-                  className="flex items-center gap-1.5 px-4 py-2 bg-ember hover:bg-ember-dark disabled:opacity-50 text-white rounded-xl text-xs font-bold transition-all shadow-sm">
+                  className="flex items-center gap-1.5 px-4 py-2.5 sm:py-2 bg-ember hover:bg-ember-dark disabled:opacity-50 text-white rounded-xl text-xs font-bold transition-all shadow-sm">
                   {syncing ? <Loader2 size={13} className="animate-spin" /> : <RefreshCw size={13} />}
                   {syncing ? 'Syncing…' : 'Sync now'}
                 </button>
-                <button onClick={handleSapDisconnect} className="px-3 py-2 bg-white hover:bg-danger-pale border border-sand hover:border-danger/30 rounded-xl transition-all group">
+                <button onClick={handleSapDisconnect} aria-label="Disconnect SAP" className="px-3 py-2.5 sm:py-2 bg-white hover:bg-danger-pale border border-sand hover:border-danger/30 rounded-xl transition-all group">
                   <Unlink size={13} className="text-ink-muted group-hover:text-danger" />
                 </button>
               </>
@@ -470,7 +471,7 @@ export default function AttendancePage() {
                 </p>
                 <p className="text-[11px] text-ink-muted mt-0.5">
                   {sapStatus.autoSyncReady
-                    ? 'Refreshes your attendance every night at 5:00 AM, so it is ready in the morning.'
+                    ? 'Refreshes your attendance every night (around 1:30 AM), so it is ready in the morning.'
                     : 'Run one manual sync first — that saves your semester so the daily sync knows what to fetch.'}
                 </p>
                 {sapStatus.autoSyncEnabled && sapStatus.lastAutoSync && (
@@ -488,7 +489,7 @@ export default function AttendancePage() {
                 disabled={!sapStatus.autoSyncReady}
                 onClick={handleToggleAutoSync}
                 title={!sapStatus.autoSyncReady ? 'Run one manual sync first' : undefined}
-                className={`relative w-11 h-6 rounded-full flex-shrink-0 transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${
+                className={`relative w-11 h-6 rounded-full flex-shrink-0 transition-colors disabled:opacity-40 disabled:cursor-not-allowed before:content-[''] before:absolute before:-inset-2.5 ${
                   sapStatus.autoSyncEnabled ? 'bg-sage' : 'bg-sand-dark'
                 }`}>
                 <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow-sm transition-transform ${

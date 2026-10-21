@@ -1,8 +1,8 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { weeklyTrend, parseDay } from '../utils/attendanceData';
 import { ATTENDANCE_THRESHOLD } from '../constants';
 
-const W = 640, H = 220, PAD = { l: 38, r: 14, t: 14, b: 28 };
+const H = 220, PAD = { l: 38, r: 14, t: 14, b: 28 };
 
 const shortDate = key =>
   parseDay(key).toLocaleDateString(undefined, { day: 'numeric', month: 'short' });
@@ -11,6 +11,17 @@ const shortDate = key =>
 export default function WeeklyTrend({ records }) {
   const weeks = useMemo(() => weeklyTrend(records), [records]);
   const [active, setActive] = useState(null);
+
+  // Draw the chart at phone width on small screens instead of shrinking a wide one —
+  // otherwise the axis labels end up unreadably tiny.
+  const [narrow, setNarrow] = useState(() => window.matchMedia('(max-width: 639px)').matches);
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 639px)');
+    const on = e => setNarrow(e.matches);
+    mq.addEventListener('change', on);
+    return () => mq.removeEventListener('change', on);
+  }, []);
+  const W = narrow ? 340 : 640;
 
   if (weeks.length < 2) {
     return (
@@ -29,7 +40,7 @@ export default function WeeklyTrend({ records }) {
   const line = weeks.map((w, i) => `${i ? 'L' : 'M'}${x(i).toFixed(1)},${y(w.cumPct).toFixed(1)}`).join(' ');
   const ticks = [];
   for (let v = yMin; v <= yMax; v += 10) ticks.push(v);
-  const labelEvery = Math.ceil(weeks.length / 7);
+  const labelEvery = Math.ceil(weeks.length / (narrow ? 4 : 7));
 
   const cur = active !== null ? weeks[active] : weeks[weeks.length - 1];
   const prev4 = weeks.slice(-4);

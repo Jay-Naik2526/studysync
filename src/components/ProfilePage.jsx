@@ -5,6 +5,7 @@ import {
   LayoutGrid, BookOpen, Shield
 } from 'lucide-react';
 import { profileAPI } from '../api';
+import { InstallCard } from './InstallApp';
 
 function Field({ label, icon: Icon, value, onChange, placeholder, disabled }) {
   return (
@@ -405,6 +406,8 @@ export default function ProfilePage() {
             <StudentProfile profile={profile} onUpdate={handleProfileUpdate} />
           </>
         )}
+
+        <InstallCard />
       </div>
     </div>
   );

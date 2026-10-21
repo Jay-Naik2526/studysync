@@ -303,7 +303,7 @@ function ApplicationCard({ app, onWithdraw }) {
         <button
           onClick={handleWithdraw}
           disabled={withdrawing}
-          className="mt-2 flex items-center gap-1.5 text-xs font-bold text-danger hover:text-danger/80 transition-all"
+          className="mt-1 -ml-2 px-2 py-2.5 flex items-center gap-1.5 text-xs font-bold text-danger hover:text-danger/80 transition-all"
         >
           <Undo2 size={12} />
           {withdrawing ? 'Withdrawing…' : 'Withdraw'}
@@ -409,7 +409,7 @@ export default function ApplicationsPage() {
           <button
             key={opt.value}
             onClick={() => setStatusFilter(opt.value)}
-            className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all flex-shrink-0 ${
+            className={`px-3.5 py-2 min-h-[36px] rounded-full text-xs font-bold transition-all flex-shrink-0 ${
               statusFilter === opt.value
                 ? 'bg-ember text-white'
                 : 'bg-parchment text-ink-muted border border-sand hover:border-sand-dark'

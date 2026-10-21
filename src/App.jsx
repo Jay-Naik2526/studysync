@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { profileAPI } from './api';
+import { clearOfflineData } from './pwa';
 import AuthPage from './components/AuthPage';
 import Layout from './components/Layout';
 import DashboardPage from './components/DashboardPage';
@@ -75,6 +76,7 @@ function App() {
       })
       .catch(() => {
         // Token invalid — clear and show login
+        clearOfflineData();
         localStorage.removeItem('token');
         localStorage.removeItem('user');
         setUser(null);
@@ -83,6 +85,7 @@ function App() {
   }, []);
 
   const handleLogin = (data) => {
+    clearOfflineData();
     setUser(data.user);
     localStorage.setItem('user', JSON.stringify(data.user));
     localStorage.setItem('token', data.token);
@@ -90,6 +93,7 @@ function App() {
   };
 
   const handleLogout = () => {
+    clearOfflineData();
     setUser(null);
     localStorage.removeItem('token');
     localStorage.removeItem('user');
@@ -110,7 +114,7 @@ function App() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-paper text-ink-muted flex items-center justify-center text-sm">
+      <div className="min-h-screen min-h-dvh bg-paper text-ink-muted flex items-center justify-center text-sm">
         Loading…
       </div>
     );

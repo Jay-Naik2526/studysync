@@ -726,11 +726,11 @@ export default function NotesPage() {
       <div className="lg:hidden space-y-4">
         <div className="flex bg-parchment border border-sand rounded-xl p-1 gap-1">
           <button onClick={() => setShowForm(true)}
-            className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all ${showForm ? 'bg-white text-ink shadow-sm' : 'text-ink-muted hover:text-ink'}`}>
+            className={`flex-1 py-2.5 rounded-lg text-xs font-bold transition-all ${showForm ? 'bg-white text-ink shadow-sm' : 'text-ink-muted hover:text-ink'}`}>
             Generate
           </button>
           <button onClick={() => setShowForm(false)}
-            className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all ${!showForm ? 'bg-white text-ink shadow-sm' : 'text-ink-muted hover:text-ink'}`}>
+            className={`flex-1 py-2.5 rounded-lg text-xs font-bold transition-all ${!showForm ? 'bg-white text-ink shadow-sm' : 'text-ink-muted hover:text-ink'}`}>
             Output {currentNote && <span className="text-ember-dark ml-1">●</span>}
           </button>
         </div>

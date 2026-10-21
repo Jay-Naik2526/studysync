@@ -185,11 +185,11 @@ export default function AttendanceCalendarPage({ onNavigate }) {
         {tab === 'planner' ? <SkipPlanner records={records} /> : month && (
         <>
         {subjects.length > 1 && (
-          <div className="flex flex-wrap gap-1.5 mb-4" role="group" aria-label="Filter by subject">
+          <div className="flex gap-1.5 mb-4 overflow-x-auto sm:flex-wrap sm:overflow-visible -mx-4 px-4 sm:mx-0 sm:px-0 pb-1 custom-scrollbar" role="group" aria-label="Filter by subject">
             {['all', ...subjects].map(name => (
               <button key={name} onClick={() => { setSubject(name); setSelected(null); }}
                 aria-pressed={activeSubject === name}
-                className={`px-3 py-1.5 text-[11px] font-bold rounded-full border transition-colors ${activeSubject === name ? 'bg-ink text-parchment border-ink' : 'bg-parchment text-ink-muted border-sand hover:border-sand-dark'}`}>
+                className={`px-3.5 py-2 min-h-[36px] text-[11px] font-bold rounded-full border transition-colors flex-shrink-0 whitespace-nowrap ${activeSubject === name ? 'bg-ink text-parchment border-ink' : 'bg-parchment text-ink-muted border-sand hover:border-sand-dark'}`}>
                 {name === 'all' ? 'All subjects' : name}
               </button>
             ))}
@@ -199,7 +199,7 @@ export default function AttendanceCalendarPage({ onNavigate }) {
           {/* Month switcher + that month's total */}
           <div className="flex items-center justify-between gap-3 mb-4">
             <button onClick={() => step(-1)} disabled={bounds && cursorIdx <= bounds.lo} aria-label="Previous month"
-              className="p-2 rounded-lg border border-sand text-ink-muted hover:bg-map disabled:opacity-30 disabled:hover:bg-transparent">
+              className="p-3 rounded-lg border border-sand text-ink-muted hover:bg-map disabled:opacity-30 disabled:hover:bg-transparent">
               <ChevronLeft size={16} />
             </button>
             <div className="text-center min-w-0">
@@ -211,7 +211,7 @@ export default function AttendanceCalendarPage({ onNavigate }) {
               </p>
             </div>
             <button onClick={() => step(1)} disabled={bounds && cursorIdx >= bounds.hi} aria-label="Next month"
-              className="p-2 rounded-lg border border-sand text-ink-muted hover:bg-map disabled:opacity-30 disabled:hover:bg-transparent">
+              className="p-3 rounded-lg border border-sand text-ink-muted hover:bg-map disabled:opacity-30 disabled:hover:bg-transparent">
               <ChevronRight size={16} />
             </button>
           </div>
@@ -231,7 +231,7 @@ export default function AttendanceCalendarPage({ onNavigate }) {
                   onClick={() => setSelected(isSel ? null : key)}
                   aria-pressed={isSel}
                   aria-label={`${key}: ${marked ? `${present} of ${marked} classes attended` : rows.length ? 'not updated yet' : 'no classes'}`}
-                  className={`flex aspect-square min-h-10 flex-col items-center justify-center rounded-lg border text-sm font-bold transition-shadow ${TONE[tone]} ${isSel ? 'ring-2 ring-ink ring-offset-1 ring-offset-parchment' : ''} ${isToday ? 'underline underline-offset-4' : ''}`}>
+                  className={`flex aspect-square sm:aspect-auto sm:h-16 min-h-10 flex-col items-center justify-center rounded-lg border text-sm font-bold transition-shadow ${TONE[tone]} ${isSel ? 'ring-2 ring-ink ring-offset-1 ring-offset-parchment' : ''} ${isToday ? 'underline underline-offset-4' : ''}`}>
                   <span>{Number(key.slice(8))}</span>
                   {marked > 0 && (
                     <span className="hidden sm:block text-[10px] font-medium leading-none mt-0.5">{present}/{marked}</span>

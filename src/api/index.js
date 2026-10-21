@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { clearOfflineData } from '../pwa';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
 
@@ -33,6 +34,7 @@ api.interceptors.response.use(
     const isAuthCall = url.includes('/auth/login') || url.includes('/auth/register');
 
     if (status === 401 && !isAuthCall && localStorage.getItem('token')) {
+      clearOfflineData();
       localStorage.removeItem('token');
       localStorage.removeItem('user');
       sessionStorage.setItem('authMessage', 'Your session ended. Please sign in again.');
