@@ -2,6 +2,9 @@ import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { CalendarRange, ChevronLeft, ChevronRight, AlertTriangle, Loader2, BookOpen, FlaskConical } from 'lucide-react';
 import { sapAPI } from '../api';
 import { ATTENDANCE_THRESHOLD } from '../constants';
+import { pad, parseDay, dayKey, fmtTime, buildEntries, isMarked } from '../utils/attendanceData';
+import WeeklyTrend from './WeeklyTrend';
+import SkipPlanner from './SkipPlanner';
 
 const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 const MONTH_NAMES = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
@@ -15,50 +18,7 @@ const TONE = {
   empty:   'bg-parchment border-sand text-ink-faint',
 };
 
-const pad = n => String(n).padStart(2, '0');
 const monthKey = (y, m) => `${y}-${pad(m + 1)}`; // m is 0-based
-
-// yyyy-mm-dd → local Date at midnight (never `new Date('yyyy-mm-dd')`, which is UTC)
-function parseDay(key) {
-  const [y, m, d] = key.split('-').map(Number);
-  return new Date(y, m - 1, d);
-}
-
-function fmtTime(mins) {
-  if (mins === null || mins === undefined) return '';
-  const h = Math.floor(mins / 60);
-  const m = mins % 60;
-  const ap = h >= 12 ? 'PM' : 'AM';
-  return `${h % 12 || 12}:${pad(m)} ${ap}`;
-}
-
-/**
- * Turns one day's hourly SAP rows into the entries shown to the student.
- * Lectures stay one row each; back-to-back lab hours of the same subject are merged into
- * ONE lab (a 2-hour lab is two rows in SAP), so the list matches how the day actually ran.
- */
-function buildEntries(rows) {
-  const sorted = [...rows].sort((a, b) => (a.start ?? 0) - (b.start ?? 0));
-  const entries = [];
-  for (const r of sorted) {
-    const prev = entries[entries.length - 1];
-    const joins = r.kind === 'lab' && prev && prev.kind === 'lab' &&
-      prev.subject === r.subjectName && prev.end !== null && r.start !== null && r.start - prev.end <= 1;
-    if (joins) {
-      prev.end = r.end ?? prev.end;
-      prev.rows.push(r);
-    } else {
-      entries.push({ subject: r.subjectName, kind: r.kind, start: r.start, end: r.end, rows: [r] });
-    }
-  }
-  return entries.map(e => {
-    const marked = e.rows.filter(r => r.status !== 'NU');
-    const present = marked.filter(r => r.status === 'P').length;
-    let status = 'NU';
-    if (marked.length) status = present === marked.length ? 'P' : present === 0 ? 'A' : 'mixed';
-    return { ...e, hours: e.rows.length, markedHours: marked.length, presentHours: present, status };
-  });
-}
 
 const STATUS_CHIP = {
   P:     { label: 'Present',      cls: 'bg-sage-pale text-sage-dark' },
@@ -73,6 +33,8 @@ export default function AttendanceCalendarPage({ onNavigate }) {
   const [error, setError] = useState('');
   const [cursor, setCursor] = useState(null);      // { y, m } month on screen
   const [selected, setSelected] = useState(null);  // 'yyyy-mm-dd'
+  const [tab, setTab] = useState('calendar');        // 'calendar' | 'planner'
+  const [subject, setSubject] = useState('all');     // subject filter for the calendar + trend
 
   const load = useCallback(async () => {
     try {
@@ -88,20 +50,28 @@ export default function AttendanceCalendarPage({ onNavigate }) {
 
   useEffect(() => { load(); }, [load]);
 
+  const subjects = useMemo(() => [...new Set(records.map(r => r.subjectName))].sort(), [records]);
+  // A subject that vanished after a re-sync must not leave the filter stuck on nothing
+  const activeSubject = subject === 'all' || subjects.includes(subject) ? subject : 'all';
+  const shown = useMemo(
+    () => (activeSubject === 'all' ? records : records.filter(r => r.subjectName === activeSubject)),
+    [records, activeSubject]
+  );
+
   // day → rows
   const byDay = useMemo(() => {
     const map = new Map();
-    for (const r of records) {
+    for (const r of shown) {
       if (!map.has(r.date)) map.set(r.date, []);
       map.get(r.date).push(r);
     }
     return map;
-  }, [records]);
+  }, [shown]);
 
   // Open on the month of the most recent day that actually has marked attendance
   useEffect(() => {
     if (cursor || !records.length) return;
-    const marked = records.filter(r => r.status !== 'NU');
+    const marked = records.filter(isMarked);
     const last = (marked.length ? marked : records).reduce((a, r) => (r.date > a ? r.date : a), '');
     const d = parseDay(last);
     setCursor({ y: d.getFullYear(), m: d.getMonth() });
@@ -109,7 +79,7 @@ export default function AttendanceCalendarPage({ onNavigate }) {
 
   const dayInfo = useCallback((key) => {
     const rows = byDay.get(key) || [];
-    const marked = rows.filter(r => r.status !== 'NU');
+    const marked = rows.filter(isMarked);
     const present = marked.filter(r => r.status === 'P').length;
     let tone = 'empty';
     if (marked.length) tone = present === marked.length ? 'all' : present === 0 ? 'none' : 'some';
@@ -164,7 +134,7 @@ export default function AttendanceCalendarPage({ onNavigate }) {
     );
   }
 
-  const todayKey = (() => { const t = new Date(); return `${t.getFullYear()}-${pad(t.getMonth() + 1)}-${pad(t.getDate())}`; })();
+  const todayKey = dayKey(new Date());
 
   return (
     <div className="max-w-3xl mx-auto px-4 sm:px-6 pt-8">
@@ -174,7 +144,7 @@ export default function AttendanceCalendarPage({ onNavigate }) {
           <CalendarRange size={22} className="text-ink-muted" /> Attendance calendar
         </h1>
         <p className="text-xs text-ink-muted mt-1.5">
-          Every day coloured by how many of that day's classes you attended. Tap a day to see each class.
+          Every day coloured by how many of that day's classes you attended. Tap a day to see each class, or switch to the skip planner.
         </p>
       </div>
 
@@ -200,7 +170,31 @@ export default function AttendanceCalendarPage({ onNavigate }) {
             </button>
           )}
         </div>
-      ) : month && (
+      ) : records.length > 0 && (
+        <>
+        {/* Calendar / Skip planner switch */}
+        <div className="flex gap-1 p-1 bg-map rounded-xl mb-5" role="tablist">
+          {[['calendar', 'Calendar'], ['planner', 'Skip planner']].map(([id, label]) => (
+            <button key={id} role="tab" aria-selected={tab === id} onClick={() => setTab(id)}
+              className={`flex-1 py-2 text-sm font-bold rounded-lg transition-colors ${tab === id ? 'bg-parchment text-ink shadow-sm' : 'text-ink-muted hover:text-ink'}`}>
+              {label}
+            </button>
+          ))}
+        </div>
+
+        {tab === 'planner' ? <SkipPlanner records={records} /> : month && (
+        <>
+        {subjects.length > 1 && (
+          <div className="flex flex-wrap gap-1.5 mb-4" role="group" aria-label="Filter by subject">
+            {['all', ...subjects].map(name => (
+              <button key={name} onClick={() => { setSubject(name); setSelected(null); }}
+                aria-pressed={activeSubject === name}
+                className={`px-3 py-1.5 text-[11px] font-bold rounded-full border transition-colors ${activeSubject === name ? 'bg-ink text-parchment border-ink' : 'bg-parchment text-ink-muted border-sand hover:border-sand-dark'}`}>
+                {name === 'all' ? 'All subjects' : name}
+              </button>
+            ))}
+          </div>
+        )}
         <div className="bg-parchment border border-sand rounded-2xl p-4 sm:p-5 shadow-sm">
           {/* Month switcher + that month's total */}
           <div className="flex items-center justify-between gap-3 mb-4">
@@ -289,6 +283,16 @@ export default function AttendanceCalendarPage({ onNavigate }) {
             </div>
           )}
         </div>
+
+        <div className="bg-parchment border border-sand rounded-2xl p-4 sm:p-5 shadow-sm mt-5">
+          <p className="text-[10px] font-bold text-ink-muted uppercase tracking-widest mb-3">
+            Weekly trend{activeSubject !== 'all' ? ` · ${activeSubject}` : ''}
+          </p>
+          <WeeklyTrend records={shown} />
+        </div>
+        </>
+        )}
+        </>
       )}
     </div>
   );
