@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { LayoutDashboard, CalendarDays, Calculator, BarChart2, BookOpen, FileText, Compass, LogOut, Users, Inbox, UserCircle, MoreHorizontal, X } from 'lucide-react';
+import { LayoutDashboard, CalendarDays, Calculator, BarChart2, BookOpen, FileText, Compass, CalendarRange, LogOut, Users, Inbox, UserCircle, MoreHorizontal, X } from 'lucide-react';
 import ContourBackdrop from './ContourBackdrop';
 
 const studentNavItems = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { id: 'attendance', label: 'Attendance', icon: CalendarDays },
+  { id: 'calendar', label: 'Calendar', icon: CalendarRange },
   { id: 'classcount', label: 'Classes', icon: Calculator },
   { id: 'marks', label: 'Marks', icon: BarChart2 },
   { id: 'subjects', label: 'Subjects', icon: BookOpen },

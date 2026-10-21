@@ -1,6 +1,7 @@
 import express from 'express';
 import { authMiddleware }   from '../middleware/auth.js';
 import SapCredentials       from '../models/SapCredentials.js';
+import AttendanceRecord     from '../models/AttendanceRecord.js';
 import { encryptCredential } from '../services/sapScraper.js';
 import { runSyncForUser, runDailyAutoSync, isPortalOpen } from '../services/syncRunner.js';
 
@@ -51,6 +52,20 @@ router.get('/status', authMiddleware, async (req, res) => {
     lastCalendarSync:        creds.lastCalendarSync,
     lastCalendarSyncMessage: creds.lastCalendarSyncMessage,
   });
+});
+
+// ── GET /api/sap/attendance-days — every synced session, for the calendar ──
+router.get('/attendance-days', authMiddleware, async (req, res) => {
+  try {
+    const records = await AttendanceRecord.find({ user: req.user.id })
+      .sort({ date: 1, start: 1 })
+      .select('-_id -user -__v')
+      .lean();
+    res.json({ records });
+  } catch (err) {
+    console.error('Attendance days error:', err);
+    res.status(500).json({ message: 'Could not load daily attendance.' });
+  }
 });
 
 // ── POST /api/sap/sync — trigger a scrape & update attendance ─────

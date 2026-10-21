@@ -91,6 +91,7 @@ export const sapAPI = {
   disconnect:      ()      => api.delete('/sap/credentials'),
   saveCalendarUrl: (data)  => api.post('/sap/calendar', data),
   getDeadlines:    ()      => api.get('/sap/deadlines'),
+  getAttendanceDays: ()    => api.get('/sap/attendance-days'),
 };
 
 export const profileAPI = {

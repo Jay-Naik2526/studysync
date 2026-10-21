@@ -4,6 +4,7 @@
 
 import SapCredentials from '../models/SapCredentials.js';
 import Subject        from '../models/Subject.js';
+import AttendanceRecord from '../models/AttendanceRecord.js';
 import { decryptCredential, scrapeSAPAttendance } from './sapScraper.js';
 
 // The SAP portal is closed 7:00 AM – 6:00 PM IST.
@@ -114,6 +115,24 @@ export async function runSyncForUser(creds, opts = {}) {
         matchedBy: 'none',
       });
     }
+  }
+
+  // Keep the day-by-day rows for the Calendar page. Replaced wholesale so the calendar
+  // always matches the latest report; a failure here must not fail the sync itself.
+  try {
+    const records = results.flatMap(r =>
+      (r.rows || []).map(row => ({
+        user: creds.userId,
+        subjectName: r.subjectName || r.pdfName,
+        ...row,
+      }))
+    );
+    if (records.length) {
+      await AttendanceRecord.deleteMany({ user: creds.userId });
+      await AttendanceRecord.insertMany(records);
+    }
+  } catch (err) {
+    console.error('Could not save daily attendance records:', err.message);
   }
 
   const message = `Updated ${updated} subject(s). ${skipped} course(s) from SAP could not be matched — add more subjects with matching names.`;

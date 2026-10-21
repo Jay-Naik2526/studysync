@@ -155,6 +155,16 @@ function matchSubject(pdfName, subjects) {
 // `strictLayout: false` — same row logic, but tolerant of pdf-parse merging columns:
 //                         the sequence number may be glued to the course name and the
 //                         attendance letter may trail the times column.
+const MONTHS = { jan: 1, feb: 2, mar: 3, apr: 4, may: 5, jun: 6, jul: 7, aug: 8, sep: 9, oct: 10, nov: 11, dec: 12 };
+
+// "Oct 5, 2026" -> "2026-10-05". Plain string maths, so the server's timezone can't shift the day.
+export function toISODate(dateStr) {
+  const m = /^([a-z]{3})[a-z]*\s+(\d{1,2}),\s+(\d{4})$/i.exec((dateStr || '').trim());
+  const mon = m && MONTHS[m[1].toLowerCase()];
+  if (!mon) return null;
+  return `${m[3]}-${String(mon).padStart(2, '0')}-${String(m[2]).padStart(2, '0')}`;
+}
+
 export function collectAttendanceRows(lines, { strictLayout }) {
   const map = {};
 
@@ -258,7 +268,17 @@ export function collectAttendanceRows(lines, { strictLayout }) {
       // lectures and labs separately (they run at different weekly rates).
       lecture: { conducted: 0, absent: 0 },
       lab:     { conducted: 0, absent: 0, slots: [] },
+      // Every row as listed (NU included), for the day-by-day calendar
+      rows: [],
     };
+
+    const isoDate = toISODate(dateStr);
+    if (isoDate) {
+      map[courseName].rows.push({
+        date: isoDate, kind, status: attendance,
+        start: times[0] ?? null, end: times[1] ?? null,
+      });
+    }
 
     // NU (Not Updated) classes are planned but not conducted yet — we do not count them as conducted
     if (attendance !== 'NU') {
@@ -331,6 +351,7 @@ export function mergeTruncatedCourseNames(map) {
         merged[target][kind].absent    += map[name][kind].absent;
       }
       merged[target].lab.sessions += map[name].lab.sessions;
+      merged[target].rows.push(...map[name].rows);
       merged[target].dates.push(...map[name].dates);
       console.log(`  ↔ Merged "${name}" into "${target}" (same course, truncated differently by SAP)`);
     } else {
@@ -338,6 +359,7 @@ export function mergeTruncatedCourseNames(map) {
       merged[name] = {
         ...map[name],
         dates:   [...map[name].dates],
+        rows:    [...map[name].rows],
         lecture: { ...map[name].lecture },
         lab:     { ...map[name].lab },
       };
@@ -1388,6 +1410,7 @@ export async function scrapeSAPAttendance(username, password, subjects, options 
         absentLectures:    data.lecture.absent,
         conductedLabs:     data.lab.conducted,
         conductedLabSessions: data.lab.sessions,
+        rows: data.rows,
         absentLabs:        data.lab.absent,
         autoMatched: confidence >= 0.6,
       });

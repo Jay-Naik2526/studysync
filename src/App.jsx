@@ -5,6 +5,7 @@ import Layout from './components/Layout';
 import DashboardPage from './components/DashboardPage';
 import AttendancePage from './components/AttendancePage';
 import ClassCountPage from './components/ClassCountPage';
+import AttendanceCalendarPage from './components/AttendanceCalendarPage';
 import MarksPage from './components/MarksPage';
 import SubjectsPage from './components/SubjectsPage';
 import NotesPage from './components/NotesPage';
@@ -18,7 +19,7 @@ import MentorApplicationsPage from './components/MentorApplicationsPage';
 
 // Known views per role — used to detect and recover from an unmatched view
 const STUDENT_VIEWS = new Set([
-  'dashboard', 'attendance', 'classcount', 'marks', 'subjects',
+  'dashboard', 'attendance', 'calendar', 'classcount', 'marks', 'subjects',
   'notes', 'planner', 'applications', 'profile',
 ]);
 const MENTOR_VIEWS = new Set([
@@ -141,6 +142,7 @@ function App() {
       {/* ── Student views ── */}
       {role === 'student' && view === 'dashboard' && <DashboardPage onNavigate={onNavigate} />}
       {role === 'student' && view === 'attendance' && <AttendancePage onNavigate={onNavigate} />}
+      {role === 'student' && view === 'calendar' && <AttendanceCalendarPage onNavigate={onNavigate} />}
       {role === 'student' && view === 'classcount' && <ClassCountPage onNavigate={onNavigate} />}
       {role === 'student' && view === 'marks' && <MarksPage onNavigate={onNavigate} />}
       {role === 'student' && view === 'subjects' && <SubjectsPage onNavigate={onNavigate} />}
