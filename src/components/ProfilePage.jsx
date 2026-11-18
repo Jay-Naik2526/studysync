@@ -7,6 +7,7 @@ import {
 import { profileAPI } from '../api';
 import { InstallCard } from './InstallApp';
 import { useTheme } from '../theme.jsx';
+import { useLoaderMode } from '../prefs.js';
 
 function Field({ label, icon: Icon, value, onChange, placeholder, disabled }) {
   return (
@@ -311,9 +312,15 @@ function JoinMentorCard({ profile, onRefresh }) {
 // ── Appearance: Atlas (default) or Ledger ──
 function AppearanceCard() {
   const { theme, setTheme } = useTheme();
+  const [loaderMode, setLoaderMode] = useLoaderMode();
+  const loaderOptions = [
+    { id: 'full', name: 'Full', note: 'Cinematic on first visit' },
+    { id: 'quick', name: 'Quick', note: 'Short and snappy' },
+    { id: 'off', name: 'Off', note: 'No loading screen' },
+  ];
   const options = [
+    { id: 'ledger', name: 'Ledger', note: 'Register paper, ink and highlighter (default)', swatch: ['#F8F7F2', '#1F2433', '#F7DC4F'] },
     { id: 'atlas', name: 'Atlas', note: 'Warm paper with contour lines', swatch: ['#F4EEE0', '#2B2B26', '#BF4F2B'] },
-    { id: 'ledger', name: 'Ledger', note: 'Register paper, ink and highlighter', swatch: ['#F8F7F2', '#1F2433', '#F7DC4F'] },
   ];
   return (
     <div className="bg-parchment border border-sand rounded-2xl p-4 sm:p-5 mb-5 shadow-sm">
@@ -335,6 +342,23 @@ function AppearanceCard() {
                 <span className="block text-sm font-medium text-ink">{o.name}</span>
                 <span className="block text-xs text-ink-muted">{o.note}</span>
               </span>
+            </button>
+          );
+        })}
+      </div>
+
+      <p className="text-sm font-display font-semibold text-ink mt-5 mb-1">Page loading animation</p>
+      <p className="text-xs text-ink-muted mb-3">The full-screen loader shown while a page opens. Click or press Esc to skip it any time</p>
+      <div className="grid grid-cols-3 gap-2" role="radiogroup" aria-label="Page loading animation">
+        {loaderOptions.map(o => {
+          const on = loaderMode === o.id;
+          return (
+            <button
+              key={o.id} type="button" role="radio" aria-checked={on} onClick={() => setLoaderMode(o.id)}
+              className={`rounded-xl border px-3 py-2.5 text-left transition-colors ${on ? 'border-ember bg-ember-pale' : 'border-sand bg-white hover:border-sand-dark'}`}
+            >
+              <span className="block text-sm font-medium text-ink">{o.name}</span>
+              <span className="block text-[11px] text-ink-muted">{o.note}</span>
             </button>
           );
         })}

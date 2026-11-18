@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { profileAPI } from './api';
 import { clearOfflineData } from './pwa';
 import AuthPage from './components/AuthPage';
+import ContourMark from './components/ContourMark';
 import Layout from './components/Layout';
 import DashboardPage from './components/DashboardPage';
 import AttendancePage from './components/AttendancePage';
@@ -114,8 +115,9 @@ function App() {
 
   if (loading) {
     return (
-      <div className="min-h-screen min-h-dvh bg-paper text-ink-muted flex items-center justify-center text-sm">
-        Loading…
+      <div className="min-h-screen min-h-dvh bg-paper text-ink flex flex-col items-center justify-center gap-4" role="status" aria-label="Loading StudySync">
+        <ContourMark size={56} className="text-ember ld-spin-slow" />
+        <p className="font-display text-xl font-semibold tracking-tight">StudySync</p>
       </div>
     );
   }

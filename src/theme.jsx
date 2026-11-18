@@ -16,11 +16,15 @@ export const COLORS = {
 };
 
 const THEMES = ['atlas', 'ledger'];
-const ThemeContext = createContext({ theme: 'atlas', isLedger: false, setTheme: () => {}, toggle: () => {} });
+// Ledger is the default. The key is versioned so everyone starts on the new default;
+// a theme picked from now on is remembered.
+const DEFAULT_THEME = 'ledger';
+const STORAGE_KEY = 'studysync-theme-v2';
+const ThemeContext = createContext({ theme: DEFAULT_THEME, isLedger: true, setTheme: () => {}, toggle: () => {} });
 
 const read = () => {
-  try { return THEMES.includes(localStorage.getItem('studysync-theme')) ? localStorage.getItem('studysync-theme') : 'atlas'; }
-  catch { return 'atlas'; }
+  try { const v = localStorage.getItem(STORAGE_KEY); return THEMES.includes(v) ? v : DEFAULT_THEME; }
+  catch { return DEFAULT_THEME; }
 };
 
 export function ThemeProvider({ children }) {
@@ -29,7 +33,7 @@ export function ThemeProvider({ children }) {
   useEffect(() => {
     const root = document.documentElement;
     if (theme === 'ledger') root.setAttribute('data-theme', 'ledger'); else root.removeAttribute('data-theme');
-    try { localStorage.setItem('studysync-theme', theme); } catch { /* storage blocked */ }
+    try { localStorage.setItem(STORAGE_KEY, theme); } catch { /* storage blocked */ }
     const meta = document.querySelector('meta[name="theme-color"]');
     if (meta) meta.setAttribute('content', theme === 'ledger' ? '#F8F7F2' : '#F4EEE0');
   }, [theme]);
@@ -40,7 +44,7 @@ export function ThemeProvider({ children }) {
     root.classList.add('theme-fade');
     window.setTimeout(() => root.classList.remove('theme-fade'), 320);
   };
-  const setTheme = useCallback(t => { fade(); setThemeState(THEMES.includes(t) ? t : 'atlas'); }, []);
+  const setTheme = useCallback(t => { fade(); setThemeState(THEMES.includes(t) ? t : DEFAULT_THEME); }, []);
   const toggle = useCallback(() => { fade(); setThemeState(t => (t === 'ledger' ? 'atlas' : 'ledger')); }, []);
 
   return (

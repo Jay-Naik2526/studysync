@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 
 // Deterministic wobbly loop: a contour line, not a circle.
-function loopPath(cx, cy, r, seed) {
+export function loopPath(cx, cy, r, seed) {
   const pts = [];
   const steps = 72;
   for (let i = 0; i < steps; i++) {
