@@ -48,7 +48,7 @@ function Moon() {
 
 function Cloud({ i }) {
   return (
-    <svg viewBox="0 0 220 60" className="nw-cloud" style={{ '--i': i }} aria-hidden="true">
+    <svg viewBox="0 0 220 60" className={`nw-cloud ${i >= 2 ? 'nw-cloud-x' : ''}`} style={{ '--i': i }} aria-hidden="true">
       <g fill="currentColor"><ellipse cx="70" cy="40" rx="62" ry="16" /><ellipse cx="118" cy="30" rx="46" ry="20" /><ellipse cx="156" cy="42" rx="52" ry="14" /><ellipse cx="96" cy="24" rx="30" ry="14" /></g>
     </svg>
   );

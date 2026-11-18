@@ -158,6 +158,9 @@ export default function Layout({ currentView, onNavigate, onLogout, user, childr
 
       {/* Page content — bottom padding clears the fixed nav on every breakpoint */}
       <div className="relative z-10 pb-28 min-[1180px]:pb-32">
+        <div className="sticky top-0 z-40 flex justify-end px-4 sm:px-6 pt-3 pb-1 pointer-events-none">
+          <ThemeToggle showLabel className="pointer-events-auto px-3 py-2 rounded-xl border border-sand bg-parchment shadow-sm" />
+        </div>
         <InstallBanner />
         <div key={currentView} className="page-enter">{children}</div>
       </div>
@@ -273,8 +276,6 @@ export default function Layout({ currentView, onNavigate, onLogout, user, childr
               })}
             </div>
 
-            <ThemeToggle showLabel className="mt-3 w-full py-3 rounded-xl border border-sand bg-white" />
-
             <button
               onClick={onLogout}
               className="mt-3 w-full flex items-center justify-center gap-2 py-3 rounded-xl border border-sand bg-white text-ink-muted hover:text-danger hover:border-danger/30 hover:bg-danger-pale"
@@ -329,8 +330,6 @@ export default function Layout({ currentView, onNavigate, onLogout, user, childr
           <Search size={16} />
         </button>
 
-        <ThemeToggle className="rounded-full p-2.5 transition-colors" />
-
         <button
           onClick={onLogout}
           className="flex items-center gap-2 rounded-full text-ink-faint hover:text-ink hover:bg-ink/5 px-3 py-3"
@@ -357,7 +356,6 @@ export default function Layout({ currentView, onNavigate, onLogout, user, childr
               </span>
             )}
             <span className="w-px h-5 mx-1 flex-shrink-0" />
-            <span className="p-2.5 w-[36px] flex-shrink-0" />
             <span className="p-2.5 w-[36px] flex-shrink-0" />
             <span className="px-3 py-3 flex-shrink-0 opacity-0">Sign out</span>
           </div>

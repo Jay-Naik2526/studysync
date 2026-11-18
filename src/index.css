@@ -749,6 +749,14 @@ svg.ld-spin-slow { transform-origin: center; animation-duration: 9s; }
 
 /* Lighter on phones: fewer simultaneous animations, no grain */
 @media (max-width: 767px) {
-  .nw-stars span, .nw-flick, .nw-cloud:nth-of-type(n+3) { animation: none; }
+  .nw-stars span, .nw-flick { animation: none; }
+  .nw-cloud-x { display: none; }
   .nw-film::after { display: none; }
+}
+
+/* A still picture still needs sensible positions: spread the clouds, hide things that only make sense moving */
+.neon-world[data-fx='off'] .nw-cloud { translate: calc(var(--i) * 26vw + 4vw) 0; }
+@media (prefers-reduced-motion: reduce) {
+  .neon-world .nw-cloud { translate: calc(var(--i) * 26vw + 4vw) 0; }
+  .neon-world .nw-car, .neon-world .nw-bird { display: none; }
 }
