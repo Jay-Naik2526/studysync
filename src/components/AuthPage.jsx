@@ -104,7 +104,7 @@ export default function AuthPage({ onLogin }) {
 
       {isLedger && <AuthPreview />}
       <div className={isLedger ? 'relative z-10 flex items-center justify-center p-4 min-h-screen min-h-dvh' : 'contents'}>
-      <div className="relative z-10 w-full max-w-sm">
+      <div className="stagger relative z-10 w-full max-w-sm">
         {/* Logo */}
         <div className="flex flex-col items-center mb-8">
           <ContourMark size={40} className="text-ember mb-3" />

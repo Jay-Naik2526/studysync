@@ -7,6 +7,7 @@ import { ATTENDANCE_THRESHOLD } from '../constants';
 
 import { COLORS, useTheme } from '../theme.jsx';
 import { SyncDot } from './ContourGauge';
+import { CountUp } from '../motion.jsx';
 function Ring({ pct, color, size = 52, stroke = 5 }) {
   const r = size / 2 - stroke / 2;
   const circ = 2 * Math.PI * r;
@@ -190,7 +191,7 @@ function LedgerTable({ subjects, onUpdate, onDelete }) {
                     <div className="flex items-center gap-3">
                       <span className={`w-10 text-right font-medium tabular-nums ${onTrack ? 'text-ink' : 'text-danger'}`}>{pct.toFixed(0)}%</span>
                       <div className="flex-1 h-1 bg-ink/10 rounded-full overflow-hidden" aria-hidden="true">
-                        <div className={`h-1 rounded-full ${onTrack ? 'bg-ember' : 'bg-danger'}`} style={{ width: `${Math.min(pct, 100)}%` }} />
+                        <div className={`grow-x h-1 rounded-full ${onTrack ? 'bg-ember' : 'bg-danger'}`} style={{ width: `${Math.min(pct, 100)}%` }} />
                       </div>
                     </div>
                   </td>
@@ -238,7 +239,7 @@ function SummaryStrip({ subjects }) {
       ].map(({ label, value, color }) => (
         <div key={label} className="bg-parchment border border-sand rounded-2xl p-3 sm:p-4 text-center shadow-sm">
           <p className="text-[11px] text-ink-muted mb-0.5">{label}</p>
-          <p className="text-xl sm:text-2xl font-display font-semibold leading-none tabular-nums" style={{ color }}><span className={label === 'Overall' ? 'hl' : undefined}>{value}</span></p>
+          <p className="text-xl sm:text-2xl font-display font-semibold leading-none tabular-nums" style={{ color }}><span className={label === 'Overall' ? 'hl' : undefined}><CountUp value={value} /></span></p>
         </div>
       ))}
     </div>

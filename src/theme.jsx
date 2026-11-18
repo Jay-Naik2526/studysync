@@ -34,8 +34,14 @@ export function ThemeProvider({ children }) {
     if (meta) meta.setAttribute('content', theme === 'ledger' ? '#F8F7F2' : '#F4EEE0');
   }, [theme]);
 
-  const setTheme = useCallback(t => setThemeState(THEMES.includes(t) ? t : 'atlas'), []);
-  const toggle = useCallback(() => setThemeState(t => (t === 'ledger' ? 'atlas' : 'ledger')), []);
+  // Crossfade colours for a moment so the switch doesn't flash
+  const fade = () => {
+    const root = document.documentElement;
+    root.classList.add('theme-fade');
+    window.setTimeout(() => root.classList.remove('theme-fade'), 320);
+  };
+  const setTheme = useCallback(t => { fade(); setThemeState(THEMES.includes(t) ? t : 'atlas'); }, []);
+  const toggle = useCallback(() => { fade(); setThemeState(t => (t === 'ledger' ? 'atlas' : 'ledger')); }, []);
 
   return (
     <ThemeContext.Provider value={{ theme, isLedger: theme === 'ledger', setTheme, toggle }}>

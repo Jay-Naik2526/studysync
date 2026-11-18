@@ -80,7 +80,7 @@ function StudentProfile({ profile, onUpdate }) {
         className="mt-4 flex items-center gap-2 bg-ember hover:bg-ember-dark disabled:opacity-50 text-white font-medium py-3 px-5 rounded-xl text-sm transition-colors shadow-sm"
       >
         {saving ? <Loader2 size={16} className="animate-spin" /> : saved ? <Check size={16} /> : <Save size={16} />}
-        {saving ? 'Saving…' : saved ? 'Saved' : 'Save changes'}
+        {saving ? 'Saving…' : saved ? <span className="inline-flex items-center gap-2"><Check size={16} className="check-pop" />Saved</span> : 'Save changes'}
       </button>
     </div>
   );
@@ -134,7 +134,7 @@ function MentorProfile({ profile, onUpdate }) {
         className="mt-4 flex items-center gap-2 bg-ember hover:bg-ember-dark disabled:opacity-50 text-white font-medium py-3 px-5 rounded-xl text-sm transition-colors shadow-sm"
       >
         {saving ? <Loader2 size={16} className="animate-spin" /> : saved ? <Check size={16} /> : <Save size={16} />}
-        {saving ? 'Saving…' : saved ? 'Saved' : 'Save changes'}
+        {saving ? 'Saving…' : saved ? <span className="inline-flex items-center gap-2"><Check size={16} className="check-pop" />Saved</span> : 'Save changes'}
       </button>
     </div>
   );

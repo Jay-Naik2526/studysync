@@ -3,6 +3,7 @@ import { Plus, Trash2, Target, CheckSquare, Square, TrendingUp, BookOpen, Chevro
 import { subjectsAPI, gradesAPI, todosAPI } from '../api';
 
 import { COLORS, useTheme } from '../theme.jsx';
+import { CountUp } from '../motion.jsx';
 // Atlas: green / amber / red by score. Ledger: one accent, red pen only when behind.
 const scoreFill = (pct, ledger) => ledger ? (pct >= 60 ? COLORS.ember : COLORS.danger) : (pct >= 80 ? COLORS.sage : pct >= 60 ? COLORS.caution : COLORS.danger);
 const scoreText = (pct, ledger) => ledger ? (pct >= 60 ? COLORS.ink : COLORS.danger) : (pct >= 80 ? COLORS.sageDark : pct >= 60 ? COLORS.caution : COLORS.danger);
@@ -11,7 +12,7 @@ function Bar({ value, max = 100, color = COLORS.trail }) {
   const pct = max > 0 ? Math.min((value / max) * 100, 100) : 0;
   return (
     <div className="w-full bg-ink/10 rounded-full h-1.5">
-      <div className="h-1.5 rounded-full transition-[width] duration-500" style={{ width: `${pct}%`, backgroundColor: color }} />
+      <div className="grow-x h-1.5 rounded-full transition-[width] duration-500" style={{ width: `${pct}%`, backgroundColor: color }} />
     </div>
   );
 }
@@ -266,7 +267,7 @@ function Overview({ subjects, grades, todos }) {
         ].map(({ label, value, color }) => (
           <div key={label} className="bg-parchment border border-sand rounded-2xl p-4 text-center shadow-sm">
             <p className="text-[11px] text-ink-muted mb-1 leading-none">{label}</p>
-            <p className="text-xl font-display font-semibold leading-tight mt-1 tabular-nums" style={{ color }}><span className={label === 'Overall score' ? 'hl' : undefined}>{value}</span></p>
+            <p className="text-xl font-display font-semibold leading-tight mt-1 tabular-nums" style={{ color }}><span className={label === 'Overall score' ? 'hl' : undefined}><CountUp value={value} /></span></p>
           </div>
         ))}
       </div>

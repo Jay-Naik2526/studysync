@@ -122,7 +122,7 @@ function RankedList({ title, note, items, leadIndex = -1, suffix = '', max = 100
                 <span className="text-sm font-medium text-ink tabular-nums">{it.value}{suffix}</span>
               </div>
               <div className="h-1 rounded-full bg-ink/10 overflow-hidden" aria-hidden="true">
-                <div className={`h-1 rounded-full ${i === leadIndex ? 'bg-ember' : 'bg-ink/30'}`} style={{ width: `${Math.min((it.value / max) * 100, 100)}%` }} />
+                <div className={`grow-x h-1 rounded-full ${i === leadIndex ? 'bg-ember' : 'bg-ink/30'}`} style={{ width: `${Math.min((it.value / max) * 100, 100)}%` }} />
               </div>
             </li>
           ))}
@@ -493,7 +493,7 @@ export default function DashboardPage({ onNavigate }) {
             <button
               key={view}
               onClick={() => onNavigate(view)}
-              className="bg-parchment border border-sand rounded-2xl p-4 text-left hover:border-sand-dark hover:bg-white/60 transition-colors group shadow-sm"
+              className="lift bg-parchment border border-sand rounded-2xl p-4 text-left hover:border-sand-dark group shadow-sm"
             >
               <div className="flex items-center justify-between mb-2">
                 <p className="text-sm font-display font-semibold text-ink leading-tight">{label}</p>

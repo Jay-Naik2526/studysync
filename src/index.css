@@ -66,44 +66,113 @@
   }
 }
 
-/* ── Motion: one curve, short durations ─────────────────────────── */
-:root { --ease-out: cubic-bezier(0.2, 0, 0, 1); }
+/* ── Motion (design-suite: animate / emil-design-eng) ──────────────
+   Strong custom curves, UI under 300ms, transform + opacity only, hover motion gated
+   to real pointers, reduced motion = gentler (fades), never zero. */
+:root {
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+  --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
+}
 
-/* Press feedback on every button: colours ease, a tiny scale-down while held */
+/* Press feedback: instant on pointer-down, colours ease */
 button:not(:disabled) {
   transition: color 150ms var(--ease-out), background-color 150ms var(--ease-out),
-    border-color 150ms var(--ease-out), opacity 150ms var(--ease-out), scale 120ms var(--ease-out);
+    border-color 150ms var(--ease-out), opacity 150ms var(--ease-out), scale 160ms var(--ease-out);
 }
 button:not(:disabled):active { scale: 0.97; }
 
-@keyframes rise-in { from { opacity: 0; translate: 0 8px; } }
-@keyframes fade-in { from { opacity: 0; } }
-@keyframes pop-in  { from { opacity: 0; translate: 0 8px; scale: 0.98; } }
+@keyframes page-in  { from { opacity: 0; translate: 0 4px; } }
+@keyframes rise-in  { from { opacity: 0; translate: 0 6px; filter: blur(2px); } }
+@keyframes fade-in  { from { opacity: 0; } }
+@keyframes pop-in   { from { opacity: 0; translate: 0 6px; scale: 0.96; } }
+@keyframes grow-x   { from { scale: 0 1; } }
 @keyframes bar-grow { from { scale: 1 0; } }
+@keyframes check-pop { 0% { opacity: 0; scale: 0.6; } 60% { scale: 1.08; } 100% { opacity: 1; scale: 1; } }
 
-/* Page change: the page's blocks fade up in a short stagger */
-.page-enter > * > * { animation: rise-in 320ms var(--ease-out) backwards; }
-.page-enter > * > *:nth-child(2) { animation-delay: 40ms; }
-.page-enter > * > *:nth-child(3) { animation-delay: 80ms; }
-.page-enter > * > *:nth-child(4) { animation-delay: 120ms; }
-.page-enter > * > *:nth-child(5) { animation-delay: 160ms; }
-.page-enter > * > *:nth-child(n+6) { animation-delay: 200ms; }
+/* Page change happens tens of times a day: one short, near-imperceptible fade */
+.page-enter { animation: page-in 180ms var(--ease-out) backwards; }
 
-/* Dialogs: scrim fades, card rises */
-.anim-fade { animation: fade-in 180ms var(--ease-out) backwards; }
-.anim-pop  { animation: pop-in 220ms var(--ease-out) backwards; }
+/* Dialogs: scrim fades, card rises from just below centre (modals stay centred) */
+.anim-fade { animation: fade-in 250ms var(--ease-out) backwards; }
+.anim-pop  { animation: pop-in 250ms var(--ease-out) backwards; }
 /* Inline messages (errors, sync results, confirmations) */
 .anim-rise { animation: rise-in 220ms var(--ease-out) backwards; }
-/* Chart bars grow from the baseline */
-.bar-grow { transform-origin: bottom; animation: bar-grow 520ms var(--ease-out) backwards; }
+/* Bars fill from the baseline (decorative, once per visit) */
+.bar-grow { transform-origin: bottom; animation: bar-grow 480ms var(--ease-out) backwards; }
+.grow-x   { transform-origin: left;   animation: grow-x 560ms var(--ease-out) backwards; }
+/* Success confirmation */
+.check-pop { animation: check-pop 320ms var(--ease-out) backwards; }
 
+/* First-visit surfaces (sign-in) may carry the delight budget: a calm stagger */
+.stagger > * { animation: rise-in 420ms var(--ease-out) backwards; }
+.stagger > *:nth-child(2) { animation-delay: 60ms; }
+.stagger > *:nth-child(3) { animation-delay: 120ms; }
+.stagger > *:nth-child(4) { animation-delay: 180ms; }
+.stagger > *:nth-child(n+5) { animation-delay: 240ms; }
+
+/* Interactive cards lift on real hover only; touch fires false hovers */
+.lift { transition: translate 200ms var(--ease-out), box-shadow 200ms var(--ease-out), border-color 200ms var(--ease-out); }
+@media (hover: hover) and (pointer: fine) {
+  .lift:hover { translate: 0 -2px; box-shadow: var(--shadow-lift); }
+}
+
+/* Reduced motion: keep fades that aid comprehension, drop movement, scaling and blur */
 @media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after {
-    animation-duration: 0.01ms !important;
-    animation-delay: 0ms !important;
-    transition-duration: 0.01ms !important;
-    scale: none !important;
-  }
+  @keyframes page-in  { from { opacity: 0; } }
+  @keyframes rise-in  { from { opacity: 0; } }
+  @keyframes pop-in   { from { opacity: 0; } }
+  @keyframes grow-x   { from { opacity: 0; } }
+  @keyframes bar-grow { from { opacity: 0; } }
+  @keyframes check-pop { from { opacity: 0; } }
+  .stagger > * { animation-delay: 0ms !important; }
+  button:not(:disabled):active { scale: none; }
+  .lift:hover { translate: none; }
+  .sync-dot[data-state='running'] { animation: none !important; }
+}
+
+/* ── Materials, elevation and type details ────────────────────────── */
+:root {
+  --shadow-card: 0 1px 1px rgb(var(--c-ink) / 0.04), 0 2px 6px -2px rgb(var(--c-ink) / 0.06), 0 14px 28px -20px rgb(var(--c-ink) / 0.16);
+  --shadow-lift: 0 1px 1px rgb(var(--c-ink) / 0.05), 0 6px 14px -6px rgb(var(--c-ink) / 0.14), 0 22px 34px -22px rgb(var(--c-ink) / 0.22);
+  --shadow-float: 0 1px 0 rgb(255 255 255 / 0.55) inset, 0 2px 4px rgb(var(--c-ink) / 0.06), 0 18px 40px -14px rgb(var(--c-ink) / 0.28);
+}
+/* Layered, low-opacity shadows read as depth rather than as a drop shadow */
+.shadow-sm { box-shadow: var(--shadow-card); }
+.shadow-lg { box-shadow: var(--shadow-float); }
+
+/* Translucent floating chrome: blur + saturation, bright top edge where light lands */
+.nav-glass {
+  background: rgb(var(--c-parchment) / 0.78);
+  -webkit-backdrop-filter: blur(18px) saturate(160%);
+  backdrop-filter: blur(18px) saturate(160%);
+  box-shadow: var(--shadow-float);
+}
+@media (prefers-reduced-transparency: reduce) {
+  .nav-glass { background: rgb(var(--c-parchment)); -webkit-backdrop-filter: none; backdrop-filter: none; }
+}
+@media (prefers-contrast: more) {
+  .nav-glass { background: rgb(var(--c-parchment)); border-color: rgb(var(--c-ink) / 0.5); }
+}
+
+/* Soft edge where content scrolls under the floating nav, instead of a hard line */
+.nav-fade {
+  background: linear-gradient(to top, rgb(var(--c-paper)) 0%, rgb(var(--c-paper) / 0.82) 28%, rgb(var(--c-paper) / 0.38) 62%, rgb(var(--c-paper) / 0) 100%);
+}
+
+/* Type: size-specific tracking, balanced headings, no orphans */
+h1, h2, h3 { text-wrap: balance; }
+p { text-wrap: pretty; }
+h1.font-display, h2.font-display { letter-spacing: -0.02em; }
+.text-xs, .text-\[11px\] { letter-spacing: 0.01em; }
+html { font-optical-sizing: auto; scroll-behavior: smooth; }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+::selection { background: rgb(var(--c-hi) / 0.55); color: rgb(var(--c-ink)); }
+
+/* Theme switch crossfades colours instead of flashing */
+html.theme-fade, html.theme-fade *, html.theme-fade *::before, html.theme-fade *::after {
+  transition: background-color 260ms var(--ease-out), color 260ms var(--ease-out),
+    border-color 260ms var(--ease-out), fill 260ms var(--ease-out), stroke 260ms var(--ease-out) !important;
 }
 
 /* ══ Ledger theme (Ledger + Highlighter) ═══════════════════════════ */
@@ -124,6 +193,7 @@ button:not(:disabled):active { scale: 0.97; }
 :root[data-theme='ledger'] .rounded-md  { border-radius: 3px; }
 /* Printed-register look: hairlines instead of shadows on cards */
 :root[data-theme='ledger'] .shadow-sm { box-shadow: none; }
+:root[data-theme='ledger'] .shadow-lg { box-shadow: 0 1px 0 rgb(255 255 255 / 0.6) inset, 0 12px 32px -16px rgb(var(--c-ink) / 0.3); }
 
 /* Highlighter stroke behind the one figure that matters on a screen */
 :root[data-theme='ledger'] .hl {

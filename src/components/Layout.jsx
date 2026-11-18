@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useLayoutEffect, useRef } from 'react';
 import { LayoutDashboard, ClipboardCheck, CalendarDays, Calculator, BarChart2, BookOpen, FileText, Compass, LogOut, Users, Inbox, UserCircle, MoreHorizontal, X } from 'lucide-react';
 import ContourBackdrop from './ContourBackdrop';
 import { InstallBanner, OfflineBar } from './InstallApp';
@@ -35,6 +35,28 @@ export default function Layout({ currentView, onNavigate, onLogout, user, childr
   const navItems = role === 'mentor' ? mentorNavItems : studentNavItems;
 
   const [sheetOpen, setSheetOpen] = useState(false);
+  const pillRef = useRef(null);
+  const [clip, setClip] = useState(null);   // clip-path that reveals only the active item of the overlay copy
+  const [clipReady, setClipReady] = useState(false);
+
+  // The pill holds two copies of its items. The top copy is styled as "active" and clipped to
+  // the active item, so background and text colour move together as one element.
+  useLayoutEffect(() => {
+    const measure = () => {
+      const nav = pillRef.current;
+      const el = nav?.querySelector('[aria-current="page"]');
+      if (!nav || !el) { setClip(null); return; }
+      const W = nav.clientWidth, H = nav.clientHeight;
+      const x = el.offsetLeft, y = el.offsetTop, w = el.offsetWidth, h = el.offsetHeight;
+      setClip(`inset(${y}px ${W - x - w}px ${H - y - h}px ${x}px round ${h / 2}px)`);
+    };
+    measure();
+    const ro = new ResizeObserver(measure);
+    if (pillRef.current) ro.observe(pillRef.current);
+    document.fonts?.ready.then(measure);
+    const t = setTimeout(() => setClipReady(true), 120);
+    return () => { ro.disconnect(); clearTimeout(t); };
+  }, [currentView, role]);
 
   // Close the sheet on Escape, and lock body scroll while it is open
   useEffect(() => {
@@ -72,10 +94,17 @@ export default function Layout({ currentView, onNavigate, onLogout, user, childr
 
       {/* ══ Mobile / tablet: full-width bottom bar (below lg) ══ */}
       <nav
-        className="min-[1180px]:hidden fixed bottom-0 inset-x-0 z-50 bg-parchment/95 backdrop-blur border-t border-sand shadow-[0_-2px_16px_-8px_rgba(43,43,38,0.25)]"
+        className="min-[1180px]:hidden nav-glass fixed bottom-0 inset-x-0 z-50 border-t border-sand"
         style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
       >
-        <div className="grid" style={{ gridTemplateColumns: `repeat(${MOBILE_SLOTS}, minmax(0, 1fr))` }}>
+        <div className="grid relative" style={{ gridTemplateColumns: `repeat(${MOBILE_SLOTS}, minmax(0, 1fr))` }}>
+          {(() => {
+            const idx = moreIsActive ? barItems.length : barItems.findIndex(i => i.id === currentView);
+            return idx < 0 ? null : (
+              <span aria-hidden="true" className="absolute top-0 left-0 h-0.5 bg-ember pointer-events-none"
+                style={{ width: `${100 / MOBILE_SLOTS}%`, transform: `translateX(${idx * 100}%)`, transition: 'transform 260ms var(--ease-in-out)' }} />
+            );
+          })()}
           {barItems.map(({ id, label, icon: Icon }) => {
             const active = currentView === id;
             return (
@@ -174,7 +203,8 @@ export default function Layout({ currentView, onNavigate, onLogout, user, childr
       )}
 
       {/* ══ Desktop: floating pill (lg and up, where every label fits) ══ */}
-      <nav className="hidden min-[1180px]:flex fixed bottom-5 left-1/2 -translate-x-1/2 z-50 items-center gap-0.5 p-2 rounded-full bg-parchment/95 backdrop-blur border border-sand shadow-lg shadow-ink/10"
+      <div aria-hidden="true" className="nav-fade hidden min-[1180px]:block fixed inset-x-0 bottom-0 h-32 z-40 pointer-events-none" />
+      <nav ref={pillRef} className="nav-glass hidden min-[1180px]:flex fixed bottom-5 left-1/2 -translate-x-1/2 z-50 items-center gap-0.5 p-2 rounded-full border border-sand"
         style={{ maxWidth: 'calc(100vw - 24px)' }}>
 
         {navItems.map(({ id, label, icon: Icon }) => {
@@ -184,8 +214,8 @@ export default function Layout({ currentView, onNavigate, onLogout, user, childr
               key={id}
               onClick={() => onNavigate(id)}
               aria-current={active ? 'page' : undefined}
-              className={`relative flex items-center gap-2 rounded-full transition-colors duration-150 select-none px-3 py-3
-                ${active ? 'bg-ember text-white' : 'text-ink-muted hover:text-ink hover:bg-ink/5'}`}
+              className={`relative flex items-center gap-2 rounded-full select-none px-3 py-3
+                ${active ? 'text-transparent' : 'text-ink-muted hover:text-ink hover:bg-ink/5'}`}
             >
               <Icon size={16} className="flex-shrink-0" />
               <span className="text-xs font-medium whitespace-nowrap">{label}</span>
@@ -199,11 +229,27 @@ export default function Layout({ currentView, onNavigate, onLogout, user, childr
 
         <button
           onClick={onLogout}
-          className="flex items-center gap-2 rounded-full text-ink-faint hover:text-ink hover:bg-ink/5 transition-colors px-3 py-3"
+          className="flex items-center gap-2 rounded-full text-ink-faint hover:text-ink hover:bg-ink/5 px-3 py-3"
         >
           <LogOut size={16} className="flex-shrink-0" />
           <span className="text-xs font-medium whitespace-nowrap">Sign out</span>
         </button>
+
+        {/* Active copy: same layout, accent background and white text, clipped to the active item */}
+        {clip && (
+          <div aria-hidden="true" className="absolute inset-0 flex items-center gap-0.5 p-2 rounded-full bg-ember text-white pointer-events-none"
+            style={{ clipPath: clip, transition: clipReady ? 'clip-path 260ms var(--ease-in-out)' : 'none' }}>
+            {navItems.map(({ id, label, icon: Icon }) => (
+              <span key={id} className="flex items-center gap-2 px-3 py-3 flex-shrink-0">
+                <Icon size={16} className="flex-shrink-0" />
+                <span className="text-xs font-medium whitespace-nowrap">{label}</span>
+              </span>
+            ))}
+            <span className="w-px h-5 mx-1 flex-shrink-0" />
+            <span className="p-2.5 w-[36px] flex-shrink-0" />
+            <span className="px-3 py-3 flex-shrink-0 opacity-0">Sign out</span>
+          </div>
+        )}
       </nav>
     </div>
   );
