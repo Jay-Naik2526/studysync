@@ -25,7 +25,7 @@ export default function WeeklyTrend({ records }) {
 
   if (weeks.length < 2) {
     return (
-      <p className="text-[11px] text-ink-muted">
+      <p className="text-xs text-ink-muted">
         The trend appears once there are at least two weeks of marked classes.
       </p>
     );
@@ -50,11 +50,11 @@ export default function WeeklyTrend({ records }) {
   return (
     <div>
       <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 mb-2">
-        <p className="text-[11px] text-ink-muted" aria-live="polite">
+        <p className="text-xs text-ink-muted" aria-live="polite">
           <strong className="text-ink">Week of {shortDate(cur.weekStart)}:</strong>{' '}
           {cur.present}/{cur.marked} attended ({cur.pct.toFixed(0)}%) · running total {cur.cumPct.toFixed(1)}%
         </p>
-        <p className="text-[11px] text-ink-muted">
+        <p className="text-xs text-ink-muted">
           Last 4 weeks: <strong className={(p4 / m4) * 100 < ATTENDANCE_THRESHOLD ? 'text-danger' : 'text-sage-dark'}>
             {m4 ? ((p4 / m4) * 100).toFixed(0) : '–'}%
           </strong>
@@ -93,10 +93,10 @@ export default function WeeklyTrend({ records }) {
         ))}
       </svg>
 
-      <ul className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-ink-muted" aria-label="Legend">
-        <li className="flex items-center gap-1.5"><span className="inline-block h-0.5 w-4 bg-trail" /> Running total</li>
-        <li className="flex items-center gap-1.5"><span className="inline-block h-2.5 w-2.5 rounded-full bg-sage" /> That week</li>
-        <li className="flex items-center gap-1.5"><span className="inline-block h-2.5 w-2.5 rounded-full bg-danger" /> Week below {ATTENDANCE_THRESHOLD}%</li>
+      <ul className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-ink-muted" aria-label="Legend">
+        <li className="flex items-center gap-2"><span className="inline-block h-0.5 w-4 bg-trail" /> Running total</li>
+        <li className="flex items-center gap-2"><span className="inline-block h-2.5 w-2.5 rounded-full bg-sage" /> That week</li>
+        <li className="flex items-center gap-2"><span className="inline-block h-2.5 w-2.5 rounded-full bg-danger" /> Week below {ATTENDANCE_THRESHOLD}%</li>
       </ul>
     </div>
   );

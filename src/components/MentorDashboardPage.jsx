@@ -10,7 +10,7 @@ function StatTile({ label, value, icon: Icon, color, onClick }) {
   return (
     <Wrapper
       onClick={onClick}
-      className={`bg-parchment border border-sand rounded-2xl p-4 sm:p-5 shadow-sm text-left transition-all ${
+      className={`bg-parchment border border-sand rounded-2xl p-4 sm:p-5 shadow-sm text-left transition-colors ${
         onClick ? 'hover:border-sand-dark hover:shadow-md cursor-pointer' : ''
       }`}
     >
@@ -19,11 +19,11 @@ function StatTile({ label, value, icon: Icon, color, onClick }) {
           <Icon size={16} className="text-white" />
         </div>
       </div>
-      <p className={`text-2xl sm:text-3xl font-display font-bold text-ink`}>{value ?? '—'}</p>
-      <p className="text-[10px] font-bold text-ink-muted uppercase tracking-widest mt-1">{label}</p>
+      <p className={`text-2xl sm:text-3xl font-display font-semibold text-ink`}>{value ?? '—'}</p>
+      <p className="text-[11px] font-medium text-ink-muted mt-1">{label}</p>
       {onClick && (
-        <p className="text-[11px] text-ember-dark font-bold mt-2 flex items-center gap-1">
-          View all <ArrowRight size={11} />
+        <p className="text-xs text-ember-dark font-medium mt-2 flex items-center gap-1">
+          View all <ArrowRight size={14} />
         </p>
       )}
     </Wrapper>
@@ -55,22 +55,22 @@ function MentorCodeCard({ code, onRegenerate }) {
     <div className="bg-parchment border border-sand rounded-2xl p-4 sm:p-5 shadow-sm">
       <div className="flex items-center justify-between gap-3 mb-3">
         <div>
-          <h2 className="text-sm font-display font-bold text-ink flex items-center gap-2">
-            <Shield size={14} className="text-ink-muted" /> Your Mentor Code
+          <h2 className="text-sm font-display font-semibold text-ink flex items-center gap-2">
+            <Shield size={16} className="text-ink-muted" /> Your Mentor Code
           </h2>
-          <p className="text-xs text-ink-muted mt-0.5">Share with students so they can join you.</p>
+          <p className="text-xs text-ink-muted mt-0.5">Share with students so they can join you</p>
         </div>
       </div>
 
       <div className="flex items-center gap-3 bg-map rounded-xl px-4 py-3 border border-sand">
-        <span className="text-xl sm:text-2xl font-display font-bold text-ink tracking-widest flex-1 select-all">
+        <span className="text-xl sm:text-2xl font-display font-semibold text-ink flex-1 select-all">
           {code || '—'}
         </span>
         <button
           onClick={copyCode}
-          className="flex items-center gap-1.5 text-xs font-bold text-trail-dark hover:text-trail bg-trail-pale hover:bg-trail/20 px-3 py-2 rounded-lg transition-all"
+          className="flex items-center gap-2 text-xs font-medium text-trail-dark hover:text-trail bg-trail-pale hover:bg-trail/20 px-3 py-2 rounded-lg transition-colors"
         >
-          {copied ? <Check size={13} /> : <Copy size={13} />}
+          {copied ? <Check size={16} /> : <Copy size={16} />}
           {copied ? 'Copied' : 'Copy'}
         </button>
       </div>
@@ -78,9 +78,9 @@ function MentorCodeCard({ code, onRegenerate }) {
       <button
         onClick={handleRegenerate}
         disabled={regenerating}
-        className="mt-2 flex items-center gap-1.5 text-[11px] font-bold text-ink-muted hover:text-ink transition-all"
+        className="mt-2 flex items-center gap-2 text-xs font-medium text-ink-muted hover:text-ink transition-colors"
       >
-        <RefreshCw size={11} className={regenerating ? 'animate-spin' : ''} />
+        <RefreshCw size={14} className={regenerating ? 'animate-spin' : ''} />
         {regenerating ? 'Regenerating…' : 'Generate new code'}
       </button>
     </div>
@@ -118,7 +118,7 @@ export default function MentorDashboardPage({ onNavigate }) {
   if (loading) {
     return (
       <div className="max-w-3xl mx-auto px-4 sm:px-6 pt-8 flex items-center gap-2 text-sm text-ink-muted">
-        <Loader2 size={14} className="animate-spin" /> Loading dashboard…
+        <Loader2 size={16} className="animate-spin" /> Loading dashboard…
       </div>
     );
   }
@@ -127,18 +127,18 @@ export default function MentorDashboardPage({ onNavigate }) {
     <div className="max-w-3xl mx-auto px-4 sm:px-6 pt-8">
       {/* Page header */}
       <div className="mb-7">
-        <p className="text-[10px] font-bold text-ember-dark uppercase tracking-widest mb-1">Overview</p>
-        <h1 className="text-2xl sm:text-3xl font-display font-bold text-ink tracking-tight flex items-center gap-2">
+        <p className="text-xs font-medium text-ink-muted mb-1">Overview</p>
+        <h1 className="text-2xl sm:text-3xl font-display font-semibold text-ink tracking-tight flex items-center gap-2">
           <LayoutDashboard size={22} className="text-ink-muted" /> Mentor Dashboard
         </h1>
-        <p className="text-xs text-ink-muted mt-1.5">
+        <p className="text-xs text-ink-muted mt-2">
           Your mentee overview at a glance.
         </p>
       </div>
 
       {error && (
         <div className="mb-4 flex items-start gap-2 text-xs font-medium text-danger bg-danger-pale border border-danger/20 rounded-xl px-3 py-2">
-          <AlertTriangle size={13} className="mt-0.5 flex-shrink-0" />
+          <AlertTriangle size={16} className="mt-0.5 flex-shrink-0" />
           <span className="flex-1">{error}</span>
           <button onClick={fetchOverview} className="underline flex-shrink-0">Retry</button>
         </div>
@@ -175,7 +175,7 @@ export default function MentorDashboardPage({ onNavigate }) {
       {/* Empty state */}
       {overview?.menteeCount === 0 && (
         <div className="mt-5 bg-parchment border border-sand rounded-2xl p-8 text-center shadow-sm">
-          <p className="text-sm font-bold text-ink mb-1">No mentees yet</p>
+          <p className="text-sm font-medium text-ink mb-1">No mentees yet</p>
           <p className="text-sm text-ink-muted">
             Share your mentor code with students. Once they join, their attendance and academic data will appear here.
           </p>

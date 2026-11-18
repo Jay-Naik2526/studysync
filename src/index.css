@@ -5,7 +5,7 @@
 
 @layer base {
   html {
-    font-family: 'Atkinson Hyperlegible', system-ui, -apple-system, sans-serif;
+    font-family: 'Atkinson Hyperlegible Next', 'Atkinson Hyperlegible', system-ui, -apple-system, sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
@@ -20,10 +20,57 @@
     -webkit-text-size-adjust: 100%;
   }
 
+  /* One stroke weight for every line icon */
+  svg.lucide { stroke-width: 1.5; }
+
+  /* One visible focus ring for keyboard users, none on mouse click */
+  :focus { outline: none; }
+  :focus-visible { outline: 2px solid #BF4F2B; outline-offset: 2px; }
+
   /* iOS Safari zooms the page when a field under 16px is focused. Keep fields at 16px on
      phones so tapping one never jumps the layout. */
   @media (max-width: 767px) {
     input:not([type='checkbox']):not([type='radio']), select, textarea { font-size: 16px !important; }
+  }
+}
+
+/* ── Motion: one curve, short durations ─────────────────────────── */
+:root { --ease-out: cubic-bezier(0.2, 0, 0, 1); }
+
+/* Press feedback on every button: colours ease, a tiny scale-down while held */
+button:not(:disabled) {
+  transition: color 150ms var(--ease-out), background-color 150ms var(--ease-out),
+    border-color 150ms var(--ease-out), opacity 150ms var(--ease-out), scale 120ms var(--ease-out);
+}
+button:not(:disabled):active { scale: 0.97; }
+
+@keyframes rise-in { from { opacity: 0; translate: 0 8px; } }
+@keyframes fade-in { from { opacity: 0; } }
+@keyframes pop-in  { from { opacity: 0; translate: 0 8px; scale: 0.98; } }
+@keyframes bar-grow { from { scale: 1 0; } }
+
+/* Page change: the page's blocks fade up in a short stagger */
+.page-enter > * > * { animation: rise-in 320ms var(--ease-out) backwards; }
+.page-enter > * > *:nth-child(2) { animation-delay: 40ms; }
+.page-enter > * > *:nth-child(3) { animation-delay: 80ms; }
+.page-enter > * > *:nth-child(4) { animation-delay: 120ms; }
+.page-enter > * > *:nth-child(5) { animation-delay: 160ms; }
+.page-enter > * > *:nth-child(n+6) { animation-delay: 200ms; }
+
+/* Dialogs: scrim fades, card rises */
+.anim-fade { animation: fade-in 180ms var(--ease-out) backwards; }
+.anim-pop  { animation: pop-in 220ms var(--ease-out) backwards; }
+/* Inline messages (errors, sync results, confirmations) */
+.anim-rise { animation: rise-in 220ms var(--ease-out) backwards; }
+/* Chart bars grow from the baseline */
+.bar-grow { transform-origin: bottom; animation: bar-grow 520ms var(--ease-out) backwards; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-delay: 0ms !important;
+    transition-duration: 0.01ms !important;
+    scale: none !important;
   }
 }
 
@@ -42,14 +89,14 @@
 /* ── Markdown atlas renderer (light, paper & ink) ─────────────── */
 .markdown-atlas { color: #3A3730; font-size: 0.9rem; line-height: 1.75; }
 
-.markdown-atlas h1 { font-family: 'Bricolage Grotesque', sans-serif; font-size: 1.6rem; font-weight: 700; color: #2B2B26; margin: 1.6rem 0 0.8rem; line-height: 1.2; }
-.markdown-atlas h2 { font-family: 'Bricolage Grotesque', sans-serif; font-size: 1.25rem; font-weight: 700; color: #2B2B26; margin: 1.4rem 0 0.6rem; line-height: 1.3; }
+.markdown-atlas h1 { font-family: 'Bricolage Grotesque', sans-serif; font-size: 1.6rem; font-weight: 600; color: #2B2B26; margin: 1.6rem 0 0.8rem; line-height: 1.2; }
+.markdown-atlas h2 { font-family: 'Bricolage Grotesque', sans-serif; font-size: 1.25rem; font-weight: 600; color: #2B2B26; margin: 1.4rem 0 0.6rem; line-height: 1.3; }
 .markdown-atlas h3 { font-family: 'Bricolage Grotesque', sans-serif; font-size: 1.05rem; font-weight: 600; color: #3A3730; margin: 1.2rem 0 0.5rem; }
-.markdown-atlas h4 { font-size: 0.95rem; font-weight: 700; color: #7A7566; margin: 1rem 0 0.4rem; text-transform: uppercase; letter-spacing: 0.05em; }
+.markdown-atlas h4 { font-size: 0.95rem; font-weight: 600; color: #7A7566; margin: 1rem 0 0.4rem; }
 
 .markdown-atlas p  { margin: 0.6rem 0; color: #3A3730; }
-.markdown-atlas strong { color: #2B2B26; font-weight: 700; }
-.markdown-atlas em { color: #4A5A40; font-style: italic; }
+.markdown-atlas strong { color: #2B2B26; font-weight: 600; }
+.markdown-atlas em { color: #4A5A40; font-style: normal; font-weight: 500; }
 .markdown-atlas a  { color: #3E566C; text-decoration: underline; }
 
 .markdown-atlas ul { list-style: disc; padding-left: 1.4rem; margin: 0.6rem 0; }
@@ -70,7 +117,7 @@
 .markdown-atlas code {
   background: #EFE7D3;
   border: 1px solid #DDD3B4;
-  color: #A33D26;
+  color: #9A3A20;
   padding: 0.15em 0.4em;
   border-radius: 0.3rem;
   font-size: 0.85em;
@@ -94,7 +141,7 @@
 }
 
 /* KaTeX — suppress red error color, show gracefully */
-.markdown-atlas .katex-error { color: #A33D26 !important; }
+.markdown-atlas .katex-error { color: #9A3A20 !important; }
 .markdown-atlas .katex { font-size: 1em; }
 
 /* Tables */
@@ -111,7 +158,7 @@
 .markdown-atlas th {
   padding: 0.6rem 0.9rem;
   text-align: left;
-  font-weight: 700;
+  font-weight: 600;
   color: #4A5A40;
   border-bottom: 1px solid #DDD3B4;
 }
@@ -139,7 +186,7 @@
 .flip-card-back { transform: rotateY(180deg); }
 
 .pdf-export-container {
-  font-family: 'Atkinson Hyperlegible', 'Segoe UI', sans-serif;
+  font-family: 'Atkinson Hyperlegible Next', 'Atkinson Hyperlegible', 'Segoe UI', sans-serif;
   line-height: 1.6;
 }
 

@@ -84,7 +84,7 @@ export function SkeletonPlanner() {
             <div className="h-5 w-16 rounded-full bg-ink/10 animate-shimmer" />
           </div>
           <div className="h-px bg-sand" />
-          <div className="space-y-2.5">
+          <div className="space-y-3">
             <div className="flex items-center gap-3">
               <div className="w-4 h-4 rounded border border-sand bg-ink/5 flex-shrink-0 animate-shimmer" />
               <div className="h-3 w-3/4 rounded bg-ink/5 animate-shimmer" />

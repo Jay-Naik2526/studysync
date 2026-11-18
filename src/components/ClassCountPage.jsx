@@ -86,8 +86,8 @@ function NumberField({ label, icon: Icon, value, onCommit }) {
 
   return (
     <label className="flex-1 min-w-[104px]">
-      <span className="flex items-center gap-1 text-[10px] font-bold text-ink-muted uppercase tracking-widest mb-1">
-        <Icon size={11} /> {label}
+      <span className="flex items-center gap-1 text-[11px] font-medium text-ink-muted mb-1">
+        <Icon size={14} /> {label}
       </span>
       <input
         type="number" min="0" max="50" inputMode="numeric"
@@ -95,7 +95,7 @@ function NumberField({ label, icon: Icon, value, onCommit }) {
         onChange={e => setDraft(e.target.value)}
         onBlur={commit}
         onKeyDown={e => { if (e.key === 'Enter') e.currentTarget.blur(); }}
-        className="w-full px-3 py-2 bg-white border border-sand rounded-lg text-sm font-bold text-ink focus:outline-none focus:border-ember"
+        className="w-full px-3 py-2 bg-white border border-sand rounded-lg text-sm font-medium text-ink focus:outline-none focus:border-ember"
       />
     </label>
   );
@@ -109,18 +109,18 @@ function SubjectRow({ subject, backlog, onSave }) {
     <div className="bg-parchment border border-sand rounded-2xl p-4 sm:p-5 shadow-sm">
       <div className="flex items-start justify-between gap-3 mb-3">
         <div className="min-w-0">
-          <p className="text-sm font-bold text-ink truncate">{subject.name}</p>
-          <p className="text-[11px] text-ink-muted mt-0.5">
+          <p className="text-sm font-medium text-ink truncate">{subject.name}</p>
+          <p className="text-xs text-ink-muted mt-0.5">
             {b.conducted} conducted
             <span className="text-ink-faint"> · {b.conductedLectures} lectures + {b.conductedLabs} labs</span>
           </p>
         </div>
         {!noRate && (
           <div className="text-right flex-shrink-0">
-            <p className={`text-lg font-display font-bold ${b.pending > 0 ? 'text-caution' : 'text-sage-dark'}`}>
+            <p className={`text-lg font-display font-semibold ${b.pending > 0 ? 'text-caution' : 'text-sage-dark'}`}>
               {b.pending}
             </p>
-            <p className="text-[10px] text-ink-muted">pending</p>
+            <p className="text-[11px] text-ink-muted">pending</p>
           </div>
         )}
       </div>
@@ -133,48 +133,48 @@ function SubjectRow({ subject, backlog, onSave }) {
       </div>
 
       {noRate ? (
-        <p className="text-[11px] text-ink-muted bg-map rounded-lg px-3 py-2">
+        <p className="text-xs text-ink-muted bg-map rounded-lg px-3 py-2">
           Enter how many lectures and labs this subject has each week to see what is pending.
         </p>
       ) : (
         <div className="bg-map rounded-xl p-3">
           <div className="grid grid-cols-3 gap-2 text-center mb-2">
             <div>
-              <p className="text-base font-display font-bold text-ink">{b.expected}</p>
-              <p className="text-[10px] text-ink-muted leading-tight">should have<br />happened</p>
+              <p className="text-base font-display font-semibold text-ink">{b.expected}</p>
+              <p className="text-[11px] text-ink-muted leading-tight">should have<br />happened</p>
             </div>
             <div>
-              <p className="text-base font-display font-bold text-trail-dark">{b.conducted}</p>
-              <p className="text-[10px] text-ink-muted leading-tight">actually<br />conducted</p>
+              <p className="text-base font-display font-semibold text-trail-dark">{b.conducted}</p>
+              <p className="text-[11px] text-ink-muted leading-tight">actually<br />conducted</p>
             </div>
             <div>
-              <p className={`text-base font-display font-bold ${b.pending > 0 ? 'text-caution' : 'text-sage-dark'}`}>
+              <p className={`text-base font-display font-semibold ${b.pending > 0 ? 'text-caution' : 'text-sage-dark'}`}>
                 {b.pending}
               </p>
-              <p className="text-[10px] text-ink-muted leading-tight">pending<br />(not taken)</p>
+              <p className="text-[11px] text-ink-muted leading-tight">pending<br />(not taken)</p>
             </div>
           </div>
 
           {/* Per-kind breakdown — labs and lectures fall behind independently */}
-          <div className="flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-ink-muted border-t border-sand pt-2">
+          <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-ink-muted border-t border-sand pt-2">
             <span className="flex items-center gap-1">
-              <BookOpen size={10} /> Lectures: {b.conductedLectures}/{b.expectedLectures}
+              <BookOpen size={14} /> Lectures: {b.conductedLectures}/{b.expectedLectures}
               {b.pendingLectures > 0 && <strong className="text-caution">· {b.pendingLectures} pending</strong>}
             </span>
             <span className="flex items-center gap-1">
-              <FlaskConical size={10} /> Labs: {b.conductedLabs}/{b.expectedLabs}
+              <FlaskConical size={14} /> Labs: {b.conductedLabs}/{b.expectedLabs}
               {b.pendingLabs > 0 && <strong className="text-caution">· {b.pendingLabs} pending</strong>}
             </span>
           </div>
 
           {b.extra > 0 && (
-            <p className="text-[11px] font-medium text-sage-dark mt-2">
+            <p className="text-xs font-medium text-sage-dark mt-2">
               {b.extra} extra session{b.extra > 1 ? 's' : ''} beyond the weekly plan — likely make-up classes.
             </p>
           )}
 
           {b.splitMissing && (
-            <p className="text-[10px] text-ink-muted mt-2">
+            <p className="text-[11px] text-ink-muted mt-2">
               Counted as lectures — run a SAP sync to split lectures and labs properly.
             </p>
           )}
@@ -260,7 +260,7 @@ export default function ClassCountPage() {
   if (loading) {
     return (
       <div className="max-w-3xl mx-auto px-4 sm:px-6 pt-8 flex items-center gap-2 text-sm text-ink-muted">
-        <Loader2 size={14} className="animate-spin" /> Loading your subjects…
+        <Loader2 size={16} className="animate-spin" /> Loading your subjects…
       </div>
     );
   }
@@ -268,11 +268,11 @@ export default function ClassCountPage() {
   return (
     <div className="max-w-3xl mx-auto px-4 sm:px-6 pt-8">
       <div className="mb-7">
-        <p className="text-[10px] font-bold text-ember-dark uppercase tracking-widest mb-1">Backlog</p>
-        <h1 className="text-2xl sm:text-3xl font-display font-bold text-ink tracking-tight flex items-center gap-2">
+        <p className="text-xs font-medium text-ink-muted mb-1">Backlog</p>
+        <h1 className="text-2xl sm:text-3xl font-display font-semibold text-ink tracking-tight flex items-center gap-2">
           <Calculator size={22} className="text-ink-muted" /> Class count
         </h1>
-        <p className="text-xs text-ink-muted mt-1.5">
+        <p className="text-xs text-ink-muted mt-2">
           Compares how many classes should have run by now against how many SAP says actually
           happened. The gap is what your professors still owe you.
         </p>
@@ -280,7 +280,7 @@ export default function ClassCountPage() {
 
       {error && (
         <div className="mb-4 flex items-start gap-2 text-xs font-medium text-danger bg-danger-pale border border-danger/20 rounded-xl px-3 py-2">
-          <AlertTriangle size={13} className="mt-0.5 flex-shrink-0" />
+          <AlertTriangle size={16} className="mt-0.5 flex-shrink-0" />
           <span className="flex-1">{error}</span>
           <button onClick={fetchAll} className="underline flex-shrink-0">Retry</button>
         </div>
@@ -288,13 +288,13 @@ export default function ClassCountPage() {
 
       <div className="bg-parchment border border-sand rounded-2xl p-4 sm:p-5 mb-5 shadow-sm">
         <label className="block">
-          <span className="flex items-center gap-1 text-[10px] font-bold text-ink-muted uppercase tracking-widest mb-1">
-            <CalendarClock size={11} /> Semester started on
+          <span className="flex items-center gap-1 text-[11px] font-medium text-ink-muted mb-1">
+            <CalendarClock size={14} /> Semester started on
           </span>
           <input type="date" value={semesterStart} onChange={e => setSemesterStart(e.target.value)}
             className={`w-full sm:w-56 px-3 py-2 bg-white border rounded-lg text-sm text-ink focus:outline-none focus:border-ember ${startValid ? 'border-sand' : 'border-danger'}`} />
         </label>
-        <p className="text-[11px] text-ink-muted mt-2">
+        <p className="text-xs text-ink-muted mt-2">
           {!startValid
             ? 'Pick a valid start date.'
             : weeksElapsed <= 0
@@ -306,9 +306,9 @@ export default function ClassCountPage() {
       {/* Subjects last synced before the lecture/lab split existed carry only a combined
           total, so every session falls into the lecture column until the next sync. */}
       {needsResync && (
-        <div className="mb-5 flex items-start gap-2 bg-caution-pale border border-caution/30 rounded-xl px-3 py-2.5">
-          <AlertTriangle size={14} className="text-caution mt-0.5 flex-shrink-0" />
-          <p className="text-[11px] text-ink leading-relaxed">
+        <div className="mb-5 flex items-start gap-2 bg-caution-pale border border-caution/30 rounded-xl px-3 py-3">
+          <AlertTriangle size={16} className="text-caution mt-0.5 flex-shrink-0" />
+          <p className="text-xs text-ink leading-relaxed">
             <strong>Labs are showing as 0.</strong> These subjects were last synced before
             StudySync could tell lectures and labs apart, so everything is counted as a lecture.
             Run a SAP sync from the Attendance page (the portal is open 6 PM–7 AM IST) and the
@@ -325,15 +325,15 @@ export default function ClassCountPage() {
             { label: 'Pending', value: totals.pending, color: totals.pending > 0 ? 'text-caution' : 'text-sage-dark' },
           ].map(({ label, value, color }) => (
             <div key={label} className="bg-parchment border border-sand rounded-xl p-3 text-center shadow-sm">
-              <p className={`text-xl font-display font-bold ${color}`}>{value}</p>
-              <p className="text-[10px] font-bold text-ink-muted uppercase tracking-widest mt-0.5">{label}</p>
+              <p className={`text-xl font-display font-semibold ${color}`}>{value}</p>
+              <p className="text-[11px] font-medium text-ink-muted mt-0.5">{label}</p>
             </div>
           ))}
         </div>
       )}
 
       {subjects.length > 0 && totals.extra > 0 && (
-        <p className="text-[11px] text-ink-muted -mt-3 mb-5">
+        <p className="text-xs text-ink-muted -mt-3 mb-5">
           Conducted includes {totals.extra} extra session{totals.extra > 1 ? 's' : ''} beyond the weekly plan,
           so Should have − Conducted + Extra = Pending ({totals.expected} − {totals.conducted} + {totals.extra} = {totals.pending}).
         </p>
@@ -341,8 +341,8 @@ export default function ClassCountPage() {
 
       {subjects.length === 0 ? (
         <div className="bg-parchment border border-sand rounded-2xl p-8 text-center shadow-sm">
-          <p className="text-sm font-bold text-ink mb-1">No subjects yet</p>
-          <p className="text-sm text-ink-muted">Add subjects on the Attendance page, then come back here.</p>
+          <p className="text-sm font-medium text-ink mb-1">No subjects yet</p>
+          <p className="text-sm text-ink-muted">Add subjects on the Attendance page, then come back here</p>
         </div>
       ) : (
         <div className="space-y-3">
@@ -352,7 +352,7 @@ export default function ClassCountPage() {
         </div>
       )}
 
-      <p className="text-[11px] text-ink-muted mt-5 mb-2">
+      <p className="text-xs text-ink-muted mt-5 mb-2">
         Estimates — the weekly rate is assumed to hold every week, so public holidays and exam
         weeks will also show up as pending.
       </p>

@@ -129,7 +129,7 @@ export default function AttendanceCalendarPage({ onNavigate }) {
   if (loading) {
     return (
       <div className="max-w-3xl mx-auto px-4 sm:px-6 pt-8 flex items-center gap-2 text-sm text-ink-muted">
-        <Loader2 size={14} className="animate-spin" /> Loading your calendar…
+        <Loader2 size={16} className="animate-spin" /> Loading your calendar…
       </div>
     );
   }
@@ -139,18 +139,18 @@ export default function AttendanceCalendarPage({ onNavigate }) {
   return (
     <div className="max-w-3xl mx-auto px-4 sm:px-6 pt-8">
       <div className="mb-7">
-        <p className="text-[10px] font-bold text-ember-dark uppercase tracking-widest mb-1">Day by day</p>
-        <h1 className="text-2xl sm:text-3xl font-display font-bold text-ink tracking-tight flex items-center gap-2">
+        <p className="text-xs font-medium text-ink-muted mb-1">Day by day</p>
+        <h1 className="text-2xl sm:text-3xl font-display font-semibold text-ink tracking-tight flex items-center gap-2">
           <CalendarRange size={22} className="text-ink-muted" /> Attendance calendar
         </h1>
-        <p className="text-xs text-ink-muted mt-1.5">
+        <p className="text-xs text-ink-muted mt-2">
           Every day coloured by how many of that day's classes you attended. Tap a day to see each class, or switch to the skip planner.
         </p>
       </div>
 
       {error && (
         <div className="mb-4 flex items-start gap-2 text-xs font-medium text-danger bg-danger-pale border border-danger/20 rounded-xl px-3 py-2">
-          <AlertTriangle size={13} className="mt-0.5 flex-shrink-0" />
+          <AlertTriangle size={16} className="mt-0.5 flex-shrink-0" />
           <span className="flex-1">{error}</span>
           <button onClick={load} className="underline flex-shrink-0">Retry</button>
         </div>
@@ -158,14 +158,14 @@ export default function AttendanceCalendarPage({ onNavigate }) {
 
       {!records.length && !error ? (
         <div className="bg-parchment border border-sand rounded-2xl p-8 text-center shadow-sm">
-          <p className="text-sm font-bold text-ink mb-1">No daily data yet</p>
+          <p className="text-sm font-medium text-ink mb-1">No daily data yet</p>
           <p className="text-sm text-ink-muted mb-4">
             Run a SAP sync from the Attendance page (the portal is open 6 PM–7 AM IST) and every
             class will show up here.
           </p>
           {onNavigate && (
             <button onClick={() => onNavigate('attendance')}
-              className="px-4 py-2 bg-ember text-white text-sm font-bold rounded-lg hover:bg-ember-dark transition-colors">
+              className="px-4 py-2 bg-ember text-white text-sm font-medium rounded-lg hover:bg-ember-dark transition-colors">
               Go to Attendance
             </button>
           )}
@@ -176,7 +176,7 @@ export default function AttendanceCalendarPage({ onNavigate }) {
         <div className="flex gap-1 p-1 bg-map rounded-xl mb-5" role="tablist">
           {[['calendar', 'Calendar'], ['planner', 'Skip planner']].map(([id, label]) => (
             <button key={id} role="tab" aria-selected={tab === id} onClick={() => setTab(id)}
-              className={`flex-1 py-2 text-sm font-bold rounded-lg transition-colors ${tab === id ? 'bg-parchment text-ink shadow-sm' : 'text-ink-muted hover:text-ink'}`}>
+              className={`flex-1 py-2 text-sm font-medium rounded-lg transition-colors ${tab === id ? 'bg-parchment text-ink shadow-sm' : 'text-ink-muted hover:text-ink'}`}>
               {label}
             </button>
           ))}
@@ -185,11 +185,11 @@ export default function AttendanceCalendarPage({ onNavigate }) {
         {tab === 'planner' ? <SkipPlanner records={records} /> : month && (
         <>
         {subjects.length > 1 && (
-          <div className="flex gap-1.5 mb-4 overflow-x-auto sm:flex-wrap sm:overflow-visible -mx-4 px-4 sm:mx-0 sm:px-0 pb-1 custom-scrollbar" role="group" aria-label="Filter by subject">
+          <div className="flex gap-2 mb-4 overflow-x-auto sm:flex-wrap sm:overflow-visible -mx-4 px-4 sm:mx-0 sm:px-0 pb-1 custom-scrollbar" role="group" aria-label="Filter by subject">
             {['all', ...subjects].map(name => (
               <button key={name} onClick={() => { setSubject(name); setSelected(null); }}
                 aria-pressed={activeSubject === name}
-                className={`px-3.5 py-2 min-h-[36px] text-[11px] font-bold rounded-full border transition-colors flex-shrink-0 whitespace-nowrap ${activeSubject === name ? 'bg-ink text-parchment border-ink' : 'bg-parchment text-ink-muted border-sand hover:border-sand-dark'}`}>
+                className={`px-4 py-2 min-h-[36px] text-xs font-medium rounded-full border transition-colors flex-shrink-0 whitespace-nowrap ${activeSubject === name ? 'bg-ink text-parchment border-ink' : 'bg-parchment text-ink-muted border-sand hover:border-sand-dark'}`}>
                 {name === 'all' ? 'All subjects' : name}
               </button>
             ))}
@@ -203,8 +203,8 @@ export default function AttendanceCalendarPage({ onNavigate }) {
               <ChevronLeft size={16} />
             </button>
             <div className="text-center min-w-0">
-              <p className="text-base font-display font-bold text-ink">{MONTH_NAMES[cursor.m]} {cursor.y}</p>
-              <p className={`text-[11px] font-medium ${month.pct !== null && month.pct < ATTENDANCE_THRESHOLD ? 'text-danger' : 'text-ink-muted'}`}>
+              <p className="text-base font-display font-semibold text-ink">{MONTH_NAMES[cursor.m]} {cursor.y}</p>
+              <p className={`text-xs font-medium ${month.pct !== null && month.pct < ATTENDANCE_THRESHOLD ? 'text-danger' : 'text-ink-muted'}`}>
                 {month.marked
                   ? `${month.present}/${month.marked} classes attended · ${month.pct.toFixed(1)}%`
                   : 'No marked classes this month'}
@@ -216,11 +216,11 @@ export default function AttendanceCalendarPage({ onNavigate }) {
             </button>
           </div>
 
-          <div className="grid grid-cols-7 gap-1.5 text-center text-[10px] font-bold text-ink-muted uppercase tracking-wider mb-1.5" aria-hidden>
+          <div className="grid grid-cols-7 gap-2 text-center text-[11px] font-medium text-ink-muted mb-2" aria-hidden>
             {WEEKDAYS.map(d => <div key={d}>{d}</div>)}
           </div>
 
-          <div className="grid grid-cols-7 gap-1.5" role="group" aria-label={`Attendance for ${MONTH_NAMES[cursor.m]} ${cursor.y}`}>
+          <div className="grid grid-cols-7 gap-2" role="group" aria-label={`Attendance for ${MONTH_NAMES[cursor.m]} ${cursor.y}`}>
             {month.cells.map((key, i) => {
               if (!key) return <div key={`b${i}`} />;
               const { tone, present, marked, rows } = dayInfo(key);
@@ -231,19 +231,19 @@ export default function AttendanceCalendarPage({ onNavigate }) {
                   onClick={() => setSelected(isSel ? null : key)}
                   aria-pressed={isSel}
                   aria-label={`${key}: ${marked ? `${present} of ${marked} classes attended` : rows.length ? 'not updated yet' : 'no classes'}`}
-                  className={`flex aspect-square sm:aspect-auto sm:h-16 min-h-10 flex-col items-center justify-center rounded-lg border text-sm font-bold transition-shadow ${TONE[tone]} ${isSel ? 'ring-2 ring-ink ring-offset-1 ring-offset-parchment' : ''} ${isToday ? 'underline underline-offset-4' : ''}`}>
+                  className={`flex aspect-square sm:aspect-auto sm:h-16 min-h-10 flex-col items-center justify-center rounded-lg border text-sm font-medium transition-shadow ${TONE[tone]} ${isSel ? 'ring-2 ring-ink ring-offset-1 ring-offset-parchment' : ''} ${isToday ? 'underline underline-offset-4' : ''}`}>
                   <span>{Number(key.slice(8))}</span>
                   {marked > 0 && (
-                    <span className="hidden sm:block text-[10px] font-medium leading-none mt-0.5">{present}/{marked}</span>
+                    <span className="hidden sm:block text-[11px] font-medium leading-none mt-0.5">{present}/{marked}</span>
                   )}
                 </button>
               );
             })}
           </div>
 
-          <ul className="mt-4 flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-ink-muted" aria-label="Legend">
+          <ul className="mt-4 flex flex-wrap gap-x-4 gap-y-1 text-xs text-ink-muted" aria-label="Legend">
             {[['all', 'All attended'], ['some', 'Some missed'], ['none', 'All missed'], ['pending', 'Not updated yet']].map(([t, l]) => (
-              <li key={t} className="flex items-center gap-1.5">
+              <li key={t} className="flex items-center gap-2">
                 <span className={`inline-block h-3 w-3 rounded border ${TONE[t]}`} aria-hidden /> {l}
               </li>
             ))}
@@ -251,30 +251,30 @@ export default function AttendanceCalendarPage({ onNavigate }) {
 
           {selected && (
             <div className="mt-5 bg-map rounded-xl p-4" aria-live="polite">
-              <p className="text-sm font-bold text-ink mb-3">
+              <p className="text-sm font-medium text-ink mb-3">
                 {parseDay(selected).toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
               </p>
               {selectedEntries.length === 0 ? (
-                <p className="text-sm text-ink-muted">No classes on this day.</p>
+                <p className="text-sm text-ink-muted">No classes on this day</p>
               ) : (
-                <ul className="space-y-2.5">
+                <ul className="space-y-3">
                   {selectedEntries.map((e, i) => {
                     const chip = STATUS_CHIP[e.status];
                     const Icon = e.kind === 'lab' ? FlaskConical : BookOpen;
                     return (
                       <li key={i} className="flex items-start justify-between gap-3">
                         <div className="min-w-0">
-                          <p className="text-sm font-bold text-ink flex items-center gap-1.5">
-                            <Icon size={13} className="text-ink-muted flex-shrink-0" />
+                          <p className="text-sm font-medium text-ink flex items-center gap-2">
+                            <Icon size={16} className="text-ink-muted flex-shrink-0" />
                             <span className="truncate">{e.subject}</span>
                           </p>
-                          <p className="text-[11px] text-ink-muted mt-0.5">
+                          <p className="text-xs text-ink-muted mt-0.5">
                             {fmtTime(e.start)}{e.end !== null ? ` – ${fmtTime(e.end)}` : ''}
                             <span className="text-ink-faint"> · {e.kind === 'lab' ? 'Lab' : 'Lecture'}{e.hours > 1 ? ` (${e.hours} hrs)` : ''}</span>
                             {e.status === 'mixed' && <span> · attended {e.presentHours} of {e.markedHours} hrs</span>}
                           </p>
                         </div>
-                        <span className={`text-[10px] font-bold px-2 py-1 rounded-full flex-shrink-0 ${chip.cls}`}>{chip.label}</span>
+                        <span className={`text-[11px] font-medium px-2 py-1 rounded-full flex-shrink-0 ${chip.cls}`}>{chip.label}</span>
                       </li>
                     );
                   })}
@@ -285,7 +285,7 @@ export default function AttendanceCalendarPage({ onNavigate }) {
         </div>
 
         <div className="bg-parchment border border-sand rounded-2xl p-4 sm:p-5 shadow-sm mt-5">
-          <p className="text-[10px] font-bold text-ink-muted uppercase tracking-widest mb-3">
+          <p className="text-[11px] font-medium text-ink-muted mb-3">
             Weekly trend{activeSubject !== 'all' ? ` · ${activeSubject}` : ''}
           </p>
           <WeeklyTrend records={shown} />

@@ -48,26 +48,26 @@ function SubjectCard({ subject, onUpdate, onDelete }) {
   };
 
   return (
-    <div className={`border rounded-2xl p-4 sm:p-5 transition-all shadow-sm ${isSimulating ? 'bg-trail-pale border-trail/40' : 'bg-parchment border-sand hover:border-sand-dark'}`}>
+    <div className={`border rounded-2xl p-4 sm:p-5 transition-colors shadow-sm ${isSimulating ? 'bg-trail-pale border-trail/40' : 'bg-parchment border-sand hover:border-sand-dark'}`}>
       {/* Header */}
       <div className="flex items-start justify-between mb-4">
         <div className="flex items-center gap-3 min-w-0">
           <div className="relative flex-shrink-0">
             <Ring pct={pct} color={onTrack ? '#7C9070' : '#A93B2B'} />
-            <span className="absolute inset-0 flex items-center justify-center text-[10px] font-display font-bold tabular-nums"
+            <span className="absolute inset-0 flex items-center justify-center text-[11px] font-display font-semibold tabular-nums"
               style={{ color: onTrack ? '#4A5A40' : '#A93B2B' }}>
               {pct.toFixed(0)}%
             </span>
           </div>
           <div className="min-w-0">
-            <h3 className="font-display font-bold text-ink text-sm leading-tight truncate">{name}</h3>
-            <div className="flex items-center gap-1.5 mt-0.5">
+            <h3 className="font-display font-semibold text-ink text-sm leading-tight truncate">{name}</h3>
+            <div className="flex items-center gap-2 mt-0.5">
               {onTrack
-                ? <><CheckCircle size={10} className="text-sage-dark flex-shrink-0" /><span className="text-[11px] text-sage-dark">On track</span></>
-                : <><AlertTriangle size={10} className="text-danger flex-shrink-0" /><span className="text-[11px] text-danger">Below {ATTENDANCE_THRESHOLD}%</span></>
+                ? <><CheckCircle size={14} className="text-sage-dark flex-shrink-0" /><span className="text-xs text-sage-dark">On track</span></>
+                : <><AlertTriangle size={14} className="text-danger flex-shrink-0" /><span className="text-xs text-danger">Below {ATTENDANCE_THRESHOLD}%</span></>
               }
               {isSimulating && (
-                <span className="text-[9px] font-bold text-trail-dark bg-trail/15 px-1.5 py-0.5 rounded uppercase tracking-wider">Simulating</span>
+                <span className="text-[11px] font-medium text-trail-dark bg-trail/15 px-2 py-0.5 rounded">Simulating</span>
               )}
             </div>
           </div>
@@ -75,9 +75,9 @@ function SubjectCard({ subject, onUpdate, onDelete }) {
         <button
           onClick={() => { if (window.confirm(`Delete "${name}"?`)) onDelete(_id); }}
           aria-label={`Delete ${name}`}
-          className="text-ink-faint hover:text-danger transition-colors p-2.5 -m-1.5 flex-shrink-0 ml-1"
+          className="text-ink-faint hover:text-danger transition-colors p-3 -m-2 flex-shrink-0 ml-1"
         >
-          <Trash2 size={14} />
+          <Trash2 size={16} />
         </button>
       </div>
 
@@ -88,37 +88,37 @@ function SubjectCard({ subject, onUpdate, onDelete }) {
           { label: 'Absent', field: 'absentClasses', value: absentClasses },
           { label: 'Planned', field: 'totalPlannedClasses', value: totalPlannedClasses },
         ].map(({ label, field, value }) => (
-          <div key={field} className="bg-map rounded-xl p-2.5 border border-sand">
-            <p className="text-[10px] text-ink-muted mb-0.5 leading-none">{label}</p>
+          <div key={field} className="bg-map rounded-xl p-3 border border-sand">
+            <p className="text-[11px] text-ink-muted mb-0.5 leading-none">{label}</p>
             <input
               type="number" value={value}
               onChange={e => set(field, e.target.value)}
-              className="w-full bg-transparent text-ink font-bold text-sm sm:text-base leading-none focus:outline-none tabular-nums"
+              className="w-full bg-transparent text-ink font-medium text-sm sm:text-base leading-none focus:outline-none tabular-nums"
             />
           </div>
         ))}
       </div>
 
       {/* Interactive Simulation Controls */}
-      <div className="bg-white/50 border border-sand rounded-xl p-2.5 mb-3">
-        <div className="flex items-center justify-between mb-1.5">
-          <p className="text-[10px] font-bold text-trail-dark uppercase tracking-wider">What-if predictor</p>
+      <div className="bg-white/50 border border-sand rounded-xl p-3 mb-3">
+        <div className="flex items-center justify-between mb-2">
+          <p className="text-[11px] font-medium text-trail-dark">What-if predictor</p>
           {isSimulating && (
-            <button onClick={resetSimulation} className="text-[10px] font-medium text-ink-muted hover:text-ink transition-colors">Reset</button>
+            <button onClick={resetSimulation} className="text-[11px] font-medium text-ink-muted hover:text-ink transition-colors">Reset</button>
           )}
         </div>
         <div className="grid grid-cols-2 gap-2 text-xs">
-          <div className="flex flex-col items-start gap-1.5 sm:flex-row sm:items-center sm:justify-between bg-sage-pale border border-sage/25 rounded-lg p-2 sm:p-1.5 sm:px-2">
-            <span className="text-[11px] text-sage-dark">Attend next:</span>
-            <div className="flex items-center gap-1.5 font-bold text-ink">
+          <div className="flex flex-col items-start gap-2 sm:flex-row sm:items-center sm:justify-between bg-sage-pale border border-sage/25 rounded-lg p-2 sm:p-2 sm:px-2">
+            <span className="text-xs text-sage-dark">Attend next:</span>
+            <div className="flex items-center gap-2 font-medium text-ink">
               <button disabled={simAttended <= 0} onClick={() => setSimAttended(prev => Math.max(0, prev - 1))} className="w-9 h-9 sm:w-5 sm:h-5 text-base sm:text-xs bg-white border border-sand hover:border-sand-dark rounded-lg sm:rounded flex items-center justify-center disabled:opacity-30">-</button>
               <span className="w-6 sm:w-4 text-center text-sm sm:text-xs tabular-nums">{simAttended}</span>
               <button onClick={() => setSimAttended(prev => prev + 1)} className="w-9 h-9 sm:w-5 sm:h-5 text-base sm:text-xs bg-white border border-sand hover:border-sand-dark rounded-lg sm:rounded flex items-center justify-center">+</button>
             </div>
           </div>
-          <div className="flex flex-col items-start gap-1.5 sm:flex-row sm:items-center sm:justify-between bg-danger-pale border border-danger/20 rounded-lg p-2 sm:p-1.5 sm:px-2">
-            <span className="text-[11px] text-danger">Skip next:</span>
-            <div className="flex items-center gap-1.5 font-bold text-ink">
+          <div className="flex flex-col items-start gap-2 sm:flex-row sm:items-center sm:justify-between bg-danger-pale border border-danger/20 rounded-lg p-2 sm:p-2 sm:px-2">
+            <span className="text-xs text-danger">Skip next:</span>
+            <div className="flex items-center gap-2 font-medium text-ink">
               <button disabled={simAbsent <= 0} onClick={() => setSimAbsent(prev => Math.max(0, prev - 1))} className="w-9 h-9 sm:w-5 sm:h-5 text-base sm:text-xs bg-white border border-sand hover:border-sand-dark rounded-lg sm:rounded flex items-center justify-center disabled:opacity-30">-</button>
               <span className="w-6 sm:w-4 text-center text-sm sm:text-xs tabular-nums">{simAbsent}</span>
               <button onClick={() => setSimAbsent(prev => prev + 1)} className="w-9 h-9 sm:w-5 sm:h-5 text-base sm:text-xs bg-white border border-sand hover:border-sand-dark rounded-lg sm:rounded flex items-center justify-center">+</button>
@@ -129,13 +129,13 @@ function SubjectCard({ subject, onUpdate, onDelete }) {
 
       {/* Read-only stats */}
       <div className="grid grid-cols-2 gap-2">
-        <div className="bg-map rounded-xl p-2.5 border border-sand">
-          <p className="text-[10px] text-ink-muted leading-none mb-0.5">Present</p>
-          <p className="font-bold text-ink text-sm sm:text-base tabular-nums">{present}</p>
+        <div className="bg-map rounded-xl p-3 border border-sand">
+          <p className="text-[11px] text-ink-muted leading-none mb-0.5">Present</p>
+          <p className="font-medium text-ink text-sm sm:text-base tabular-nums">{present}</p>
         </div>
-        <div className="bg-map rounded-xl p-2.5 border border-sand">
-          <p className="text-[10px] text-ink-muted leading-none mb-0.5">Can skip</p>
-          <p className={`font-bold text-sm sm:text-base tabular-nums ${canSkip > 0 ? 'text-sage-dark' : 'text-danger'}`}>{canSkip}</p>
+        <div className="bg-map rounded-xl p-3 border border-sand">
+          <p className="text-[11px] text-ink-muted leading-none mb-0.5">Can skip</p>
+          <p className={`font-medium text-sm sm:text-base tabular-nums ${canSkip > 0 ? 'text-sage-dark' : 'text-danger'}`}>{canSkip}</p>
         </div>
       </div>
     </div>
@@ -162,8 +162,8 @@ function SummaryStrip({ subjects }) {
         { label: 'At risk', value: atRisk, color: '#A8842C' },
       ].map(({ label, value, color }) => (
         <div key={label} className="bg-parchment border border-sand rounded-2xl p-3 sm:p-4 text-center shadow-sm">
-          <p className="text-[10px] text-ink-muted mb-0.5 uppercase tracking-wide">{label}</p>
-          <p className="text-xl sm:text-2xl font-display font-bold leading-none tabular-nums" style={{ color }}>{value}</p>
+          <p className="text-[11px] text-ink-muted mb-0.5">{label}</p>
+          <p className="text-xl sm:text-2xl font-display font-semibold leading-none tabular-nums" style={{ color }}>{value}</p>
         </div>
       ))}
     </div>
@@ -189,29 +189,29 @@ function SapModal({ onClose, onSaved }) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-ink/40 backdrop-blur-sm">
-      <div className="bg-parchment border border-sand rounded-2xl p-6 w-full max-w-sm shadow-xl">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-ink/40 backdrop-blur-sm anim-fade">
+      <div className="anim-pop bg-parchment border border-sand rounded-2xl p-6 w-full max-w-sm shadow-lg shadow-ink/10">
         <div className="flex items-center justify-between mb-5">
           <div>
-            <h3 className="text-base font-display font-bold text-ink">Connect SAP portal</h3>
+            <h3 className="text-base font-display font-semibold text-ink">Connect SAP portal</h3>
             <p className="text-xs text-ink-muted mt-0.5">Stored encrypted. Used only to sync attendance.</p>
           </div>
           <button onClick={onClose} className="text-ink-faint hover:text-ink transition-colors"><X size={18} /></button>
         </div>
         <form onSubmit={handleSave} className="space-y-3">
           <div>
-            <label className="block text-[10px] font-bold text-ink-muted uppercase tracking-widest mb-1.5">SAP user ID</label>
+            <label className="block text-[11px] font-medium text-ink-muted mb-2">SAP user ID</label>
             <input type="text" placeholder="e.g. 70552400047" value={sapUser} onChange={e => setSapUser(e.target.value)}
-              className="w-full bg-white border border-sand text-ink placeholder-ink-faint rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-ember" required />
+              className="w-full bg-white border border-sand text-ink placeholder-ink-faint rounded-xl px-3 py-3 text-sm focus:outline-none focus:border-ember" required />
           </div>
           <div>
-            <label className="block text-[10px] font-bold text-ink-muted uppercase tracking-widest mb-1.5">Password</label>
+            <label className="block text-[11px] font-medium text-ink-muted mb-2">Password</label>
             <input type="password" placeholder="••••••••" value={sapPass} onChange={e => setSapPass(e.target.value)}
-              className="w-full bg-white border border-sand text-ink placeholder-ink-faint rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-ember" required />
+              className="w-full bg-white border border-sand text-ink placeholder-ink-faint rounded-xl px-3 py-3 text-sm focus:outline-none focus:border-ember" required />
           </div>
           {err && <p className="text-xs text-danger">{err}</p>}
           <button type="submit" disabled={saving}
-            className="w-full py-2.5 bg-ember hover:bg-ember-dark disabled:opacity-50 text-white font-bold rounded-xl text-sm transition-all shadow-sm">
+            className="w-full py-3 bg-ember hover:bg-ember-dark disabled:opacity-50 text-white font-medium rounded-xl text-sm transition-colors shadow-sm">
             {saving ? 'Saving…' : 'Save & connect'}
           </button>
         </form>
@@ -232,6 +232,8 @@ export default function AttendancePage() {
   const [showSapModal, setShowSapModal] = useState(false);
   const [syncing, setSyncing] = useState(false);
   const [syncMsg, setSyncMsg] = useState('');
+  const [syncTone, setSyncTone] = useState('info');
+  const notify = (msg, tone = 'info') => { setSyncMsg(msg); setSyncTone(tone); };
 
   // Academic Year auto-defaults to the currently running year (flips every July 1)
   // so this works out of the box for any student, any year — no hardcoding.
@@ -267,11 +269,11 @@ export default function AttendancePage() {
 
   const handleSapSync = async () => {
     if (!semester) {
-      setSyncMsg('✗ Please select your Semester/Trimester first.');
+      notify('Select your semester or trimester first', 'err');
       return;
     }
     setSyncing(true);
-    setSyncMsg('Starting sync — this takes ~1 minute…');
+    notify('Starting sync, this takes about a minute…');
     try {
       await sapAPI.sync({ academicYear, semester });
       // Poll for completion, surfacing each backend step live
@@ -279,20 +281,20 @@ export default function AttendancePage() {
         const { data } = await sapAPI.getStatus();
         setSapStatus(data);
         if (data.lastSyncStatus === 'success') {
-          setSyncMsg(`✓ ${data.lastSyncMessage}`);
+          notify(data.lastSyncMessage, 'ok');
           setSyncing(false);
           clearInterval(poll);
           fetchSubjects(); // refresh attendance numbers
         } else if (data.lastSyncStatus === 'failed') {
-          setSyncMsg(`✗ ${data.lastSyncMessage}`);
+          notify(data.lastSyncMessage, 'err');
           setSyncing(false);
           clearInterval(poll);
         } else if (data.lastSyncStatus === 'running' && data.lastSyncProgress) {
-          setSyncMsg(data.lastSyncProgress);
+          notify(data.lastSyncProgress);
         }
       }, 3000);
     } catch (e) {
-      setSyncMsg(e.response?.data?.message || 'Sync failed.');
+      notify(e.response?.data?.message || 'Sync failed', 'err');
       setSyncing(false);
     }
   };
@@ -303,11 +305,11 @@ export default function AttendancePage() {
     setSapStatus(s => ({ ...s, autoSyncEnabled: next }));
     try {
       const { data } = await sapAPI.setAutoSync(next);
-      setSyncMsg(`✓ ${data.message}`);
+      notify(data.message, 'ok');
       fetchSapStatus();
     } catch (e) {
       setSapStatus(s => ({ ...s, autoSyncEnabled: !next }));
-      setSyncMsg(`✗ ${e.response?.data?.message || 'Could not change auto-sync.'}`);
+      notify(e.response?.data?.message || 'Could not change auto-sync', 'err');
     }
   };
 
@@ -371,16 +373,16 @@ export default function AttendancePage() {
       {/* Header */}
       <div className="flex items-start justify-between gap-3 mb-7">
         <div>
-          <p className="text-[10px] font-bold text-ember-dark uppercase tracking-widest mb-1">Trail log</p>
-          <h1 className="text-2xl sm:text-3xl font-display font-bold text-ink tracking-tight">Attendance</h1>
+          <p className="text-xs font-medium text-ink-muted mb-1">Trail log</p>
+          <h1 className="text-2xl sm:text-3xl font-display font-semibold text-ink tracking-tight">Attendance</h1>
         </div>
         {subjects.length > 0 && (
           <div className="flex gap-2 mt-1 flex-shrink-0">
-            <button onClick={exportCsv} aria-label="Export CSV" className="flex items-center justify-center gap-1.5 min-w-[40px] min-h-[40px] sm:min-h-0 px-3 py-2 bg-white hover:bg-map border border-sand rounded-xl text-xs font-medium text-ink-muted hover:text-ink transition-all">
-              <Download size={12} /><span className="hidden sm:inline">CSV</span>
+            <button onClick={exportCsv} aria-label="Export CSV" className="flex items-center justify-center gap-2 min-w-[40px] min-h-[40px] sm:min-h-0 px-3 py-2 bg-white hover:bg-map border border-sand rounded-xl text-xs font-medium text-ink-muted hover:text-ink transition-colors">
+              <Download size={14} /><span className="hidden sm:inline">CSV</span>
             </button>
-            <button onClick={exportPdf} aria-label="Export PDF" className="flex items-center justify-center gap-1.5 min-w-[40px] min-h-[40px] sm:min-h-0 px-3 py-2 bg-white hover:bg-map border border-sand rounded-xl text-xs font-medium text-ink-muted hover:text-ink transition-all">
-              <FileText size={12} /><span className="hidden sm:inline">PDF</span>
+            <button onClick={exportPdf} aria-label="Export PDF" className="flex items-center justify-center gap-2 min-w-[40px] min-h-[40px] sm:min-h-0 px-3 py-2 bg-white hover:bg-map border border-sand rounded-xl text-xs font-medium text-ink-muted hover:text-ink transition-colors">
+              <FileText size={14} /><span className="hidden sm:inline">PDF</span>
             </button>
           </div>
         )}
@@ -393,19 +395,19 @@ export default function AttendancePage() {
         <div className="flex items-center justify-between gap-3 flex-wrap">
           <div className="flex items-center gap-3">
             <div className={`w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 ${sapStatus?.connected ? 'bg-sage-pale' : 'bg-map'}`}>
-              {sapStatus?.connected ? <Link size={15} className="text-sage-dark" /> : <Link size={15} className="text-ink-faint" />}
+              {sapStatus?.connected ? <Link size={16} className="text-sage-dark" /> : <Link size={16} className="text-ink-faint" />}
             </div>
             <div>
-              <p className="text-sm font-bold text-ink">
+              <p className="text-sm font-medium text-ink">
                 SAP portal sync
-                {sapStatus?.connected && <span className="ml-2 text-[10px] font-bold text-sage-dark bg-sage-pale px-2 py-0.5 rounded-full">Connected</span>}
+                {sapStatus?.connected && <span className="ml-2 text-[11px] font-medium text-sage-dark bg-sage-pale px-2 py-0.5 rounded-full">Connected</span>}
               </p>
               <p className="text-xs text-ink-muted mt-0.5">
                 {sapStatus?.connected ? (
                   <>
                     {sapStatus.lastSync ? `Last synced: ${new Date(sapStatus.lastSync).toLocaleString()}` : 'Never synced — hit Sync now'}
                     {sapStatus.lastAttendanceDate && (
-                      <span className="block text-[11px] text-trail-dark font-medium mt-1">
+                      <span className="block text-xs text-trail-dark font-medium mt-1">
                         Portal data marked up to: {new Date(sapStatus.lastAttendanceDate).toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
                       </span>
                     )}
@@ -422,18 +424,18 @@ export default function AttendancePage() {
                 <button
                   onClick={handleSapSync} disabled={syncing || !semester}
                   title={!semester ? 'Select Semester/Trimester first' : undefined}
-                  className="flex items-center gap-1.5 px-4 py-2.5 sm:py-2 bg-ember hover:bg-ember-dark disabled:opacity-50 text-white rounded-xl text-xs font-bold transition-all shadow-sm">
-                  {syncing ? <Loader2 size={13} className="animate-spin" /> : <RefreshCw size={13} />}
+                  className="flex items-center gap-2 px-4 py-3 sm:py-2 bg-ember hover:bg-ember-dark disabled:opacity-50 text-white rounded-xl text-xs font-medium transition-colors shadow-sm">
+                  {syncing ? <Loader2 size={16} className="animate-spin" /> : <RefreshCw size={16} />}
                   {syncing ? 'Syncing…' : 'Sync now'}
                 </button>
-                <button onClick={handleSapDisconnect} aria-label="Disconnect SAP" className="px-3 py-2.5 sm:py-2 bg-white hover:bg-danger-pale border border-sand hover:border-danger/30 rounded-xl transition-all group">
-                  <Unlink size={13} className="text-ink-muted group-hover:text-danger" />
+                <button onClick={handleSapDisconnect} aria-label="Disconnect SAP" className="px-3 py-3 sm:py-2 bg-white hover:bg-danger-pale border border-sand hover:border-danger/30 rounded-xl transition-colors group">
+                  <Unlink size={16} className="text-ink-muted group-hover:text-danger" />
                 </button>
               </>
             ) : (
               <button onClick={() => setShowSapModal(true)}
-                className="flex items-center gap-1.5 px-4 py-2 bg-ember hover:bg-ember-dark text-white rounded-xl text-xs font-bold transition-all shadow-sm">
-                <Link size={13} /> Connect SAP
+                className="flex items-center gap-2 px-4 py-2 bg-ember hover:bg-ember-dark text-white rounded-xl text-xs font-medium transition-colors shadow-sm">
+                <Link size={16} /> Connect SAP
               </button>
             )}
           </div>
@@ -442,14 +444,14 @@ export default function AttendancePage() {
         {sapStatus?.connected && (
           <div className="flex flex-wrap gap-2 mt-3">
             <div className="flex-1 min-w-[140px]">
-              <label className="block text-[10px] font-bold text-ink-muted uppercase tracking-widest mb-1">Academic year</label>
+              <label className="block text-[11px] font-medium text-ink-muted mb-1">Academic year</label>
               <select value={academicYear} onChange={e => setAcademicYear(e.target.value)}
                 className="w-full px-3 py-2 bg-white border border-sand rounded-lg text-xs text-ink focus:outline-none focus:border-ember">
                 {academicYearOptions.map(y => <option key={y} value={y}>{y}</option>)}
               </select>
             </div>
             <div className="flex-1 min-w-[140px]">
-              <label className="block text-[10px] font-bold text-ink-muted uppercase tracking-widest mb-1">Semester / trimester</label>
+              <label className="block text-[11px] font-medium text-ink-muted mb-1">Semester / trimester</label>
               <select value={semester} onChange={e => setSemester(e.target.value)}
                 className="w-full px-3 py-2 bg-white border border-sand rounded-lg text-xs text-ink focus:outline-none focus:border-ember">
                 <option value="">Select…</option>
@@ -465,17 +467,17 @@ export default function AttendancePage() {
           <div className="mt-3 pt-3 border-t border-sand">
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
-                <p className="text-xs font-bold text-ink flex items-center gap-1.5">
-                  <Clock size={12} className="text-ink-muted flex-shrink-0" />
+                <p className="text-xs font-medium text-ink flex items-center gap-2">
+                  <Clock size={14} className="text-ink-muted flex-shrink-0" />
                   Daily auto-sync
                 </p>
-                <p className="text-[11px] text-ink-muted mt-0.5">
+                <p className="text-xs text-ink-muted mt-0.5">
                   {sapStatus.autoSyncReady
                     ? 'Refreshes your attendance every night (around 1:30 AM), so it is ready in the morning.'
                     : 'Run one manual sync first — that saves your semester so the daily sync knows what to fetch.'}
                 </p>
                 {sapStatus.autoSyncEnabled && sapStatus.lastAutoSync && (
-                  <p className={`text-[11px] font-medium mt-1 ${sapStatus.lastAutoSyncStatus === 'failed' ? 'text-danger' : 'text-sage-dark'}`}>
+                  <p className={`text-xs font-medium mt-1 ${sapStatus.lastAutoSyncStatus === 'failed' ? 'text-danger' : 'text-sage-dark'}`}>
                     Last auto-sync: {new Date(sapStatus.lastAutoSync).toLocaleString()}
                     {sapStatus.lastAutoSyncStatus === 'failed' && ' — failed'}
                   </p>
@@ -501,7 +503,7 @@ export default function AttendancePage() {
         )}
 
         {syncMsg && (
-          <p className={`text-xs mt-3 px-3 py-2 rounded-lg ${syncMsg.startsWith('✓') ? 'bg-sage-pale text-sage-dark' : syncMsg.startsWith('✗') ? 'bg-danger-pale text-danger' : 'bg-trail-pale text-trail-dark'}`}>
+          <p key={syncMsg} className={`anim-rise text-xs mt-3 px-3 py-2 rounded-lg ${syncTone === 'ok' ? 'bg-sage-pale text-sage-dark' : syncTone === 'err' ? 'bg-danger-pale text-danger' : 'bg-trail-pale text-trail-dark'}`}>
             {syncMsg}
           </p>
         )}
@@ -509,15 +511,15 @@ export default function AttendancePage() {
         {/* Sync Mapping Details Breakdown */}
         {sapStatus?.lastSyncDetails && sapStatus.lastSyncDetails.length > 0 && (
           <div className="mt-4 border-t border-sand pt-4">
-            <h4 className="text-[10px] font-bold text-ink-muted uppercase tracking-widest mb-3">Sync mapping status</h4>
+            <h4 className="text-[11px] font-medium text-ink-muted mb-3">Sync mapping status</h4>
             <div className="overflow-x-auto max-h-60 overflow-y-auto rounded-xl border border-sand custom-scrollbar">
               <table className="w-full text-left border-collapse text-xs">
                 <thead>
                   <tr className="bg-map border-b border-sand text-ink-muted">
-                    <th className="p-3 font-bold">SAP course name</th>
-                    <th className="p-3 font-bold">StudySync match</th>
-                    <th className="p-3 font-bold">Attendance</th>
-                    <th className="p-3 font-bold text-right">Status</th>
+                    <th className="p-3 font-medium">SAP course name</th>
+                    <th className="p-3 font-medium">StudySync match</th>
+                    <th className="p-3 font-medium">Attendance</th>
+                    <th className="p-3 font-medium text-right">Status</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-sand/60">
@@ -535,8 +537,8 @@ export default function AttendancePage() {
                         </td>
                         <td className="p-3">
                           {isMatched ? (
-                            <div className="flex items-center gap-1.5">
-                              <span className="text-sage-dark font-bold">{matchedSubjectName}</span>
+                            <div className="flex items-center gap-2">
+                              <span className="text-sage-dark font-medium">{matchedSubjectName}</span>
                               <button
                                 onClick={async () => {
                                   if (window.confirm(`Remove mapping for "${detail.pdfName}"?`)) {
@@ -555,7 +557,7 @@ export default function AttendancePage() {
                                 className="text-ink-faint hover:text-danger p-0.5 rounded transition-colors"
                                 title="Unlink mapping"
                               >
-                                <X size={12} />
+                                <X size={14} />
                               </button>
                             </div>
                           ) : (
@@ -590,17 +592,17 @@ export default function AttendancePage() {
                         <td className="p-3 text-right">
                           {isMatched ? (
                             detail.matchedBy === 'ai' ? (
-                              <span className="inline-flex items-center gap-1 text-[10px] font-bold text-trail-dark bg-trail-pale px-2 py-0.5 rounded-full" title="Matched using optimized Gemini fallback">
+                              <span className="inline-flex items-center gap-1 text-[11px] font-medium text-trail-dark bg-trail-pale px-2 py-0.5 rounded-full" title="Matched using optimized Gemini fallback">
                                 Synced via AI
                               </span>
                             ) : (
-                              <span className="inline-flex items-center gap-1 text-[10px] font-bold text-sage-dark bg-sage-pale px-2 py-0.5 rounded-full" title="Matched instantly using fast heuristics">
-                                <CheckCircle size={10} /> Synced
+                              <span className="inline-flex items-center gap-1 text-[11px] font-medium text-sage-dark bg-sage-pale px-2 py-0.5 rounded-full" title="Matched instantly using fast heuristics">
+                                <CheckCircle size={14} /> Synced
                               </span>
                             )
                           ) : (
-                            <span className="inline-flex items-center gap-1 text-[10px] font-bold text-caution bg-caution-pale px-2 py-0.5 rounded-full" title="To match this, add a subject with this name or acronym">
-                              <AlertTriangle size={10} /> Unmatched
+                            <span className="inline-flex items-center gap-1 text-[11px] font-medium text-caution bg-caution-pale px-2 py-0.5 rounded-full" title="To match this, add a subject with this name or acronym">
+                              <AlertTriangle size={14} /> Unmatched
                             </span>
                           )}
                         </td>
@@ -623,25 +625,25 @@ export default function AttendancePage() {
 
       {/* Add form */}
       <div className="bg-parchment border border-sand rounded-2xl p-4 sm:p-5 mb-5 shadow-sm">
-        <p className="text-[10px] font-bold text-ink-muted uppercase tracking-widest mb-3">Add subject</p>
-        <form onSubmit={handleAdd} className="flex flex-col sm:flex-row gap-2.5">
+        <p className="text-[11px] font-medium text-ink-muted mb-3">Add subject</p>
+        <form onSubmit={handleAdd} className="flex flex-col sm:flex-row gap-3">
           <input
             type="text" placeholder="Subject name" value={newName}
             onChange={e => setNewName(e.target.value)}
-            className="flex-1 bg-white border border-sand text-ink placeholder-ink-faint rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-ember transition-all"
+            className="flex-1 bg-white border border-sand text-ink placeholder-ink-faint rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-ember transition-colors"
             required
           />
           <input
             type="number" placeholder="Total classes" value={newTotal}
             onChange={e => setNewTotal(e.target.value)}
-            className="sm:w-40 bg-white border border-sand text-ink placeholder-ink-faint rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-ember transition-all"
+            className="sm:w-40 bg-white border border-sand text-ink placeholder-ink-faint rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-ember transition-colors"
             required
           />
           <button
             type="submit" disabled={adding}
-            className="flex items-center justify-center gap-2 px-5 py-2.5 bg-ember hover:bg-ember-dark disabled:opacity-50 text-white rounded-xl text-sm font-bold transition-all shadow-sm whitespace-nowrap"
+            className="flex items-center justify-center gap-2 px-5 py-3 bg-ember hover:bg-ember-dark disabled:opacity-50 text-white rounded-xl text-sm font-medium transition-colors shadow-sm whitespace-nowrap"
           >
-            <Plus size={15} />{adding ? 'Adding…' : 'Add'}
+            <Plus size={16} />{adding ? 'Adding…' : 'Add'}
           </button>
         </form>
         {error && <p className="text-xs text-danger mt-2">{error}</p>}
@@ -651,7 +653,7 @@ export default function AttendancePage() {
       {subjects.length === 0 ? (
         <div className="bg-parchment border border-sand rounded-2xl py-16 flex flex-col items-center gap-3 shadow-sm">
           <TrendingUp size={26} className="text-ink-faint" />
-          <p className="text-sm text-ink-muted">Add a subject to start tracking.</p>
+          <p className="text-sm text-ink-muted">Add a subject to start tracking</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

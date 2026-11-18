@@ -13,14 +13,14 @@ function StatusLine({ attended, marked }) {
   if (marked === 0) return <span className="text-ink-muted">No classes yet</span>;
   if (b.needToAttend > 0) {
     return (
-      <span className="flex items-center gap-1 text-danger font-bold">
-        <ShieldAlert size={12} /> Attend the next {b.needToAttend} hr{b.needToAttend > 1 ? 's' : ''} to reach {ATTENDANCE_THRESHOLD}%
+      <span className="flex items-center gap-1 text-danger font-medium">
+        <ShieldAlert size={14} /> Attend the next {b.needToAttend} hr{b.needToAttend > 1 ? 's' : ''} to reach {ATTENDANCE_THRESHOLD}%
       </span>
     );
   }
   return (
-    <span className="flex items-center gap-1 text-sage-dark font-bold">
-      <ShieldCheck size={12} /> Can miss {b.canSkip} more hr{b.canSkip === 1 ? '' : 's'}
+    <span className="flex items-center gap-1 text-sage-dark font-medium">
+      <ShieldCheck size={14} /> Can miss {b.canSkip} more hr{b.canSkip === 1 ? '' : 's'}
     </span>
   );
 }
@@ -77,11 +77,11 @@ export default function SkipPlanner({ records }) {
       <div className="bg-parchment border border-sand rounded-2xl p-4 sm:p-5 shadow-sm">
         <div className="flex items-start justify-between gap-3 mb-4">
           <div>
-            <p className="text-[10px] font-bold text-ink-muted uppercase tracking-widest mb-1">Overall right now</p>
-            <p className={`text-3xl font-display font-bold ${overallNow !== null && overallNow < ATTENDANCE_THRESHOLD ? 'text-danger' : 'text-ink'}`}>
+            <p className="text-[11px] font-medium text-ink-muted mb-1">Overall right now</p>
+            <p className={`text-3xl font-display font-semibold ${overallNow !== null && overallNow < ATTENDANCE_THRESHOLD ? 'text-danger' : 'text-ink'}`}>
               {fmtPct(overallNow)}
             </p>
-            <p className="text-[11px] text-ink-muted">{now.overall.attended}/{now.overall.marked} hours attended</p>
+            <p className="text-xs text-ink-muted">{now.overall.attended}/{now.overall.marked} hours attended</p>
           </div>
           <div className="text-right text-xs"><StatusLine attended={now.overall.attended} marked={now.overall.marked} /></div>
         </div>
@@ -91,12 +91,12 @@ export default function SkipPlanner({ records }) {
             const t = now.bySubject.get(name) || { attended: 0, marked: 0 };
             const v = pct(t.attended, t.marked);
             return (
-              <div key={name} className="bg-map rounded-xl px-3 py-2.5">
+              <div key={name} className="bg-map rounded-xl px-3 py-3">
                 <div className="flex items-center justify-between gap-3">
-                  <p className="text-sm font-bold text-ink truncate">{name}</p>
-                  <p className={`text-sm font-display font-bold flex-shrink-0 ${v !== null && v < ATTENDANCE_THRESHOLD ? 'text-danger' : 'text-ink'}`}>{fmtPct(v)}</p>
+                  <p className="text-sm font-medium text-ink truncate">{name}</p>
+                  <p className={`text-sm font-display font-semibold flex-shrink-0 ${v !== null && v < ATTENDANCE_THRESHOLD ? 'text-danger' : 'text-ink'}`}>{fmtPct(v)}</p>
                 </div>
-                <div className="flex items-center justify-between gap-3 mt-0.5 text-[11px] text-ink-muted">
+                <div className="flex items-center justify-between gap-3 mt-0.5 text-xs text-ink-muted">
                   <span>{t.attended}/{t.marked} hrs</span>
                   <StatusLine attended={t.attended} marked={t.marked} />
                 </div>
@@ -104,22 +104,22 @@ export default function SkipPlanner({ records }) {
             );
           })}
         </div>
-        <p className="text-[10px] text-ink-faint mt-3 flex items-start gap-1">
-          <Info size={11} className="mt-px flex-shrink-0" />
+        <p className="text-[11px] text-ink-faint mt-3 flex items-start gap-1">
+          <Info size={14} className="mt-px flex-shrink-0" />
           Counted in hours, the way SAP records attendance: a lecture is 1 hour and a 2-hour lab is 2.
         </p>
       </div>
 
       {/* What if */}
       <div className="bg-parchment border border-sand rounded-2xl p-4 sm:p-5 shadow-sm">
-        <p className="text-[10px] font-bold text-ember-dark uppercase tracking-widest mb-1">What if I skip…</p>
+        <p className="text-xs font-medium text-ink-muted mb-1">What if I skip…</p>
         <p className="text-xs text-ink-muted mb-4">
           Your next class days, from the weekly timetable StudySync learned from your attendance. Tap a day to
           skip all of it, or a single class. Everything else is assumed attended.
         </p>
 
         {staleDays > 2 && (
-          <p className="text-[11px] text-caution bg-caution-pale rounded-lg px-3 py-2 mb-3">
+          <p className="text-xs text-caution bg-caution-pale rounded-lg px-3 py-2 mb-3">
             SAP data runs up to {parseDay(lastMarked).toLocaleDateString(undefined, { day: 'numeric', month: 'short' })}.
             Classes since then aren't counted yet. Run a sync to bring this up to date.
           </p>
@@ -130,26 +130,26 @@ export default function SkipPlanner({ records }) {
             Not enough attendance history to work out your timetable yet. Sync again after a few more weeks of classes.
           </p>
         ) : (
-          <div className="space-y-2.5">
+          <div className="space-y-3">
             {days.map(day => {
               const allSkipped = day.entries.every(e => skipped.has(e.key));
               return (
                 <div key={day.date} className={`rounded-xl border p-3 transition-colors ${allSkipped ? 'bg-danger-pale border-danger/30' : 'bg-map border-sand'}`}>
                   <div className="flex items-center justify-between gap-3 mb-2">
-                    <p className="text-sm font-bold text-ink">{dayLabel(day)}</p>
+                    <p className="text-sm font-medium text-ink">{dayLabel(day)}</p>
                     <button onClick={() => toggleDay(day)}
-                      className={`text-[11px] font-bold px-3 py-2 min-h-[36px] rounded-lg border ${allSkipped ? 'bg-danger text-white border-danger' : 'bg-white text-ink-muted border-sand hover:border-sand-dark'}`}>
+                      className={`text-xs font-medium px-3 py-2 min-h-[36px] rounded-lg border ${allSkipped ? 'bg-danger text-white border-danger' : 'bg-white text-ink-muted border-sand hover:border-sand-dark'}`}>
                       {allSkipped ? 'Skipping all' : 'Skip whole day'}
                     </button>
                   </div>
-                  <div className="flex flex-wrap gap-1.5">
+                  <div className="flex flex-wrap gap-2">
                     {day.entries.map(e => {
                       const off = skipped.has(e.key);
                       const Icon = e.kind === 'lab' ? FlaskConical : BookOpen;
                       return (
                         <button key={e.key} onClick={() => toggle(e.key)} aria-pressed={off}
-                          className={`flex items-center gap-1 text-[11px] font-medium px-2.5 py-2 min-h-[36px] rounded-lg border max-w-full ${off ? 'bg-danger-pale border-danger/40 text-danger line-through' : 'bg-white border-sand text-ink'}`}>
-                          <Icon size={11} className="flex-shrink-0" />
+                          className={`flex items-center gap-1 text-xs font-medium px-3 py-2 min-h-[36px] rounded-lg border max-w-full ${off ? 'bg-danger-pale border-danger/40 text-danger line-through' : 'bg-white border-sand text-ink'}`}>
+                          <Icon size={14} className="flex-shrink-0" />
                           <span className="truncate">{e.subject}</span>
                           <span className="text-ink-faint no-underline">· {e.hours}h</span>
                         </button>
@@ -166,17 +166,17 @@ export default function SkipPlanner({ records }) {
           <div className="mt-4 border-t border-sand pt-4">
             <div className="flex items-end justify-between gap-3 mb-3">
               <div>
-                <p className="text-[10px] font-bold text-ink-muted uppercase tracking-widest mb-0.5">After these days</p>
-                <p className={`text-2xl font-display font-bold ${overallAfter !== null && overallAfter < ATTENDANCE_THRESHOLD ? 'text-danger' : 'text-ink'}`}>
+                <p className="text-[11px] font-medium text-ink-muted mb-0.5">After these days</p>
+                <p className={`text-2xl font-display font-semibold ${overallAfter !== null && overallAfter < ATTENDANCE_THRESHOLD ? 'text-danger' : 'text-ink'}`}>
                   {fmtPct(overallAfter)}
                   {overallNow !== null && overallAfter !== null && (
-                    <span className={`text-xs font-bold ml-2 ${overallAfter >= overallNow ? 'text-sage-dark' : 'text-caution'}`}>
+                    <span className={`text-xs font-medium ml-2 ${overallAfter >= overallNow ? 'text-sage-dark' : 'text-caution'}`}>
                       {overallAfter >= overallNow ? '+' : ''}{(overallAfter - overallNow).toFixed(1)}
                     </span>
                   )}
                 </p>
               </div>
-              <p className="text-[11px] text-ink-muted text-right">
+              <p className="text-xs text-ink-muted text-right">
                 {after.skippedHours} hr{after.skippedHours === 1 ? '' : 's'} skipped
                 {skipped.size > 0 && (
                   <button onClick={() => setSkipped(new Set())} className="ml-2 underline">Reset</button>
@@ -185,17 +185,17 @@ export default function SkipPlanner({ records }) {
             </div>
 
             {willDrop.length === 0 ? (
-              <p className="text-[11px] font-bold text-sage-dark flex items-center gap-1 mb-3">
-                <ShieldCheck size={13} /> Every subject stays at or above {ATTENDANCE_THRESHOLD}%.
+              <p className="text-xs font-medium text-sage-dark flex items-center gap-1 mb-3">
+                <ShieldCheck size={16} /> Every subject stays at or above {ATTENDANCE_THRESHOLD}%.
               </p>
             ) : (
-              <p className="text-[11px] font-bold text-danger flex items-start gap-1 mb-3">
-                <ShieldAlert size={13} className="mt-px flex-shrink-0" />
+              <p className="text-xs font-medium text-danger flex items-start gap-1 mb-3">
+                <ShieldAlert size={16} className="mt-px flex-shrink-0" />
                 <span>Drops below {ATTENDANCE_THRESHOLD}%: {willDrop.join(', ')}</span>
               </p>
             )}
 
-            <div className="space-y-1.5">
+            <div className="space-y-2">
               {subjectNames.map(name => {
                 const before = now.bySubject.get(name) || { attended: 0, marked: 0 };
                 const t = after.subjects.get(name) || { attended: 0, marked: 0 };

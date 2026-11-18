@@ -66,7 +66,7 @@ export default function Layout({ currentView, onNavigate, onLogout, user, childr
       {/* Page content — bottom padding clears the fixed nav on every breakpoint */}
       <div className="relative z-10 pb-28 min-[1180px]:pb-32">
         <InstallBanner />
-        {children}
+        <div key={currentView} className="page-enter">{children}</div>
       </div>
 
       {/* ══ Mobile / tablet: full-width bottom bar (below lg) ══ */}
@@ -82,11 +82,11 @@ export default function Layout({ currentView, onNavigate, onLogout, user, childr
                 key={id}
                 onClick={() => go(id)}
                 aria-current={active ? 'page' : undefined}
-                className={`flex flex-col items-center justify-center gap-1 py-2.5 min-h-[56px] transition-colors focus:outline-none focus-visible:bg-ink/5
+                className={`flex flex-col items-center justify-center gap-1 py-3 min-h-[56px] transition-colors focus:outline-none focus-visible:bg-ink/5
                   ${active ? 'text-ember-dark' : 'text-ink-muted active:bg-ink/5'}`}
               >
-                <Icon size={19} strokeWidth={active ? 2.4 : 2} className="flex-shrink-0" />
-                <span className={`text-[10px] leading-none truncate max-w-full px-0.5 ${active ? 'font-bold' : 'font-medium'}`}>
+                <Icon size={18} className="flex-shrink-0" />
+                <span className={`text-[11px] leading-none truncate max-w-full px-0.5 font-medium`}>
                   {label}
                 </span>
               </button>
@@ -96,21 +96,21 @@ export default function Layout({ currentView, onNavigate, onLogout, user, childr
           {fitsWithoutMore ? (
             <button
               onClick={onLogout}
-              className="flex flex-col items-center justify-center gap-1 py-2.5 min-h-[56px] text-ink-faint active:bg-ink/5 transition-colors focus:outline-none focus-visible:bg-ink/5"
+              className="flex flex-col items-center justify-center gap-1 py-3 min-h-[56px] text-ink-faint active:bg-ink/5 transition-colors focus:outline-none focus-visible:bg-ink/5"
             >
-              <LogOut size={19} strokeWidth={2} className="flex-shrink-0" />
-              <span className="text-[10px] leading-none font-medium">Sign out</span>
+              <LogOut size={18} className="flex-shrink-0" />
+              <span className="text-[11px] leading-none font-medium">Sign out</span>
             </button>
           ) : (
             <button
               onClick={() => setSheetOpen(true)}
               aria-expanded={sheetOpen}
               aria-haspopup="menu"
-              className={`flex flex-col items-center justify-center gap-1 py-2.5 min-h-[56px] transition-colors focus:outline-none focus-visible:bg-ink/5
+              className={`flex flex-col items-center justify-center gap-1 py-3 min-h-[56px] transition-colors focus:outline-none focus-visible:bg-ink/5
                 ${moreIsActive ? 'text-ember-dark' : 'text-ink-muted active:bg-ink/5'}`}
             >
-              <MoreHorizontal size={19} strokeWidth={moreIsActive ? 2.4 : 2} className="flex-shrink-0" />
-              <span className={`text-[10px] leading-none ${moreIsActive ? 'font-bold' : 'font-medium'}`}>More</span>
+              <MoreHorizontal size={18} className="flex-shrink-0" />
+              <span className={`text-[11px] leading-none ${moreIsActive ? 'font-medium' : 'font-medium'}`}>More</span>
             </button>
           )}
         </div>
@@ -122,18 +122,18 @@ export default function Layout({ currentView, onNavigate, onLogout, user, childr
           <button
             aria-label="Close menu"
             onClick={() => setSheetOpen(false)}
-            className="absolute inset-0 w-full h-full bg-ink/40 backdrop-blur-[2px]"
+            className="absolute inset-0 w-full h-full bg-ink/40 backdrop-blur-[2px] anim-fade"
           />
           <div
-            className="absolute bottom-0 inset-x-0 bg-parchment border-t border-sand rounded-t-2xl shadow-2xl p-4"
+            className="absolute bottom-0 inset-x-0 anim-pop bg-parchment border-t border-sand rounded-t-2xl shadow-lg shadow-ink/10 p-4"
             style={{ paddingBottom: 'calc(1rem + env(safe-area-inset-bottom, 0px))' }}
           >
             <div className="flex items-center justify-between mb-3">
-              <p className="text-[10px] font-bold text-ink-muted uppercase tracking-widest">More</p>
+              <p className="text-[11px] font-medium text-ink-muted">More</p>
               <button
                 onClick={() => setSheetOpen(false)}
                 aria-label="Close menu"
-                className="p-1.5 -m-1.5 rounded-lg text-ink-muted hover:text-ink hover:bg-ink/5 transition-colors"
+                className="p-2 -m-2 rounded-lg text-ink-muted hover:text-ink hover:bg-ink/5 transition-colors"
               >
                 <X size={16} />
               </button>
@@ -147,13 +147,13 @@ export default function Layout({ currentView, onNavigate, onLogout, user, childr
                     key={id}
                     onClick={() => go(id)}
                     aria-current={active ? 'page' : undefined}
-                    className={`flex flex-col items-center justify-center gap-1.5 py-3.5 rounded-xl border transition-colors
+                    className={`flex flex-col items-center justify-center gap-2 py-4 rounded-xl border transition-colors
                       ${active
                         ? 'bg-ember text-white border-ember'
                         : 'bg-white border-sand text-ink-muted hover:text-ink hover:border-sand-dark'}`}
                   >
                     <Icon size={18} className="flex-shrink-0" />
-                    <span className="text-[11px] font-bold text-center leading-tight px-1">{label}</span>
+                    <span className="text-xs font-medium text-center leading-tight px-1">{label}</span>
                   </button>
                 );
               })}
@@ -163,15 +163,15 @@ export default function Layout({ currentView, onNavigate, onLogout, user, childr
               onClick={onLogout}
               className="mt-3 w-full flex items-center justify-center gap-2 py-3 rounded-xl border border-sand bg-white text-ink-muted hover:text-danger hover:border-danger/30 hover:bg-danger-pale transition-colors"
             >
-              <LogOut size={15} />
-              <span className="text-xs font-bold">Sign out</span>
+              <LogOut size={16} />
+              <span className="text-xs font-medium">Sign out</span>
             </button>
           </div>
         </div>
       )}
 
       {/* ══ Desktop: floating pill (lg and up, where every label fits) ══ */}
-      <nav className="hidden min-[1180px]:flex fixed bottom-5 left-1/2 -translate-x-1/2 z-50 items-center gap-0.5 p-1.5 rounded-full bg-parchment/95 backdrop-blur border border-sand shadow-lg shadow-ink/10"
+      <nav className="hidden min-[1180px]:flex fixed bottom-5 left-1/2 -translate-x-1/2 z-50 items-center gap-0.5 p-2 rounded-full bg-parchment/95 backdrop-blur border border-sand shadow-lg shadow-ink/10"
         style={{ maxWidth: 'calc(100vw - 24px)' }}>
 
         {navItems.map(({ id, label, icon: Icon }) => {
@@ -181,11 +181,11 @@ export default function Layout({ currentView, onNavigate, onLogout, user, childr
               key={id}
               onClick={() => onNavigate(id)}
               aria-current={active ? 'page' : undefined}
-              className={`relative flex items-center gap-1.5 rounded-full transition-all duration-300 select-none px-3 py-2.5
-                ${active ? 'bg-ember text-white shadow-sm' : 'text-ink-muted hover:text-ink hover:bg-ink/5'}`}
+              className={`relative flex items-center gap-2 rounded-full transition-colors duration-150 select-none px-3 py-3
+                ${active ? 'bg-ember text-white' : 'text-ink-muted hover:text-ink hover:bg-ink/5'}`}
             >
-              <Icon size={15} className="flex-shrink-0" />
-              <span className="text-xs font-bold whitespace-nowrap">{label}</span>
+              <Icon size={16} className="flex-shrink-0" />
+              <span className="text-xs font-medium whitespace-nowrap">{label}</span>
             </button>
           );
         })}
@@ -194,9 +194,9 @@ export default function Layout({ currentView, onNavigate, onLogout, user, childr
 
         <button
           onClick={onLogout}
-          className="flex items-center gap-1.5 rounded-full text-ink-faint hover:text-ink hover:bg-ink/5 transition-all px-3 py-2.5"
+          className="flex items-center gap-2 rounded-full text-ink-faint hover:text-ink hover:bg-ink/5 transition-colors px-3 py-3"
         >
-          <LogOut size={14} className="flex-shrink-0" />
+          <LogOut size={16} className="flex-shrink-0" />
           <span className="text-xs font-medium whitespace-nowrap">Sign out</span>
         </button>
       </nav>

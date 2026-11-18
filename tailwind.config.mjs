@@ -13,8 +13,8 @@ export default {
         map: '#EFE7D3',          // inset panels, wells
         ink: {
           DEFAULT: '#2B2B26',    // primary text
-          muted: '#7A7566',      // secondary text
-          faint: '#A79E8B',      // hints, placeholders
+          muted: '#6B6657',      // secondary text (4.9:1 on paper)
+          faint: '#857D6B',      // hints, placeholders, icons
         },
         sand: {
           DEFAULT: '#DDD3B4',    // default border
@@ -31,7 +31,7 @@ export default {
           pale: '#E4EBF1',
         },
         ember: {
-          DEFAULT: '#E76F51',    // safety orange — the single accent
+          DEFAULT: '#BF4F2B',    // burnt orange — the single accent (4.8:1 with white text)
           dark: '#A33D26',
           pale: '#F9E4DC',
         },
@@ -45,8 +45,8 @@ export default {
         },
       },
       fontFamily: {
-        sans: ['"Atkinson Hyperlegible"', 'system-ui', '-apple-system', 'sans-serif'],
-        display: ['"Bricolage Grotesque"', '"Atkinson Hyperlegible"', 'sans-serif'],
+        sans: ['"Atkinson Hyperlegible Next"', '"Atkinson Hyperlegible"', 'system-ui', '-apple-system', 'sans-serif'],
+        display: ['"Bricolage Grotesque"', '"Atkinson Hyperlegible Next"', 'sans-serif'],
       },
     },
   },

@@ -98,23 +98,23 @@ function SubmitForm({ onSubmit, onCancel, subjects }) {
     setError('');
   };
 
-  const inputClass = "w-full px-3 py-2.5 bg-white border border-sand rounded-xl text-sm text-ink placeholder-ink-faint focus:outline-none focus:border-ember transition-all";
+  const inputClass = "w-full px-3 py-3 bg-white border border-sand rounded-xl text-sm text-ink placeholder-ink-faint focus:outline-none focus:border-ember transition-colors";
 
   return (
     <div className="bg-parchment border border-sand rounded-2xl p-4 sm:p-5 shadow-sm mb-5">
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-sm font-display font-bold text-ink flex items-center gap-2">
-          <Send size={14} className="text-ink-muted" /> New Application
+        <h2 className="text-sm font-display font-semibold text-ink flex items-center gap-2">
+          <Send size={16} className="text-ink-muted" /> New Application
         </h2>
         <button onClick={onCancel} className="text-ink-faint hover:text-ink transition-colors">
           <X size={16} />
         </button>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-3.5">
+      <form onSubmit={handleSubmit} className="space-y-4">
         {/* Type */}
         <div>
-          <label className="text-[10px] font-bold text-ink-muted uppercase tracking-widest mb-1 block">Type *</label>
+          <label className="text-[11px] font-medium text-ink-muted mb-1 block">Type *</label>
           <div className="relative">
             <select
               value={type}
@@ -125,13 +125,13 @@ function SubmitForm({ onSubmit, onCancel, subjects }) {
                 <option key={t.value} value={t.value}>{t.label}</option>
               ))}
             </select>
-            <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-ink-faint pointer-events-none" />
+            <ChevronDown size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-ink-faint pointer-events-none" />
           </div>
         </div>
 
         {/* Title */}
         <div>
-          <label className="text-[10px] font-bold text-ink-muted uppercase tracking-widest mb-1 block">Title *</label>
+          <label className="text-[11px] font-medium text-ink-muted mb-1 block">Title *</label>
           <input
             type="text"
             value={title}
@@ -145,7 +145,7 @@ function SubmitForm({ onSubmit, onCancel, subjects }) {
 
         {/* Reason */}
         <div>
-          <label className="text-[10px] font-bold text-ink-muted uppercase tracking-widest mb-1 block">Reason *</label>
+          <label className="text-[11px] font-medium text-ink-muted mb-1 block">Reason *</label>
           <textarea
             value={reason}
             onChange={e => setReason(e.target.value)}
@@ -160,7 +160,7 @@ function SubmitForm({ onSubmit, onCancel, subjects }) {
         {/* Dates */}
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="text-[10px] font-bold text-ink-muted uppercase tracking-widest mb-1 block">From *</label>
+            <label className="text-[11px] font-medium text-ink-muted mb-1 block">From *</label>
             <input
               type="date"
               value={fromDate}
@@ -170,7 +170,7 @@ function SubmitForm({ onSubmit, onCancel, subjects }) {
             />
           </div>
           <div>
-            <label className="text-[10px] font-bold text-ink-muted uppercase tracking-widest mb-1 block">To *</label>
+            <label className="text-[11px] font-medium text-ink-muted mb-1 block">To *</label>
             <input
               type="date"
               value={toDate}
@@ -184,7 +184,7 @@ function SubmitForm({ onSubmit, onCancel, subjects }) {
         {/* Subject (optional) */}
         {subjects.length > 0 && (
           <div>
-            <label className="text-[10px] font-bold text-ink-muted uppercase tracking-widest mb-1 block">Subject (optional)</label>
+            <label className="text-[11px] font-medium text-ink-muted mb-1 block">Subject (optional)</label>
             <div className="relative">
               <select
                 value={subjectId}
@@ -196,42 +196,42 @@ function SubmitForm({ onSubmit, onCancel, subjects }) {
                   <option key={s._id} value={s._id}>{s.name}</option>
                 ))}
               </select>
-              <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-ink-faint pointer-events-none" />
+              <ChevronDown size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-ink-faint pointer-events-none" />
             </div>
           </div>
         )}
 
         {/* Attachment */}
         <div>
-          <label className="text-[10px] font-bold text-ink-muted uppercase tracking-widest mb-1 block">
-            <Paperclip size={10} className="inline mr-1" />
+          <label className="text-[11px] font-medium text-ink-muted mb-1 block">
+            <Paperclip size={14} className="inline mr-1" />
             Attachment (optional, max 5 MB)
           </label>
           <input
             type="file"
             accept=".jpg,.jpeg,.png,.pdf"
             onChange={handleFileChange}
-            className="w-full text-xs text-ink file:mr-3 file:py-2 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-map file:text-ink-muted hover:file:bg-sand transition-all"
+            className="w-full text-xs text-ink file:mr-3 file:py-2 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-medium file:bg-map file:text-ink-muted hover:file:bg-sand transition-colors"
           />
           {file && (
-            <p className="text-[11px] text-sage-dark mt-1 flex items-center gap-1">
-              <Paperclip size={10} /> {file.name} ({(file.size / 1024).toFixed(0)} KB)
+            <p className="text-xs text-sage-dark mt-1 flex items-center gap-1">
+              <Paperclip size={14} /> {file.name} ({(file.size / 1024).toFixed(0)} KB)
             </p>
           )}
         </div>
 
         {error && (
-          <div className="flex items-center gap-2 text-danger text-xs bg-danger-pale border border-danger/25 rounded-xl px-3 py-2.5">
-            <AlertTriangle size={13} className="flex-shrink-0" />{error}
+          <div className="flex items-center gap-2 text-danger text-xs bg-danger-pale border border-danger/25 rounded-xl px-3 py-3">
+            <AlertTriangle size={16} className="flex-shrink-0" />{error}
           </div>
         )}
 
         <button
           type="submit"
           disabled={submitting}
-          className="w-full bg-ember hover:bg-ember-dark disabled:opacity-50 text-white font-bold py-2.5 rounded-xl text-sm flex items-center justify-center gap-2 transition-all shadow-sm"
+          className="w-full bg-ember hover:bg-ember-dark disabled:opacity-50 text-white font-medium py-3 rounded-xl text-sm flex items-center justify-center gap-2 transition-colors shadow-sm"
         >
-          {submitting ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />}
+          {submitting ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
           {submitting ? 'Submitting…' : 'Submit Application'}
         </button>
       </form>
@@ -257,22 +257,22 @@ function ApplicationCard({ app, onWithdraw }) {
     <div className="bg-parchment border border-sand rounded-2xl p-4 sm:p-5 shadow-sm">
       <div className="flex items-start gap-3 mb-2">
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-bold text-ink truncate">{app.title}</p>
+          <p className="text-sm font-medium text-ink truncate">{app.title}</p>
           <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 mt-1">
-            <span className="text-[11px] text-trail-dark font-bold">{TYPE_LABELS[app.type] || app.type}</span>
-            {app.subject?.name && <span className="text-[11px] text-ink-faint">· {app.subject.name}</span>}
+            <span className="text-xs text-trail-dark font-medium">{TYPE_LABELS[app.type] || app.type}</span>
+            {app.subject?.name && <span className="text-xs text-ink-faint">· {app.subject.name}</span>}
           </div>
         </div>
-        <span className={`flex items-center gap-1 text-[10px] font-bold px-2 py-1 rounded-full border flex-shrink-0 ${STATUS_STYLES[app.status]}`}>
-          <StatusIcon size={10} /> {app.status}
+        <span className={`flex items-center gap-1 text-[11px] font-medium px-2 py-1 rounded-full border flex-shrink-0 ${STATUS_STYLES[app.status]}`}>
+          <StatusIcon size={14} /> {app.status}
         </span>
       </div>
 
       <p className="text-xs text-ink-muted mb-2 line-clamp-2">{app.reason}</p>
 
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-ink-faint mb-2">
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-ink-faint mb-2">
         <span className="flex items-center gap-1">
-          <CalendarDays size={10} />
+          <CalendarDays size={14} />
           {new Date(app.fromDate).toLocaleDateString(undefined, { day: 'numeric', month: 'short' })}
           {app.fromDate !== app.toDate && ` – ${new Date(app.toDate).toLocaleDateString(undefined, { day: 'numeric', month: 'short' })}`}
         </span>
@@ -280,21 +280,21 @@ function ApplicationCard({ app, onWithdraw }) {
       </div>
 
       {app.attachment?.publicId && (
-        <p className="text-[11px] text-trail-dark font-bold flex items-center gap-1 mb-2">
-          <Paperclip size={10} /> {app.attachment.originalName || 'Attachment'}
+        <p className="text-xs text-trail-dark font-medium flex items-center gap-1 mb-2">
+          <Paperclip size={14} /> {app.attachment.originalName || 'Attachment'}
         </p>
       )}
 
       {/* Mentor remarks */}
       {app.mentorRemarks && app.status !== 'pending' && (
         <div className="bg-map rounded-lg px-3 py-2 mb-2">
-          <p className="text-[10px] font-bold text-ink-muted uppercase tracking-widest mb-0.5">Mentor Remarks</p>
+          <p className="text-[11px] font-medium text-ink-muted mb-0.5">Mentor Remarks</p>
           <p className="text-xs text-ink">{app.mentorRemarks}</p>
         </div>
       )}
 
       {app.decidedAt && app.status !== 'pending' && (
-        <p className="text-[10px] text-ink-faint">
+        <p className="text-[11px] text-ink-faint">
           {app.status === 'approved' ? 'Approved' : 'Rejected'} on {new Date(app.decidedAt).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })}
         </p>
       )}
@@ -303,9 +303,9 @@ function ApplicationCard({ app, onWithdraw }) {
         <button
           onClick={handleWithdraw}
           disabled={withdrawing}
-          className="mt-1 -ml-2 px-2 py-2.5 flex items-center gap-1.5 text-xs font-bold text-danger hover:text-danger/80 transition-all"
+          className="mt-1 -ml-2 px-2 py-3 flex items-center gap-2 text-xs font-medium text-danger hover:text-danger/80 transition-colors"
         >
-          <Undo2 size={12} />
+          <Undo2 size={14} />
           {withdrawing ? 'Withdrawing…' : 'Withdraw'}
         </button>
       )}
@@ -360,7 +360,7 @@ export default function ApplicationsPage() {
   if (loading) {
     return (
       <div className="max-w-3xl mx-auto px-4 sm:px-6 pt-8 flex items-center gap-2 text-sm text-ink-muted">
-        <Loader2 size={14} className="animate-spin" /> Loading applications…
+        <Loader2 size={16} className="animate-spin" /> Loading applications…
       </div>
     );
   }
@@ -369,18 +369,18 @@ export default function ApplicationsPage() {
     <div className="max-w-3xl mx-auto px-4 sm:px-6 pt-8">
       {/* Page header */}
       <div className="mb-7">
-        <p className="text-[10px] font-bold text-ember-dark uppercase tracking-widest mb-1">Requests</p>
-        <h1 className="text-2xl sm:text-3xl font-display font-bold text-ink tracking-tight flex items-center gap-2">
+        <p className="text-xs font-medium text-ink-muted mb-1">Requests</p>
+        <h1 className="text-2xl sm:text-3xl font-display font-semibold text-ink tracking-tight flex items-center gap-2">
           <FileText size={22} className="text-ink-muted" /> Applications
         </h1>
-        <p className="text-xs text-ink-muted mt-1.5">
+        <p className="text-xs text-ink-muted mt-2">
           Submit leave requests and track their status.
         </p>
       </div>
 
       {error && (
         <div className="mb-4 flex items-start gap-2 text-xs font-medium text-danger bg-danger-pale border border-danger/20 rounded-xl px-3 py-2">
-          <AlertTriangle size={13} className="mt-0.5 flex-shrink-0" />
+          <AlertTriangle size={16} className="mt-0.5 flex-shrink-0" />
           <span className="flex-1">{error}</span>
           <button onClick={fetchApplications} className="underline flex-shrink-0">Retry</button>
         </div>
@@ -396,20 +396,20 @@ export default function ApplicationsPage() {
       ) : (
         <button
           onClick={() => setShowForm(true)}
-          className="w-full mb-5 flex items-center justify-center gap-2 bg-ember hover:bg-ember-dark text-white font-bold py-3 rounded-xl text-sm transition-all shadow-sm"
+          className="w-full mb-5 flex items-center justify-center gap-2 bg-ember hover:bg-ember-dark text-white font-medium py-3 rounded-xl text-sm transition-colors shadow-sm"
         >
           <Plus size={16} /> New Application
         </button>
       )}
 
       {/* Status filter */}
-      <div className="flex items-center gap-1.5 mb-5 overflow-x-auto">
-        <Filter size={12} className="text-ink-faint flex-shrink-0" />
+      <div className="flex items-center gap-2 mb-5 overflow-x-auto">
+        <Filter size={14} className="text-ink-faint flex-shrink-0" />
         {STATUS_OPTIONS.map(opt => (
           <button
             key={opt.value}
             onClick={() => setStatusFilter(opt.value)}
-            className={`px-3.5 py-2 min-h-[36px] rounded-full text-xs font-bold transition-all flex-shrink-0 ${
+            className={`px-4 py-2 min-h-[36px] rounded-full text-xs font-medium transition-colors flex-shrink-0 ${
               statusFilter === opt.value
                 ? 'bg-ember text-white'
                 : 'bg-parchment text-ink-muted border border-sand hover:border-sand-dark'
@@ -424,7 +424,7 @@ export default function ApplicationsPage() {
       {applications.length === 0 ? (
         <div className="bg-parchment border border-sand rounded-2xl p-8 text-center shadow-sm">
           <FileText size={24} className="mx-auto text-ink-faint mb-2" />
-          <p className="text-sm font-bold text-ink mb-1">No applications</p>
+          <p className="text-sm font-medium text-ink mb-1">No applications</p>
           <p className="text-sm text-ink-muted">
             {statusFilter !== 'all'
               ? `No ${statusFilter} applications found.`

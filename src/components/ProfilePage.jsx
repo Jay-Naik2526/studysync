@@ -10,8 +10,8 @@ import { InstallCard } from './InstallApp';
 function Field({ label, icon: Icon, value, onChange, placeholder, disabled }) {
   return (
     <label className="block">
-      <span className="flex items-center gap-1.5 text-[10px] font-bold text-ink-muted uppercase tracking-widest mb-1">
-        <Icon size={11} /> {label}
+      <span className="flex items-center gap-2 text-[11px] font-medium text-ink-muted mb-1">
+        <Icon size={14} /> {label}
       </span>
       <input
         type="text"
@@ -19,7 +19,7 @@ function Field({ label, icon: Icon, value, onChange, placeholder, disabled }) {
         onChange={e => onChange(e.target.value)}
         placeholder={placeholder}
         disabled={disabled}
-        className="w-full px-3 py-2.5 bg-white border border-sand rounded-xl text-sm text-ink placeholder-ink-faint focus:outline-none focus:border-ember transition-all disabled:opacity-50 disabled:bg-map"
+        className="w-full px-3 py-3 bg-white border border-sand rounded-xl text-sm text-ink placeholder-ink-faint focus:outline-none focus:border-ember transition-colors disabled:opacity-50 disabled:bg-map"
       />
     </label>
   );
@@ -61,8 +61,8 @@ function StudentProfile({ profile, onUpdate }) {
 
   return (
     <div className="bg-parchment border border-sand rounded-2xl p-4 sm:p-5 shadow-sm">
-      <h2 className="text-sm font-display font-bold text-ink mb-4 flex items-center gap-2">
-        <GraduationCap size={15} className="text-ink-muted" /> Academic Profile
+      <h2 className="text-sm font-display font-semibold text-ink mb-4 flex items-center gap-2">
+        <GraduationCap size={16} className="text-ink-muted" /> Academic Profile
       </h2>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div className="sm:col-span-2">
@@ -76,10 +76,10 @@ function StudentProfile({ profile, onUpdate }) {
       <button
         onClick={handleSave}
         disabled={saving}
-        className="mt-4 flex items-center gap-2 bg-ember hover:bg-ember-dark disabled:opacity-50 text-white font-bold py-2.5 px-5 rounded-xl text-sm transition-all shadow-sm"
+        className="mt-4 flex items-center gap-2 bg-ember hover:bg-ember-dark disabled:opacity-50 text-white font-medium py-3 px-5 rounded-xl text-sm transition-colors shadow-sm"
       >
-        {saving ? <Loader2 size={14} className="animate-spin" /> : saved ? <Check size={14} /> : <Save size={14} />}
-        {saving ? 'Saving…' : saved ? 'Saved!' : 'Save changes'}
+        {saving ? <Loader2 size={16} className="animate-spin" /> : saved ? <Check size={16} /> : <Save size={16} />}
+        {saving ? 'Saving…' : saved ? 'Saved' : 'Save changes'}
       </button>
     </div>
   );
@@ -117,8 +117,8 @@ function MentorProfile({ profile, onUpdate }) {
 
   return (
     <div className="bg-parchment border border-sand rounded-2xl p-4 sm:p-5 shadow-sm">
-      <h2 className="text-sm font-display font-bold text-ink mb-4 flex items-center gap-2">
-        <Shield size={15} className="text-ink-muted" /> Faculty Profile
+      <h2 className="text-sm font-display font-semibold text-ink mb-4 flex items-center gap-2">
+        <Shield size={16} className="text-ink-muted" /> Faculty Profile
       </h2>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div className="sm:col-span-2">
@@ -130,10 +130,10 @@ function MentorProfile({ profile, onUpdate }) {
       <button
         onClick={handleSave}
         disabled={saving}
-        className="mt-4 flex items-center gap-2 bg-ember hover:bg-ember-dark disabled:opacity-50 text-white font-bold py-2.5 px-5 rounded-xl text-sm transition-all shadow-sm"
+        className="mt-4 flex items-center gap-2 bg-ember hover:bg-ember-dark disabled:opacity-50 text-white font-medium py-3 px-5 rounded-xl text-sm transition-colors shadow-sm"
       >
-        {saving ? <Loader2 size={14} className="animate-spin" /> : saved ? <Check size={14} /> : <Save size={14} />}
-        {saving ? 'Saving…' : saved ? 'Saved!' : 'Save changes'}
+        {saving ? <Loader2 size={16} className="animate-spin" /> : saved ? <Check size={16} /> : <Save size={16} />}
+        {saving ? 'Saving…' : saved ? 'Saved' : 'Save changes'}
       </button>
     </div>
   );
@@ -165,20 +165,20 @@ function MentorCodeCard({ code, onRegenerate }) {
 
   return (
     <div className="bg-parchment border border-sand rounded-2xl p-4 sm:p-5 shadow-sm">
-      <h2 className="text-sm font-display font-bold text-ink mb-1 flex items-center gap-2">
-        <Link2 size={15} className="text-ink-muted" /> Your Mentor Code
+      <h2 className="text-sm font-display font-semibold text-ink mb-1 flex items-center gap-2">
+        <Link2 size={16} className="text-ink-muted" /> Your Mentor Code
       </h2>
-      <p className="text-xs text-ink-muted mb-4">Share this code with students so they can join you.</p>
+      <p className="text-xs text-ink-muted mb-4">Share this code with students so they can join you</p>
 
       <div className="flex items-center gap-3 bg-map rounded-xl px-4 py-3 border border-sand">
-        <span className="text-xl sm:text-2xl font-display font-bold text-ink tracking-widest flex-1 select-all">
+        <span className="text-xl sm:text-2xl font-display font-semibold text-ink flex-1 select-all">
           {code || '—'}
         </span>
         <button
           onClick={copyCode}
-          className="flex items-center gap-1.5 text-xs font-bold text-trail-dark hover:text-trail bg-trail-pale hover:bg-trail/20 px-3 py-2 rounded-lg transition-all"
+          className="flex items-center gap-2 text-xs font-medium text-trail-dark hover:text-trail bg-trail-pale hover:bg-trail/20 px-3 py-2 rounded-lg transition-colors"
         >
-          {copied ? <Check size={13} /> : <Copy size={13} />}
+          {copied ? <Check size={16} /> : <Copy size={16} />}
           {copied ? 'Copied' : 'Copy'}
         </button>
       </div>
@@ -186,12 +186,12 @@ function MentorCodeCard({ code, onRegenerate }) {
       <button
         onClick={handleRegenerate}
         disabled={regenerating}
-        className="mt-3 flex items-center gap-1.5 text-xs font-bold text-ink-muted hover:text-ink transition-all"
+        className="mt-3 flex items-center gap-2 text-xs font-medium text-ink-muted hover:text-ink transition-colors"
       >
-        <RefreshCw size={12} className={regenerating ? 'animate-spin' : ''} />
+        <RefreshCw size={14} className={regenerating ? 'animate-spin' : ''} />
         {regenerating ? 'Regenerating…' : 'Generate a new code'}
       </button>
-      <p className="text-[10px] text-ink-faint mt-1">
+      <p className="text-[11px] text-ink-faint mt-1">
         Regenerating a code invalidates the old one. Students already linked to you are not affected.
       </p>
     </div>
@@ -214,7 +214,7 @@ function JoinMentorCard({ profile, onRefresh }) {
     setJoining(true); setError(''); setSuccess('');
     try {
       const res = await profileAPI.joinMentor(code.trim());
-      setSuccess(`Joined ${res.data.mentor.name}!`);
+      setSuccess(`Joined ${res.data.mentor.name}`);
       setCode('');
       onRefresh();
       setTimeout(() => setSuccess(''), 3000);
@@ -239,8 +239,8 @@ function JoinMentorCard({ profile, onRefresh }) {
 
   return (
     <div className="bg-parchment border border-sand rounded-2xl p-4 sm:p-5 shadow-sm">
-      <h2 className="text-sm font-display font-bold text-ink mb-1 flex items-center gap-2">
-        <Link2 size={15} className="text-ink-muted" /> Your Mentor
+      <h2 className="text-sm font-display font-semibold text-ink mb-1 flex items-center gap-2">
+        <Link2 size={16} className="text-ink-muted" /> Your Mentor
       </h2>
 
       {hasMentor ? (
@@ -250,19 +250,19 @@ function JoinMentorCard({ profile, onRefresh }) {
               <UserCircle size={18} className="text-sage-dark" />
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-bold text-ink truncate">{profile.mentor.name}</p>
+              <p className="text-sm font-medium text-ink truncate">{profile.mentor.name}</p>
               <p className="text-xs text-ink-muted truncate">{profile.mentor.email}</p>
               {profile.mentor.department && (
-                <p className="text-[11px] text-sage-dark mt-0.5">{profile.mentor.department}</p>
+                <p className="text-xs text-sage-dark mt-0.5">{profile.mentor.department}</p>
               )}
             </div>
           </div>
           <button
             onClick={handleLeave}
             disabled={leaving}
-            className="mt-3 flex items-center gap-1.5 text-xs font-bold text-danger hover:text-danger/80 transition-all"
+            className="mt-3 flex items-center gap-2 text-xs font-medium text-danger hover:text-danger/80 transition-colors"
           >
-            <Unlink size={12} />
+            <Unlink size={14} />
             {leaving ? 'Leaving…' : 'Leave mentor'}
           </button>
         </div>
@@ -278,14 +278,14 @@ function JoinMentorCard({ profile, onRefresh }) {
               onChange={e => setCode(e.target.value.toUpperCase())}
               placeholder="MNT-XXXXX"
               maxLength={9}
-              className="flex-1 px-3 py-2.5 bg-white border border-sand rounded-xl text-sm font-bold text-ink tracking-widest placeholder-ink-faint focus:outline-none focus:border-ember transition-all uppercase"
+              className="flex-1 px-3 py-3 bg-white border border-sand rounded-xl text-sm font-medium text-ink placeholder-ink-faint focus:outline-none focus:border-ember transition-colors"
             />
             <button
               type="submit"
               disabled={joining || !code.trim()}
-              className="flex items-center gap-1.5 bg-ember hover:bg-ember-dark disabled:opacity-50 text-white font-bold py-2.5 px-4 rounded-xl text-sm transition-all shadow-sm"
+              className="flex items-center gap-2 bg-ember hover:bg-ember-dark disabled:opacity-50 text-white font-medium py-3 px-4 rounded-xl text-sm transition-colors shadow-sm"
             >
-              {joining ? <Loader2 size={14} className="animate-spin" /> : <Link2 size={14} />}
+              {joining ? <Loader2 size={16} className="animate-spin" /> : <Link2 size={16} />}
               Join
             </button>
           </form>
@@ -293,13 +293,13 @@ function JoinMentorCard({ profile, onRefresh }) {
       )}
 
       {error && (
-        <div className="mt-3 flex items-center gap-2 text-danger text-xs bg-danger-pale border border-danger/25 rounded-xl px-3 py-2.5">
-          <AlertTriangle size={13} className="flex-shrink-0" />{error}
+        <div className="mt-3 flex items-center gap-2 text-danger text-xs bg-danger-pale border border-danger/25 rounded-xl px-3 py-3">
+          <AlertTriangle size={16} className="flex-shrink-0" />{error}
         </div>
       )}
       {success && (
-        <div className="mt-3 flex items-center gap-2 text-sage-dark text-xs bg-sage-pale border border-sage/30 rounded-xl px-3 py-2.5">
-          <CheckCircle size={13} className="flex-shrink-0" />{success}
+        <div className="mt-3 flex items-center gap-2 text-sage-dark text-xs bg-sage-pale border border-sage/30 rounded-xl px-3 py-3">
+          <CheckCircle size={16} className="flex-shrink-0" />{success}
         </div>
       )}
     </div>
@@ -352,7 +352,7 @@ export default function ProfilePage() {
   if (loading) {
     return (
       <div className="max-w-3xl mx-auto px-4 sm:px-6 pt-8 flex items-center gap-2 text-sm text-ink-muted">
-        <Loader2 size={14} className="animate-spin" /> Loading your profile…
+        <Loader2 size={16} className="animate-spin" /> Loading your profile…
       </div>
     );
   }
@@ -361,11 +361,11 @@ export default function ProfilePage() {
     <div className="max-w-3xl mx-auto px-4 sm:px-6 pt-8">
       {/* Page header — eyebrow + title (matching ClassCountPage) */}
       <div className="mb-7">
-        <p className="text-[10px] font-bold text-ember-dark uppercase tracking-widest mb-1">Account</p>
-        <h1 className="text-2xl sm:text-3xl font-display font-bold text-ink tracking-tight flex items-center gap-2">
+        <p className="text-xs font-medium text-ink-muted mb-1">Account</p>
+        <h1 className="text-2xl sm:text-3xl font-display font-semibold text-ink tracking-tight flex items-center gap-2">
           <UserCircle size={22} className="text-ink-muted" /> Profile
         </h1>
-        <p className="text-xs text-ink-muted mt-1.5">
+        <p className="text-xs text-ink-muted mt-2">
           {isMentor
             ? 'Manage your faculty profile and share your mentor code with students.'
             : 'Update your academic details and connect with your mentor.'}
@@ -374,7 +374,7 @@ export default function ProfilePage() {
 
       {error && (
         <div className="mb-4 flex items-start gap-2 text-xs font-medium text-danger bg-danger-pale border border-danger/20 rounded-xl px-3 py-2">
-          <AlertTriangle size={13} className="mt-0.5 flex-shrink-0" />
+          <AlertTriangle size={16} className="mt-0.5 flex-shrink-0" />
           <span className="flex-1">{error}</span>
           <button onClick={fetchProfile} className="underline flex-shrink-0">Retry</button>
         </div>
@@ -383,12 +383,12 @@ export default function ProfilePage() {
       <div className="space-y-4">
         {/* Role badge */}
         <div className="flex items-center gap-2">
-          <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold ${
+          <span className={`inline-flex items-center gap-2 px-3 py-2 rounded-full text-xs font-medium ${
             isMentor
               ? 'bg-trail-pale text-trail-dark border border-trail/30'
               : 'bg-sage-pale text-sage-dark border border-sage/30'
           }`}>
-            {isMentor ? <Shield size={12} /> : <GraduationCap size={12} />}
+            {isMentor ? <Shield size={14} /> : <GraduationCap size={14} />}
             {isMentor ? 'Mentor' : 'Student'}
           </span>
           <span className="text-xs text-ink-faint">{profile?.email}</span>
