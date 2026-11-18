@@ -1,6 +1,7 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { weeklyTrend, parseDay } from '../utils/attendanceData';
 import { ATTENDANCE_THRESHOLD } from '../constants';
+import { useTheme } from '../theme.jsx';
 
 const H = 220, PAD = { l: 38, r: 14, t: 14, b: 28 };
 
@@ -9,6 +10,7 @@ const shortDate = key =>
 
 /** Running attendance % by week, with each week's own % as a dot and the 80% line. */
 export default function WeeklyTrend({ records }) {
+  const { isLedger } = useTheme();
   const weeks = useMemo(() => weeklyTrend(records), [records]);
   const [active, setActive] = useState(null);
 
@@ -75,13 +77,13 @@ export default function WeeklyTrend({ records }) {
           {ATTENDANCE_THRESHOLD}% required
         </text>
 
-        <path d={line} fill="none" className="stroke-trail" strokeWidth="2.5" strokeLinejoin="round" strokeLinecap="round" />
+        <path d={line} fill="none" className={isLedger ? 'stroke-ember' : 'stroke-trail'} strokeWidth="2.5" strokeLinejoin="round" strokeLinecap="round" />
 
         {weeks.map((w, i) => (
           <g key={w.weekStart}>
             <circle cx={x(i)} cy={y(w.pct)} r={active === i ? 5 : 3.5}
-              className={w.pct < ATTENDANCE_THRESHOLD ? 'fill-danger' : 'fill-sage'} />
-            <circle cx={x(i)} cy={y(w.cumPct)} r={active === i ? 4.5 : 3} className="fill-trail" />
+              className={w.pct < ATTENDANCE_THRESHOLD ? 'fill-danger' : isLedger ? 'fill-ink-faint' : 'fill-sage'} />
+            <circle cx={x(i)} cy={y(w.cumPct)} r={active === i ? 4.5 : 3} className={isLedger ? 'fill-ember' : 'fill-trail'} />
             {i % labelEvery === 0 && (
               <text x={x(i)} y={H - 9} textAnchor="middle" className="fill-ink-muted" fontSize="10">{shortDate(w.weekStart)}</text>
             )}
@@ -94,8 +96,8 @@ export default function WeeklyTrend({ records }) {
       </svg>
 
       <ul className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-ink-muted" aria-label="Legend">
-        <li className="flex items-center gap-2"><span className="inline-block h-0.5 w-4 bg-trail" /> Running total</li>
-        <li className="flex items-center gap-2"><span className="inline-block h-2.5 w-2.5 rounded-full bg-sage" /> That week</li>
+        <li className="flex items-center gap-2"><span className={`inline-block h-0.5 w-4 ${isLedger ? 'bg-ember' : 'bg-trail'}`} /> Running total</li>
+        <li className="flex items-center gap-2"><span className={`inline-block h-2.5 w-2.5 rounded-full ${isLedger ? 'bg-ink-faint' : 'bg-sage'}`} /> That week</li>
         <li className="flex items-center gap-2"><span className="inline-block h-2.5 w-2.5 rounded-full bg-danger" /> Week below {ATTENDANCE_THRESHOLD}%</li>
       </ul>
     </div>

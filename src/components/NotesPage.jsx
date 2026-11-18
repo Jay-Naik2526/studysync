@@ -13,6 +13,8 @@ import rehypeKatex from 'rehype-katex';
 import html2pdf from 'html2pdf.js';
 import { SkeletonNotes } from './SkeletonLoader';
 
+import { COLORS, useTheme } from '../theme.jsx';
+import { ContourArt } from './ContourGauge';
 /* ─────────────────────────── helpers ─────────────────────────── */
 
 const typeOptions = [
@@ -253,10 +255,10 @@ function QuizView({ questions }) {
 
   if (done) {
     const pct = Math.round((score / questions.length) * 100);
-    const grade = pct >= 90 ? { label: 'Summit reached', color: '#4A5A40', Icon: Trophy }
-      : pct >= 70 ? { label: 'Good climb', color: '#3E566C', Icon: Target }
-      : pct >= 50 ? { label: 'Keep practicing', color: '#A8842C', Icon: BookOpen }
-      : { label: 'Needs work', color: '#A93B2B', Icon: AlertTriangle };
+    const grade = pct >= 90 ? { label: 'Summit reached', color: COLORS.sageDark, Icon: Trophy }
+      : pct >= 70 ? { label: 'Good climb', color: COLORS.trailDark, Icon: Target }
+      : pct >= 50 ? { label: 'Keep practicing', color: COLORS.caution, Icon: BookOpen }
+      : { label: 'Needs work', color: COLORS.danger, Icon: AlertTriangle };
 
     return (
       <div className="flex flex-col items-center w-full max-w-lg mx-auto py-8">
@@ -269,11 +271,11 @@ function QuizView({ questions }) {
         {/* Score ring */}
         <div className="relative mb-7">
           <svg width={120} height={120} className="-rotate-90">
-            <circle cx={60} cy={60} r={50} fill="none" stroke="rgba(43,43,38,0.08)" strokeWidth={10} />
-            <circle cx={60} cy={60} r={50} fill="none" stroke={grade.color} strokeWidth={10}
+            <circle cx={60} cy={60} r={50} fill="none" style={{ stroke: COLORS.track }} strokeWidth={10} />
+            <circle cx={60} cy={60} r={50} fill="none" strokeWidth={10}
               strokeLinecap="round"
               strokeDasharray={`${2 * Math.PI * 50} ${2 * Math.PI * 50}`}
-              style={{ strokeDashoffset: 2 * Math.PI * 50 - (pct / 100) * 2 * Math.PI * 50, transition: 'stroke-dashoffset 1s ease' }} />
+              style={{ stroke: grade.color, strokeDashoffset: 2 * Math.PI * 50 - (pct / 100) * 2 * Math.PI * 50, transition: 'stroke-dashoffset 1s ease' }} />
           </svg>
           <div className="absolute inset-0 flex flex-col items-center justify-center">
             <span className="text-3xl font-display font-semibold text-ink tabular-nums">{pct}%</span>
@@ -384,6 +386,7 @@ function QuizView({ questions }) {
 /* ─────────────────────────── Main page ─────────────────────────── */
 
 export default function NotesPage() {
+  const { isLedger } = useTheme();
   const [subjects, setSubjects] = useState([]);
   const [selectedSub, setSelectedSub] = useState('');
   const [noteType, setNoteType] = useState('detailed');
@@ -605,9 +608,11 @@ export default function NotesPage() {
           </div>
         ) : (
           <div className="flex flex-col items-center justify-center h-full text-center py-16">
-            <div className="w-14 h-14 rounded-2xl bg-map border border-sand flex items-center justify-center mb-4">
-              <Compass size={20} className="text-ink-faint" />
-            </div>
+            {isLedger ? <ContourArt className="mb-4" /> : (
+              <div className="w-14 h-14 rounded-2xl bg-map border border-sand flex items-center justify-center mb-4">
+                <Compass size={20} className="text-ink-faint" />
+              </div>
+            )}
             <p className="text-sm font-medium text-ink-muted">Ready to generate</p>
             <p className="text-xs text-ink-faint mt-2 max-w-[220px]">Choose a subject and topic, then hit Generate</p>
           </div>

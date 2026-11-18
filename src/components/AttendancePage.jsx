@@ -1,20 +1,22 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { Plus, Trash2, CheckCircle, AlertTriangle, Download, FileText, TrendingUp, RefreshCw, Link, Unlink, X, Loader2, Clock } from 'lucide-react';
+import { ChevronRight, Plus, Trash2, CheckCircle, AlertTriangle, Download, FileText, TrendingUp, RefreshCw, Link, Unlink, X, Loader2, Clock } from 'lucide-react';
 import { subjectsAPI, sapAPI } from '../api';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { ATTENDANCE_THRESHOLD } from '../constants';
 
+import { COLORS, useTheme } from '../theme.jsx';
+import { SyncDot } from './ContourGauge';
 function Ring({ pct, color, size = 52, stroke = 5 }) {
   const r = size / 2 - stroke / 2;
   const circ = 2 * Math.PI * r;
   const offset = circ - (Math.min(pct, 100) / 100) * circ;
   return (
     <svg width={size} height={size} className="-rotate-90" style={{ minWidth: size }}>
-      <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="rgba(43,43,38,0.08)" strokeWidth={stroke} />
-      <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke={color} strokeWidth={stroke}
+      <circle cx={size / 2} cy={size / 2} r={r} fill="none" style={{ stroke: COLORS.track }} strokeWidth={stroke} />
+      <circle cx={size / 2} cy={size / 2} r={r} fill="none" strokeWidth={stroke}
         strokeLinecap="round" strokeDasharray={`${circ} ${circ}`}
-        style={{ strokeDashoffset: offset, transition: 'stroke-dashoffset 0.7s ease' }} />
+        style={{ stroke: color, strokeDashoffset: offset, transition: 'stroke-dashoffset 0.7s ease' }} />
     </svg>
   );
 }
@@ -53,9 +55,9 @@ function SubjectCard({ subject, onUpdate, onDelete }) {
       <div className="flex items-start justify-between mb-4">
         <div className="flex items-center gap-3 min-w-0">
           <div className="relative flex-shrink-0">
-            <Ring pct={pct} color={onTrack ? '#7C9070' : '#A93B2B'} />
+            <Ring pct={pct} color={onTrack ? COLORS.sage : COLORS.danger} />
             <span className="absolute inset-0 flex items-center justify-center text-[11px] font-display font-semibold tabular-nums"
-              style={{ color: onTrack ? '#4A5A40' : '#A93B2B' }}>
+              style={{ color: onTrack ? COLORS.sageDark : COLORS.danger }}>
               {pct.toFixed(0)}%
             </span>
           </div>
@@ -142,6 +144,79 @@ function SubjectCard({ subject, onUpdate, onDelete }) {
   );
 }
 
+// ── Ledger: one register-style table instead of a card per subject ──
+function LedgerTable({ subjects, onUpdate, onDelete }) {
+  const [open, setOpen] = useState(null);
+  const rows = subjects.map(s => {
+    const conducted = s.conductedClasses || 0;
+    const absent = s.absentClasses || 0;
+    const planned = s.totalPlannedClasses || 0;
+    const present = Math.max(conducted - absent, 0);
+    const pct = conducted > 0 ? (present / conducted) * 100 : 0;
+    const canSkip = Math.max(Math.floor(planned * 0.2) - absent, 0);
+    return { s, conducted, present, pct, canSkip, onTrack: pct >= ATTENDANCE_THRESHOLD };
+  });
+
+  return (
+    <div className="bg-parchment border border-sand rounded-2xl overflow-hidden">
+      <table className="w-full text-left text-sm">
+        <thead className="sap-head bg-map text-ink-muted text-xs">
+          <tr>
+            <th className="py-3 pl-4 pr-2 font-medium">Subject</th>
+            <th className="py-3 px-2 font-medium hidden sm:table-cell text-right">Attended</th>
+            <th className="py-3 px-2 font-medium w-32 sm:w-44">Attendance</th>
+            <th className="py-3 px-2 font-medium text-right">Can skip</th>
+            <th className="py-3 pl-2 pr-4 font-medium hidden sm:table-cell">Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map(({ s, conducted, present, pct, canSkip, onTrack }) => {
+            const isOpen = open === s._id;
+            return (
+              <React.Fragment key={s._id}>
+                <tr className={`sap-row border-t border-sand ${isOpen ? 'bg-ink/[0.03]' : ''}`}>
+                  <td className="py-3 pl-4 pr-2">
+                    <button
+                      type="button" onClick={() => setOpen(isOpen ? null : s._id)}
+                      aria-expanded={isOpen} aria-label={`${isOpen ? 'Hide' : 'Show'} details for ${s.name}`}
+                      className="flex items-center gap-2 text-left font-medium text-ink"
+                    >
+                      <ChevronRight size={14} className={`flex-shrink-0 text-ink-faint transition-transform duration-150 ${isOpen ? 'rotate-90' : ''}`} />
+                      <span className="truncate max-w-[9rem] sm:max-w-none">{s.name}</span>
+                    </button>
+                  </td>
+                  <td className="py-3 px-2 hidden sm:table-cell text-right text-ink-muted tabular-nums">{present}/{conducted}</td>
+                  <td className="py-3 px-2">
+                    <div className="flex items-center gap-3">
+                      <span className={`w-10 text-right font-medium tabular-nums ${onTrack ? 'text-ink' : 'text-danger'}`}>{pct.toFixed(0)}%</span>
+                      <div className="flex-1 h-1 bg-ink/10 rounded-full overflow-hidden" aria-hidden="true">
+                        <div className={`h-1 rounded-full ${onTrack ? 'bg-ember' : 'bg-danger'}`} style={{ width: `${Math.min(pct, 100)}%` }} />
+                      </div>
+                    </div>
+                  </td>
+                  <td className={`py-3 px-2 text-right font-medium tabular-nums ${canSkip > 0 ? 'text-ink' : 'text-danger'}`}>{canSkip}</td>
+                  <td className="py-3 pl-2 pr-4 hidden sm:table-cell">
+                    {onTrack
+                      ? <span className="inline-flex items-center gap-1 text-xs text-ink-muted"><CheckCircle size={14} /> On track</span>
+                      : <span className="inline-flex items-center gap-1 text-xs font-medium text-danger"><AlertTriangle size={14} /> Below {ATTENDANCE_THRESHOLD}%</span>}
+                  </td>
+                </tr>
+                {isOpen && (
+                  <tr className="border-t border-sand bg-map/60">
+                    <td colSpan={5} className="p-3 sm:p-4 anim-rise">
+                      <SubjectCard subject={s} onUpdate={onUpdate} onDelete={onDelete} />
+                    </td>
+                  </tr>
+                )}
+              </React.Fragment>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
 function SummaryStrip({ subjects }) {
   const { overall, good, atRisk } = useMemo(() => {
     const tc = subjects.reduce((s, x) => s + (x.conductedClasses || 0), 0);
@@ -157,13 +232,13 @@ function SummaryStrip({ subjects }) {
   return (
     <div className="grid grid-cols-3 gap-3 mb-5">
       {[
-        { label: 'Overall', value: `${overall.toFixed(1)}%`, color: '#3E566C' },
-        { label: 'On track', value: good, color: '#4A5A40' },
-        { label: 'At risk', value: atRisk, color: '#A8842C' },
+        { label: 'Overall', value: `${overall.toFixed(1)}%`, color: COLORS.trailDark },
+        { label: 'On track', value: good, color: COLORS.sageDark },
+        { label: 'At risk', value: atRisk, color: COLORS.caution },
       ].map(({ label, value, color }) => (
         <div key={label} className="bg-parchment border border-sand rounded-2xl p-3 sm:p-4 text-center shadow-sm">
           <p className="text-[11px] text-ink-muted mb-0.5">{label}</p>
-          <p className="text-xl sm:text-2xl font-display font-semibold leading-none tabular-nums" style={{ color }}>{value}</p>
+          <p className="text-xl sm:text-2xl font-display font-semibold leading-none tabular-nums" style={{ color }}><span className={label === 'Overall' ? 'hl' : undefined}>{value}</span></p>
         </div>
       ))}
     </div>
@@ -221,6 +296,7 @@ function SapModal({ onClose, onSaved }) {
 }
 
 export default function AttendancePage() {
+  const { isLedger } = useTheme();
   const [subjects, setSubjects] = useState([]);
   const [newName, setNewName] = useState('');
   const [newTotal, setNewTotal] = useState('');
@@ -405,6 +481,7 @@ export default function AttendancePage() {
               <p className="text-xs text-ink-muted mt-0.5">
                 {sapStatus?.connected ? (
                   <>
+                    {isLedger && <span className="inline-flex align-middle mr-2"><SyncDot label={syncing ? 'Sync running' : sapStatus.lastSyncStatus === 'failed' ? 'Last sync failed' : 'Up to date'} state={syncing ? 'running' : sapStatus.lastSyncStatus === 'failed' ? 'failed' : 'ok'} /></span>}
                     {sapStatus.lastSync ? `Last synced: ${new Date(sapStatus.lastSync).toLocaleString()}` : 'Never synced — hit Sync now'}
                     {sapStatus.lastAttendanceDate && (
                       <span className="block text-xs text-trail-dark font-medium mt-1">
@@ -514,7 +591,7 @@ export default function AttendancePage() {
             <h4 className="text-[11px] font-medium text-ink-muted mb-3">Sync mapping status</h4>
             <div className="overflow-x-auto max-h-60 overflow-y-auto rounded-xl border border-sand custom-scrollbar">
               <table className="w-full text-left border-collapse text-xs">
-                <thead>
+                <thead className="sap-head">
                   <tr className="bg-map border-b border-sand text-ink-muted">
                     <th className="p-3 font-medium">SAP course name</th>
                     <th className="p-3 font-medium">StudySync match</th>
@@ -531,7 +608,7 @@ export default function AttendancePage() {
                     const matchedSubjectName = matchedSub ? matchedSub.name : detail.subjectName;
 
                     return (
-                      <tr key={idx} className="hover:bg-ink/[0.02] transition-colors text-ink">
+                      <tr key={idx} className={`sap-row hover:bg-ink/[0.02] transition-colors text-ink ${isMatched ? '' : 'sap-row-unmatched'}`}>
                         <td className="p-3 font-medium truncate max-w-[200px]" title={detail.pdfName}>
                           {detail.pdfName}
                         </td>
@@ -656,9 +733,13 @@ export default function AttendancePage() {
           <p className="text-sm text-ink-muted">Add a subject to start tracking</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {subjects.map(s => <SubjectCard key={s._id} subject={s} onUpdate={handleUpdate} onDelete={handleDelete} />)}
-        </div>
+        isLedger
+          ? <LedgerTable subjects={subjects} onUpdate={handleUpdate} onDelete={handleDelete} />
+          : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {subjects.map(s => <SubjectCard key={s._id} subject={s} onUpdate={handleUpdate} onDelete={handleDelete} />)}
+            </div>
+          )
       )}
     </div>
   );

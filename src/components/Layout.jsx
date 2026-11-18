@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { LayoutDashboard, ClipboardCheck, CalendarDays, Calculator, BarChart2, BookOpen, FileText, Compass, LogOut, Users, Inbox, UserCircle, MoreHorizontal, X } from 'lucide-react';
 import ContourBackdrop from './ContourBackdrop';
 import { InstallBanner, OfflineBar } from './InstallApp';
+import { ThemeToggle } from '../theme.jsx';
 
 const studentNavItems = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -159,6 +160,8 @@ export default function Layout({ currentView, onNavigate, onLogout, user, childr
               })}
             </div>
 
+            <ThemeToggle showLabel className="mt-3 w-full py-3 rounded-xl border border-sand bg-white" />
+
             <button
               onClick={onLogout}
               className="mt-3 w-full flex items-center justify-center gap-2 py-3 rounded-xl border border-sand bg-white text-ink-muted hover:text-danger hover:border-danger/30 hover:bg-danger-pale transition-colors"
@@ -191,6 +194,8 @@ export default function Layout({ currentView, onNavigate, onLogout, user, childr
         })}
 
         <div className="w-px h-5 bg-sand mx-1 flex-shrink-0" />
+
+        <ThemeToggle className="rounded-full p-2.5 transition-colors" />
 
         <button
           onClick={onLogout}

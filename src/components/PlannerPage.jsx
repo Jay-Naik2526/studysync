@@ -9,6 +9,8 @@ import html2pdf from 'html2pdf.js';
 import { SkeletonPlanner } from './SkeletonLoader';
 import { ATTENDANCE_THRESHOLD } from '../constants';
 
+import { useTheme } from '../theme.jsx';
+import { ContourArt } from './ContourGauge';
 function MarkdownRenderer({ content, isPrint = false }) {
   return (
     <div className={isPrint ? 'prose prose-slate max-w-none bg-white p-10 text-black' : 'markdown-atlas'}>
@@ -23,6 +25,7 @@ function MarkdownRenderer({ content, isPrint = false }) {
 }
 
 export default function PlannerPage() {
+  const { isLedger } = useTheme();
   const [subjects, setSubjects] = useState([]);
   const [selectedSub, setSelectedSub] = useState('');
   const [weakTopics, setWeakTopics] = useState('');
@@ -384,9 +387,11 @@ export default function PlannerPage() {
                 </div>
               ) : (
                 <div className="flex flex-col items-center justify-center h-full text-center py-16">
-                  <div className="w-14 h-14 rounded-2xl bg-map border border-sand flex items-center justify-center mb-4">
-                    <Calendar size={20} className="text-ink-faint" />
-                  </div>
+                  {isLedger ? <ContourArt className="mb-4" /> : (
+                    <div className="w-14 h-14 rounded-2xl bg-map border border-sand flex items-center justify-center mb-4">
+                      <Calendar size={20} className="text-ink-faint" />
+                    </div>
+                  )}
                   <p className="text-sm font-medium text-ink-muted">No route charted yet</p>
                   <p className="text-xs text-ink-faint mt-2 max-w-xs">
                     Upload your syllabus document, type in your difficult topics, select a subject, and chart your route!

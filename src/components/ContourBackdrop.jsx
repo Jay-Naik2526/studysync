@@ -5,12 +5,12 @@ import React from 'react';
 export default function ContourBackdrop() {
   return (
     <svg
-      className="fixed inset-0 w-full h-full pointer-events-none"
+      className="contour-backdrop fixed inset-0 w-full h-full pointer-events-none"
       viewBox="0 0 1200 800"
       preserveAspectRatio="xMidYMid slice"
       aria-hidden="true"
     >
-      <g fill="none" stroke="#7C9070" strokeWidth="1.3" opacity="0.16">
+      <g fill="none" stroke="currentColor" strokeWidth="1.3" opacity="0.16" className="text-sage">
         <path d="M100,120 C220,60 420,70 500,130 C570,185 420,230 300,215 C180,200 30,175 100,120 Z" />
         <path d="M150,130 C240,90 390,95 450,135 C505,172 400,205 310,195 C220,185 90,160 150,130 Z" />
         <path d="M200,140 C260,115 350,118 395,142 C435,163 360,180 310,174 C255,167 155,158 200,140 Z" />

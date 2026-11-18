@@ -3,6 +3,9 @@ import { AlertTriangle, CheckCircle, ArrowUpRight, Link, Unlink, RefreshCw, Load
 import { dashboardAPI, sapAPI } from '../api';
 import { ATTENDANCE_THRESHOLD } from '../constants';
 
+import { COLORS, useTheme } from '../theme.jsx';
+import WeeklyTrend from './WeeklyTrend';
+import { ContourGauge, SyncDot } from './ContourGauge';
 // Eases a number from its last value to the new one; instant when the user prefers reduced motion.
 function useCountUp(target, duration = 700) {
   const [value, setValue] = useState(0);
@@ -33,12 +36,12 @@ function Ring({ pct, size = 110, stroke = 10, color }) {
   const offset = circ - (Math.min(shown, 100) / 100) * circ;
   return (
     <svg width={size} height={size} className="-rotate-90" style={{ minWidth: size }}>
-      <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="rgba(43,43,38,0.08)" strokeWidth={stroke} />
+      <circle cx={size / 2} cy={size / 2} r={r} fill="none" style={{ stroke: COLORS.track }} strokeWidth={stroke} />
       <circle
         cx={size / 2} cy={size / 2} r={r} fill="none"
-        stroke={color} strokeWidth={stroke} strokeLinecap="round"
+        strokeWidth={stroke} strokeLinecap="round"
         strokeDasharray={`${circ} ${circ}`}
-        style={{ strokeDashoffset: offset, transition: 'stroke-dashoffset 0.8s cubic-bezier(.4,0,.2,1)' }}
+        style={{ stroke: color, strokeDashoffset: offset, transition: 'stroke-dashoffset 0.8s cubic-bezier(.4,0,.2,1)' }}
       />
     </svg>
   );
@@ -87,6 +90,44 @@ function BarChart({ data, color, valueKey = 'value', nameKey = 'name', unitSuffi
           </div>
         );
       })}
+    </div>
+  );
+}
+
+// ── Ledger: small, different-in-kind data views ──
+function RegisterRow({ label, value, suffix = '' }) {
+  const n = useCountUp(value);
+  return (
+    <div className="flex items-baseline justify-between gap-4 py-3 border-t border-sand first:border-t-0">
+      <dt className="text-sm text-ink-muted">{label}</dt>
+      <dd className="text-xl font-display font-semibold text-ink tabular-nums">{n}{suffix}</dd>
+    </div>
+  );
+}
+
+function RankedList({ title, note, items, leadIndex = -1, suffix = '', max = 100, emptyText, twoColumns = false }) {
+  const empty = !items.length || items.every(i => !i.value);
+  return (
+    <div className="bg-parchment border border-sand rounded-2xl p-5">
+      <p className="text-sm font-display font-semibold text-ink">{title}</p>
+      <p className="text-xs text-ink-muted mb-3">{note}</p>
+      {empty ? (
+        <p className="text-xs text-ink-muted py-4">{emptyText}</p>
+      ) : (
+        <ul className={twoColumns ? 'grid sm:grid-cols-2 sm:gap-x-8' : ''}>
+          {items.map((it, i) => (
+            <li key={it.name + i} className="py-2.5 border-t border-sand first:border-t-0 sm:[&:nth-child(2)]:border-t-0">
+              <div className="flex items-baseline justify-between gap-3 mb-1.5">
+                <span className="text-sm text-ink truncate">{it.name}</span>
+                <span className="text-sm font-medium text-ink tabular-nums">{it.value}{suffix}</span>
+              </div>
+              <div className="h-1 rounded-full bg-ink/10 overflow-hidden" aria-hidden="true">
+                <div className={`h-1 rounded-full ${i === leadIndex ? 'bg-ember' : 'bg-ink/30'}`} style={{ width: `${Math.min((it.value / max) * 100, 100)}%` }} />
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 }
@@ -175,6 +216,8 @@ function CalendarModal({ onClose, onSaved }) {
 }
 
 export default function DashboardPage({ onNavigate }) {
+  const { isLedger } = useTheme();
+  const [dayRecords, setDayRecords] = useState([]);
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -224,6 +267,12 @@ export default function DashboardPage({ onNavigate }) {
     } catch {}
   };
 
+  // Ledger shows a weekly trend as its main chart, which needs the day-by-day records
+  useEffect(() => {
+    if (!isLedger) return;
+    sapAPI.getAttendanceDays().then(r => setDayRecords(r.data.records || [])).catch(() => {});
+  }, [isLedger]);
+
   useEffect(() => {
     dashboardAPI.getDashboard()
       .then(res => setData(res.data))
@@ -232,6 +281,8 @@ export default function DashboardPage({ onNavigate }) {
 
     fetchSapStatus();
   }, []);
+
+  const attCount = useCountUp(data?.stats?.attendance ?? 0);
 
   if (loading) {
     return (
@@ -252,6 +303,218 @@ export default function DashboardPage({ onNavigate }) {
   const skippableData = (charts.skippableClassesData || []).map(d => ({ value: d.remaining, name: d.name }));
   const marksData = (charts.marksBySubject || []).map(d => ({ value: Math.round(d.percentage), name: d.subject }));
 
+  if (isLedger) {
+    const skipMax = Math.max(...skippableData.map(d => d.value), 1);
+    const skipLead = skippableData.length ? skippableData.reduce((m, d, i, arr) => (d.value < arr[m].value ? i : m), 0) : -1;
+    const marksLead = marksData.length ? marksData.reduce((m, d, i, arr) => (d.value > arr[m].value ? i : m), 0) : -1;
+    const lastSync = sapStatus?.lastSync ? new Date(sapStatus.lastSync) : null;
+    return (
+      <div className="max-w-5xl mx-auto px-4 py-8 sm:px-6 md:px-8">
+        <div className="flex items-end justify-between gap-3 mb-6">
+          <div>
+            <p className="text-xs font-medium text-ink-muted mb-1">Base camp</p>
+            <h1 className="text-2xl sm:text-3xl font-display font-semibold text-ink tracking-tight">Dashboard</h1>
+          </div>
+          {lastSync && (
+            <p className="flex items-center gap-2 text-xs text-ink-muted pb-2">
+              <SyncDot state="ok" label="Up to date" />
+              Synced {lastSync.toLocaleString(undefined, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
+            </p>
+          )}
+        </div>
+
+        {/* The moment: attendance as a contour map, beside the register of figures */}
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-4 mb-4">
+          <div className="lg:col-span-2 bg-parchment border border-sand rounded-2xl p-5 flex flex-col items-center justify-center">
+            <ContourGauge pct={stats.attendance}>
+              <div className="text-center">
+                <p className="text-4xl font-display font-semibold text-ink tabular-nums leading-none"><span className="hl">{attCount}%</span></p>
+                <p className="text-xs text-ink-muted mt-2">Attendance</p>
+              </div>
+            </ContourGauge>
+            <p className="text-xs text-ink-muted mt-2">{ATTENDANCE_THRESHOLD}% required</p>
+          </div>
+          <div className="lg:col-span-3 bg-parchment border border-sand rounded-2xl p-5">
+            <p className="text-sm font-display font-semibold text-ink mb-1">Register</p>
+            <dl>
+              <RegisterRow label="Days present" value={stats.daysPresent} />
+              <RegisterRow label="Absences" value={stats.absences} />
+              <RegisterRow label="Subjects" value={stats.subjects} />
+              <RegisterRow label="Average marks" value={Math.round(stats.averageMarks)} suffix="%" />
+              <RegisterRow label="Total marks" value={stats.totalMarks} />
+            </dl>
+          </div>
+        </div>
+
+      {/* Microsoft Teams Deadlines Strip */}
+      <div className="bg-parchment border border-sand rounded-2xl p-4 sm:p-5 mb-4 shadow-sm">
+        <div className="flex items-center justify-between gap-3 flex-wrap">
+          <div className="flex items-center gap-3">
+            <div className={`w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 ${sapStatus?.microsoftCalendarUrl ? 'bg-sage-pale' : 'bg-map'}`}>
+              <Clock size={16} className={sapStatus?.microsoftCalendarUrl ? 'text-sage-dark' : 'text-ink-faint'} />
+            </div>
+            <div>
+              <p className="text-sm font-medium text-ink flex items-center gap-2">
+                Microsoft Teams integration
+                {sapStatus?.microsoftCalendarUrl && <span className="text-[11px] font-medium text-sage-dark bg-sage-pale px-2 py-0.5 rounded-full">Connected</span>}
+              </p>
+              <p className="text-xs text-ink-muted mt-0.5">
+                {sapStatus?.microsoftCalendarUrl
+                  ? sapStatus.lastCalendarSync
+                    ? `Tracking ${deadlines.length} ${deadlines.length === 1 ? 'deadline' : 'deadlines'}`
+                    : 'Feed linked, syncing deadlines…'
+                  : 'Sync assignment deadlines from Teams and Outlook'}
+              </p>
+            </div>
+          </div>
+          <div className="flex gap-2 flex-shrink-0">
+            {sapStatus?.microsoftCalendarUrl ? (
+              <>
+                <button
+                  onClick={handleCalSync} disabled={syncingCal}
+                  className="flex items-center gap-2 px-4 py-2 bg-ember hover:bg-ember-dark disabled:opacity-50 text-white rounded-xl text-xs font-medium transition-colors shadow-sm">
+                  {syncingCal ? <Loader2 size={16} className="animate-spin" /> : <RefreshCw size={16} />}
+                  {syncingCal ? 'Syncing…' : 'Sync'}
+                </button>
+                <button onClick={handleCalDisconnect} className="px-3 py-2 bg-white hover:bg-danger-pale border border-sand hover:border-danger/30 rounded-xl transition-colors group">
+                  <Unlink size={16} className="text-ink-muted group-hover:text-danger" />
+                </button>
+              </>
+            ) : (
+              <button onClick={() => setShowCalModal(true)}
+                className="flex items-center gap-2 px-4 py-3 sm:py-2 bg-ember hover:bg-ember-dark text-white rounded-xl text-xs font-medium transition-colors shadow-sm">
+                <Link size={16} /> Link Teams
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Deadlines Checklist Box */}
+        {sapStatus?.microsoftCalendarUrl && deadlines.length > 0 && (
+          <div className="mt-4 border-t border-sand pt-4">
+            <h4 className="text-[11px] font-medium text-ink-muted mb-3">Upcoming assignment deadlines</h4>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-60 overflow-y-auto pr-1 custom-scrollbar">
+              {deadlines.map((dl, idx) => {
+                const hoursLeft = Math.round(dl.remainingMs / (1000 * 60 * 60));
+                const daysLeft = Math.round(hoursLeft / 24);
+                const isOverdue = dl.remainingMs < 0;
+
+                let colorClass = 'border-sage/30 bg-sage-pale text-sage-dark';
+                let timeText = `${daysLeft} days left`;
+
+                if (isOverdue) {
+                  colorClass = 'border-sand bg-map text-ink-faint';
+                  timeText = 'Overdue';
+                } else if (hoursLeft <= 24) {
+                  colorClass = 'border-danger/30 bg-danger-pale text-danger';
+                  timeText = `${hoursLeft} hours left`;
+                } else if (daysLeft <= 3) {
+                  colorClass = 'border-caution/30 bg-caution-pale text-caution';
+                  timeText = `${daysLeft} days left`;
+                }
+
+                return (
+                  <div key={idx} className="flex items-center justify-between gap-3 border border-sand bg-white/50 rounded-xl p-3 transition-colors">
+                    <div className="min-w-0">
+                      <p className="text-xs font-medium text-ink truncate max-w-[200px]">{dl.title}</p>
+                      <p className="text-[11px] text-ink-muted mt-0.5">{new Date(dl.dueDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</p>
+                    </div>
+                    <span className={`inline-flex items-center gap-1 text-[11px] font-medium border rounded-full px-3 py-0.5 ${colorClass}`}>
+                      {timeText}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+      </div>
+
+        {/* Main chart + a smaller list of a different kind */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-4">
+          <div className="lg:col-span-2 bg-parchment border border-sand rounded-2xl p-5">
+            <p className="text-sm font-display font-semibold text-ink">Attendance by week</p>
+            <p className="text-xs text-ink-muted mb-3">Running total against the {ATTENDANCE_THRESHOLD}% requirement</p>
+            <WeeklyTrend records={dayRecords} />
+          </div>
+          <RankedList
+            title="Skippable classes" note="Remaining per subject"
+            items={skippableData} leadIndex={skipLead} max={skipMax}
+            emptyText="No data yet"
+          />
+        </div>
+
+        <div className="mb-4">
+          <RankedList
+            title="Marks by subject" note="Score percentage"
+            items={marksData} leadIndex={marksLead} suffix="%" twoColumns
+            emptyText="No marks recorded yet"
+          />
+        </div>
+
+      {/* Row 3: Alerts + Quick links */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        {/* Alerts */}
+        <div className="bg-parchment border border-sand rounded-2xl p-5 shadow-sm">
+          <p className="text-sm font-display font-semibold text-ink mb-3 flex items-center gap-2">
+            <AlertTriangle size={16} className="text-caution" />Attendance alerts
+          </p>
+          <div className="space-y-3">
+            {lowAttendanceSubjects?.length > 0 ? (
+              lowAttendanceSubjects.map((s, i) => (
+                <div key={i} className="space-y-2">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-sm text-ink truncate">{s.name}</span>
+                    <span className="text-xs font-medium text-danger flex-shrink-0 tabular-nums">{s.percentage.toFixed(1)}%</span>
+                  </div>
+                  <div className="w-full bg-ink/10 rounded-full h-1.5">
+                    <div className="h-1.5 rounded-full bg-danger transition-[width]" style={{ width: `${s.percentage}%` }} />
+                  </div>
+                  <p className="text-[11px] text-ink-faint">{s.remainingSkippable} skips left</p>
+                </div>
+              ))
+            ) : (
+              <div className="flex items-center gap-2 text-sage-dark">
+                <CheckCircle size={16} />
+                <span className="text-sm font-medium">All subjects above {ATTENDANCE_THRESHOLD}%</span>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Quick links 2×2 grid */}
+        <div className="grid grid-cols-2 gap-4">
+          {[
+            { label: 'Attendance', view: 'attendance', sub: 'Track classes' },
+            { label: 'Marks', view: 'marks', sub: 'Grades and tasks' },
+            { label: 'Subjects', view: 'subjects', sub: 'Manage subjects' },
+            { label: 'Notes', view: 'notes', sub: 'Generate notes' },
+          ].map(({ label, view, sub }) => (
+            <button
+              key={view}
+              onClick={() => onNavigate(view)}
+              className="bg-parchment border border-sand rounded-2xl p-4 text-left hover:border-sand-dark hover:bg-white/60 transition-colors group shadow-sm"
+            >
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-sm font-display font-semibold text-ink leading-tight">{label}</p>
+                <ArrowUpRight size={16} className="text-ink-faint group-hover:text-ink-muted transition-colors" />
+              </div>
+              <p className="text-[11px] text-ink-muted mt-0.5 leading-tight">{sub}</p>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {showCalModal && (
+        <CalendarModal
+          onClose={() => setShowCalModal(false)}
+          onSaved={() => { setShowCalModal(false); fetchSapStatus(); }}
+        />
+      )}
+      </div>
+    );
+  }
+
   return (
     <div className="max-w-5xl mx-auto px-4 py-8 sm:px-6 md:px-8">
       {/* Header */}
@@ -263,8 +526,8 @@ export default function DashboardPage({ onNavigate }) {
       {/* Row 1: two gauges on the left, four figures on the right */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
         <div className="grid grid-cols-2 gap-4">
-          <GaugeCard label="Attendance" pct={stats.attendance} color="#7C9070" />
-          <GaugeCard label="Average marks" pct={stats.averageMarks} color="#5B7C99" />
+          <GaugeCard label="Attendance" pct={stats.attendance} color={COLORS.sage} />
+          <GaugeCard label="Average marks" pct={stats.averageMarks} color={COLORS.trail} />
         </div>
         <div className="grid grid-cols-2 gap-4">
           <StatCard label="Days present" value={stats.daysPresent} />
@@ -364,14 +627,14 @@ export default function DashboardPage({ onNavigate }) {
           <p className="text-sm font-display font-semibold text-ink mb-0.5">Skippable classes</p>
           <p className="text-[11px] text-ink-muted mb-3">Remaining per subject</p>
           <div className="h-28">
-            <BarChart data={skippableData} color="#7C9070" valueKey="value" nameKey="name" />
+            <BarChart data={skippableData} color={COLORS.sage} valueKey="value" nameKey="name" />
           </div>
         </div>
         <div className="bg-parchment border border-sand rounded-2xl p-5 shadow-sm">
           <p className="text-sm font-display font-semibold text-ink mb-0.5">Marks by subject</p>
           <p className="text-[11px] text-ink-muted mb-3">Score percentage</p>
           <div className="h-28">
-            <BarChart data={marksData} color="#5B7C99" valueKey="value" nameKey="name" unitSuffix="%" emptyText="No marks recorded yet" />
+            <BarChart data={marksData} color={COLORS.trail} valueKey="value" nameKey="name" unitSuffix="%" emptyText="No marks recorded yet" />
           </div>
         </div>
       </div>

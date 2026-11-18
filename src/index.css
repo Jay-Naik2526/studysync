@@ -4,6 +4,38 @@
 @tailwind utilities;
 
 @layer base {
+  /* ── Atlas (default): warm paper, ink text, burnt-orange accent ── */
+  :root {
+    --c-paper: 244 238 224;   --c-parchment: 249 244 230; --c-map: 239 231 211;
+    --c-ink: 43 43 38;        --c-ink-muted: 107 102 87;  --c-ink-faint: 133 125 107;
+    --c-sand: 221 211 180;    --c-sand-dark: 201 189 156;
+    --c-sage: 124 144 112;    --c-sage-dark: 74 90 64;    --c-sage-pale: 231 236 223;
+    --c-trail: 91 124 153;    --c-trail-dark: 62 86 108;  --c-trail-pale: 228 235 241;
+    --c-ember: 191 79 43;     --c-ember-dark: 154 58 32;  --c-ember-pale: 249 228 220;
+    --c-danger: 169 59 43;    --c-danger-pale: 244 223 217;
+    --c-caution: 168 132 44;  --c-caution-pale: 243 235 211;
+    --c-hi: 247 220 79;
+    --font-display: 'Bricolage Grotesque', 'Atkinson Hyperlegible Next', sans-serif;
+    --theme-meta: #F4EEE0;
+  }
+
+  /* ── Ledger: cool paper, blue-black ink, red pen for risk, highlighter for the key figure ── */
+  :root[data-theme='ledger'] {
+    --c-paper: 248 247 242;   --c-parchment: 255 254 251; --c-map: 240 238 229;
+    --c-ink: 31 36 51;        --c-ink-muted: 85 91 107;   --c-ink-faint: 122 129 144;
+    --c-sand: 218 215 203;    --c-sand-dark: 190 186 170;
+    --c-sage: 47 111 78;      --c-sage-dark: 31 77 54;    --c-sage-pale: 227 240 232;
+    --c-trail: 74 111 165;    --c-trail-dark: 47 75 122;  --c-trail-pale: 227 235 246;
+    --c-ember: 36 50 87;      --c-ember-dark: 22 31 58;   --c-ember-pale: 230 233 242;
+    --c-danger: 179 38 30;    --c-danger-pale: 248 227 224;
+    --c-caution: 138 106 18;  --c-caution-pale: 251 241 207;
+    --c-hi: 247 220 79;
+    --font-display: 'Fraunces', Georgia, 'Times New Roman', serif;
+    --theme-meta: #F8F7F2;
+  }
+}
+
+@layer base {
   html {
     font-family: 'Atkinson Hyperlegible Next', 'Atkinson Hyperlegible', system-ui, -apple-system, sans-serif;
     -webkit-font-smoothing: antialiased;
@@ -11,8 +43,8 @@
   }
 
   body {
-    background: #F4EEE0;
-    color: #2B2B26;
+    background: rgb(var(--c-paper));
+    color: rgb(var(--c-ink));
     /* Phones in landscape / installed app: keep content clear of the notch and rounded corners */
     padding-left: env(safe-area-inset-left, 0px);
     padding-right: env(safe-area-inset-right, 0px);
@@ -25,7 +57,7 @@
 
   /* One visible focus ring for keyboard users, none on mouse click */
   :focus { outline: none; }
-  :focus-visible { outline: 2px solid #BF4F2B; outline-offset: 2px; }
+  :focus-visible { outline: 2px solid rgb(var(--c-ember)); outline-offset: 2px; }
 
   /* iOS Safari zooms the page when a field under 16px is focused. Keep fields at 16px on
      phones so tapping one never jumps the layout. */
@@ -74,50 +106,92 @@ button:not(:disabled):active { scale: 0.97; }
   }
 }
 
+/* ══ Ledger theme (Ledger + Highlighter) ═══════════════════════════ */
+:root[data-theme='ledger'] .contour-backdrop { display: none; }
+:root[data-theme='ledger'] body { font-feature-settings: 'lnum' 1; }
+
+/* Register-style page titles: serif, with a double rule beneath */
+:root[data-theme='ledger'] .page-enter h1 {
+  font-weight: 600;
+  padding-bottom: 8px;
+  border-bottom: 3px double rgb(var(--c-ink) / 0.55);
+}
+
+/* Squarer, nested radii: card > well > control > chip */
+:root[data-theme='ledger'] .rounded-2xl { border-radius: 10px; }
+:root[data-theme='ledger'] .rounded-xl  { border-radius: 6px; }
+:root[data-theme='ledger'] .rounded-lg  { border-radius: 4px; }
+:root[data-theme='ledger'] .rounded-md  { border-radius: 3px; }
+/* Printed-register look: hairlines instead of shadows on cards */
+:root[data-theme='ledger'] .shadow-sm { box-shadow: none; }
+
+/* Highlighter stroke behind the one figure that matters on a screen */
+:root[data-theme='ledger'] .hl {
+  background-image: linear-gradient(transparent 56%, rgb(var(--c-hi) / 0.8) 56%, rgb(var(--c-hi) / 0.8) 92%, transparent 92%);
+  padding: 0 0.12em;
+  margin: 0 -0.12em;
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
+}
+
+/* Table rows: header, normal, hovered, unmatched and focused all read differently */
+:root[data-theme='ledger'] .sap-head th { border-bottom: 2px solid rgb(var(--c-ink) / 0.55); }
+:root[data-theme='ledger'] .sap-row { box-shadow: inset 3px 0 0 transparent; }
+:root[data-theme='ledger'] .sap-row:hover { background: rgb(var(--c-ink) / 0.04); }
+:root[data-theme='ledger'] .sap-row-unmatched { background: rgb(var(--c-caution-pale) / 0.6); box-shadow: inset 3px 0 0 rgb(var(--c-caution)); }
+:root[data-theme='ledger'] .sap-row:focus-within { background: rgb(var(--c-ember-pale) / 0.7); box-shadow: inset 3px 0 0 rgb(var(--c-ember)); }
+
+/* Live status dot (signature): steady when idle, pulses only while a sync runs */
+.sync-dot { display: inline-block; width: 8px; height: 8px; border-radius: 9999px; background: rgb(var(--c-sage)); flex-shrink: 0; }
+.sync-dot[data-state='running'] { background: rgb(var(--c-caution)); animation: dot-pulse 1.2s ease-in-out infinite; }
+.sync-dot[data-state='failed'] { background: rgb(var(--c-danger)); }
+.sync-dot[data-state='idle'] { background: rgb(var(--c-ink-faint)); }
+@keyframes dot-pulse { 50% { opacity: 0.35; } }
+
 .custom-scrollbar {
   scrollbar-width: thin;
-  scrollbar-color: rgba(43,43,38,0.18) transparent;
+  scrollbar-color: rgb(var(--c-ink) / 0.18) transparent;
 }
 
 .custom-scrollbar::-webkit-scrollbar { width: 4px; }
 .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
 .custom-scrollbar::-webkit-scrollbar-thumb {
-  background: rgba(43,43,38,0.18);
+  background: rgb(var(--c-ink) / 0.18);
   border-radius: 9999px;
 }
 
 /* ── Markdown atlas renderer (light, paper & ink) ─────────────── */
-.markdown-atlas { color: #3A3730; font-size: 0.9rem; line-height: 1.75; }
+.markdown-atlas { color: rgb(var(--c-ink) / 0.9); font-size: 0.9rem; line-height: 1.75; }
 
-.markdown-atlas h1 { font-family: 'Bricolage Grotesque', sans-serif; font-size: 1.6rem; font-weight: 600; color: #2B2B26; margin: 1.6rem 0 0.8rem; line-height: 1.2; }
-.markdown-atlas h2 { font-family: 'Bricolage Grotesque', sans-serif; font-size: 1.25rem; font-weight: 600; color: #2B2B26; margin: 1.4rem 0 0.6rem; line-height: 1.3; }
-.markdown-atlas h3 { font-family: 'Bricolage Grotesque', sans-serif; font-size: 1.05rem; font-weight: 600; color: #3A3730; margin: 1.2rem 0 0.5rem; }
-.markdown-atlas h4 { font-size: 0.95rem; font-weight: 600; color: #7A7566; margin: 1rem 0 0.4rem; }
+.markdown-atlas h1 { font-family: var(--font-display); font-size: 1.6rem; font-weight: 600; color: rgb(var(--c-ink)); margin: 1.6rem 0 0.8rem; line-height: 1.2; }
+.markdown-atlas h2 { font-family: var(--font-display); font-size: 1.25rem; font-weight: 600; color: rgb(var(--c-ink)); margin: 1.4rem 0 0.6rem; line-height: 1.3; }
+.markdown-atlas h3 { font-family: var(--font-display); font-size: 1.05rem; font-weight: 600; color: rgb(var(--c-ink) / 0.9); margin: 1.2rem 0 0.5rem; }
+.markdown-atlas h4 { font-size: 0.95rem; font-weight: 600; color: rgb(var(--c-ink-muted)); margin: 1rem 0 0.4rem; }
 
-.markdown-atlas p  { margin: 0.6rem 0; color: #3A3730; }
-.markdown-atlas strong { color: #2B2B26; font-weight: 600; }
-.markdown-atlas em { color: #4A5A40; font-style: normal; font-weight: 500; }
-.markdown-atlas a  { color: #3E566C; text-decoration: underline; }
+.markdown-atlas p  { margin: 0.6rem 0; color: rgb(var(--c-ink) / 0.9); }
+.markdown-atlas strong { color: rgb(var(--c-ink)); font-weight: 600; }
+.markdown-atlas em { color: rgb(var(--c-sage-dark)); font-style: normal; font-weight: 500; }
+.markdown-atlas a  { color: rgb(var(--c-trail-dark)); text-decoration: underline; }
 
 .markdown-atlas ul { list-style: disc; padding-left: 1.4rem; margin: 0.6rem 0; }
 .markdown-atlas ol { list-style: decimal; padding-left: 1.4rem; margin: 0.6rem 0; }
-.markdown-atlas li { margin: 0.25rem 0; color: #3A3730; }
+.markdown-atlas li { margin: 0.25rem 0; color: rgb(var(--c-ink) / 0.9); }
 
-.markdown-atlas hr { border: none; border-top: 1px solid #DDD3B4; margin: 1.5rem 0; }
+.markdown-atlas hr { border: none; border-top: 1px solid rgb(var(--c-sand)); margin: 1.5rem 0; }
 
 .markdown-atlas blockquote {
-  border-left: 3px solid #7C9070;
-  background: #E7ECDF;
+  border-left: 3px solid rgb(var(--c-sage));
+  background: rgb(var(--c-sage-pale));
   padding: 0.75rem 1rem;
   margin: 1rem 0;
   border-radius: 0 0.5rem 0.5rem 0;
-  color: #4A5A40;
+  color: rgb(var(--c-sage-dark));
 }
 
 .markdown-atlas code {
-  background: #EFE7D3;
-  border: 1px solid #DDD3B4;
-  color: #9A3A20;
+  background: rgb(var(--c-map));
+  border: 1px solid rgb(var(--c-sand));
+  color: rgb(var(--c-ember-dark));
   padding: 0.15em 0.4em;
   border-radius: 0.3rem;
   font-size: 0.85em;
@@ -125,8 +199,8 @@ button:not(:disabled):active { scale: 0.97; }
 }
 
 .markdown-atlas pre {
-  background: #EFE7D3;
-  border: 1px solid #DDD3B4;
+  background: rgb(var(--c-map));
+  border: 1px solid rgb(var(--c-sand));
   border-radius: 0.75rem;
   padding: 1rem 1.25rem;
   overflow-x: auto;
@@ -136,12 +210,12 @@ button:not(:disabled):active { scale: 0.97; }
   background: none;
   border: none;
   padding: 0;
-  color: #2B2B26;
+  color: rgb(var(--c-ink));
   font-size: 0.85rem;
 }
 
 /* KaTeX — suppress red error color, show gracefully */
-.markdown-atlas .katex-error { color: #9A3A20 !important; }
+.markdown-atlas .katex-error { color: rgb(var(--c-ember-dark)) !important; }
 .markdown-atlas .katex { font-size: 1em; }
 
 /* Tables */
@@ -152,23 +226,23 @@ button:not(:disabled):active { scale: 0.97; }
   font-size: 0.85rem;
   overflow: hidden;
   border-radius: 0.75rem;
-  border: 1px solid #DDD3B4;
+  border: 1px solid rgb(var(--c-sand));
 }
-.markdown-atlas thead tr { background: #E7ECDF; }
+.markdown-atlas thead tr { background: rgb(var(--c-sage-pale)); }
 .markdown-atlas th {
   padding: 0.6rem 0.9rem;
   text-align: left;
   font-weight: 600;
-  color: #4A5A40;
-  border-bottom: 1px solid #DDD3B4;
+  color: rgb(var(--c-sage-dark));
+  border-bottom: 1px solid rgb(var(--c-sand));
 }
 .markdown-atlas td {
   padding: 0.55rem 0.9rem;
-  color: #3A3730;
-  border-bottom: 1px solid #E9E1CC;
+  color: rgb(var(--c-ink) / 0.9);
+  border-bottom: 1px solid rgb(var(--c-sand) / 0.6);
 }
 .markdown-atlas tbody tr:last-child td { border-bottom: none; }
-.markdown-atlas tbody tr:hover { background: rgba(43,43,38,0.025); }
+.markdown-atlas tbody tr:hover { background: rgb(var(--c-ink) / 0.03); }
 
 /* Flashcard 3D flip */
 .flip-card { perspective: 1200px; }
@@ -203,9 +277,9 @@ button:not(:disabled):active { scale: 0.97; }
 .animate-shimmer {
   background: linear-gradient(
     90deg,
-    rgba(43, 43, 38, 0.05) 25%,
-    rgba(43, 43, 38, 0.11) 50%,
-    rgba(43, 43, 38, 0.05) 75%
+    rgb(var(--c-ink) / 0.05) 25%,
+    rgb(var(--c-ink) / 0.11) 50%,
+    rgb(var(--c-ink) / 0.05) 75%
   );
   background-size: 200% 100%;
   animation: shimmer 1.6s infinite linear;

@@ -2,7 +2,12 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { Plus, Trash2, Target, CheckSquare, Square, TrendingUp, BookOpen, ChevronRight } from 'lucide-react';
 import { subjectsAPI, gradesAPI, todosAPI } from '../api';
 
-function Bar({ value, max = 100, color = '#5B7C99' }) {
+import { COLORS, useTheme } from '../theme.jsx';
+// Atlas: green / amber / red by score. Ledger: one accent, red pen only when behind.
+const scoreFill = (pct, ledger) => ledger ? (pct >= 60 ? COLORS.ember : COLORS.danger) : (pct >= 80 ? COLORS.sage : pct >= 60 ? COLORS.caution : COLORS.danger);
+const scoreText = (pct, ledger) => ledger ? (pct >= 60 ? COLORS.ink : COLORS.danger) : (pct >= 80 ? COLORS.sageDark : pct >= 60 ? COLORS.caution : COLORS.danger);
+
+function Bar({ value, max = 100, color = COLORS.trail }) {
   const pct = max > 0 ? Math.min((value / max) * 100, 100) : 0;
   return (
     <div className="w-full bg-ink/10 rounded-full h-1.5">
@@ -137,7 +142,7 @@ function Todos({ subject, todos, onAdd, onUpdate, onDelete }) {
         <h3 className="text-xs font-medium text-ink-muted">Tasks</h3>
         <span className="text-xs text-ink-faint tabular-nums">{done}/{todos.length}</span>
       </div>
-      <Bar value={done} max={todos.length || 1} color="#7C9070" />
+      <Bar value={done} max={todos.length || 1} color={COLORS.sage} />
       <div className="flex gap-2">
         <input type="text" placeholder="Add task…" value={text}
           onChange={e => setText(e.target.value)} onKeyDown={e => e.key === 'Enter' && add()}
@@ -166,6 +171,7 @@ function Todos({ subject, todos, onAdd, onUpdate, onDelete }) {
 
 /* ── Mobile subject picker (horizontal scroll chips) ── */
 function MobileSubjectPicker({ subjects, grades, selected, onSelect, onNavigate }) {
+  const { isLedger } = useTheme();
   return (
     <div className="flex gap-2 overflow-x-auto pb-2 mb-4 -mx-4 px-4 custom-scrollbar" style={{ scrollbarHeight: 'none' }}>
       <button
@@ -182,7 +188,7 @@ function MobileSubjectPicker({ subjects, grades, selected, onSelect, onNavigate 
         return (
           <button key={s._id} onClick={() => onSelect(s.name)}
             className={`flex-shrink-0 flex items-center gap-2 px-3 py-2 rounded-full text-xs font-medium transition-colors ${active ? 'bg-ember-pale text-ember-dark border border-ember/40' : 'bg-parchment text-ink-muted border border-sand hover:text-ink'}`}>
-            <div className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: pct >= 80 ? '#7C9070' : pct > 0 ? '#A8842C' : '#C9BD9C' }} />
+            <div className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: pct > 0 ? scoreFill(pct, isLedger) : 'rgb(var(--c-sand-dark))' }} />
             {s.name}
           </button>
         );
@@ -197,6 +203,7 @@ function MobileSubjectPicker({ subjects, grades, selected, onSelect, onNavigate 
 
 /* ── Desktop subject sidebar ── */
 function DesktopSidebar({ subjects, grades, selected, onSelect, onNavigate }) {
+  const { isLedger } = useTheme();
   return (
     <div className="space-y-0.5">
       <button onClick={() => onSelect('overview')}
@@ -214,7 +221,7 @@ function DesktopSidebar({ subjects, grades, selected, onSelect, onNavigate }) {
           <button key={s._id} onClick={() => onSelect(s.name)}
             className={`w-full flex items-center justify-between px-3 py-3 rounded-xl text-sm transition-colors ${active ? 'bg-ember-pale text-ember-dark' : 'text-ink-muted hover:text-ink hover:bg-ink/[0.04]'}`}>
             <div className="flex items-center gap-2 min-w-0">
-              <div className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: pct >= 80 ? '#7C9070' : pct > 0 ? '#A8842C' : '#C9BD9C' }} />
+              <div className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: pct > 0 ? scoreFill(pct, isLedger) : 'rgb(var(--c-sand-dark))' }} />
               <span className="truncate text-sm font-medium">{s.name}</span>
             </div>
             <div className="flex items-center gap-1 flex-shrink-0 ml-2">
@@ -233,6 +240,7 @@ function DesktopSidebar({ subjects, grades, selected, onSelect, onNavigate }) {
 }
 
 function Overview({ subjects, grades, todos }) {
+  const { isLedger } = useTheme();
   const { pct, done, pending } = useMemo(() => {
     const score = grades.reduce((s, g) => s + g.score, 0);
     const max = grades.reduce((s, g) => s + g.maxScore, 0);
@@ -251,14 +259,14 @@ function Overview({ subjects, grades, todos }) {
     <div className="space-y-4">
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {[
-          { label: 'Overall score', value: `${pct.toFixed(1)}%`, color: '#3E566C' },
-          { label: 'Subjects', value: subjects.length, color: '#2B2B26' },
-          { label: 'Tasks done', value: done, color: '#4A5A40' },
-          { label: 'Pending', value: pending, color: '#A8842C' },
+          { label: 'Overall score', value: `${pct.toFixed(1)}%`, color: COLORS.trailDark },
+          { label: 'Subjects', value: subjects.length, color: COLORS.ink },
+          { label: 'Tasks done', value: done, color: COLORS.sageDark },
+          { label: 'Pending', value: pending, color: COLORS.caution },
         ].map(({ label, value, color }) => (
           <div key={label} className="bg-parchment border border-sand rounded-2xl p-4 text-center shadow-sm">
             <p className="text-[11px] text-ink-muted mb-1 leading-none">{label}</p>
-            <p className="text-xl font-display font-semibold leading-tight mt-1 tabular-nums" style={{ color }}>{value}</p>
+            <p className="text-xl font-display font-semibold leading-tight mt-1 tabular-nums" style={{ color }}><span className={label === 'Overall score' ? 'hl' : undefined}>{value}</span></p>
           </div>
         ))}
       </div>
@@ -272,11 +280,11 @@ function Overview({ subjects, grades, todos }) {
               <div key={s.name}>
                 <div className="flex items-center justify-between mb-2 gap-2">
                   <span className="text-sm text-ink truncate">{s.name}</span>
-                  <span className="text-xs font-medium flex-shrink-0 tabular-nums" style={{ color: s.pct >= 80 ? '#4A5A40' : s.pct >= 60 ? '#A8842C' : '#A93B2B' }}>
+                  <span className="text-xs font-medium flex-shrink-0 tabular-nums" style={{ color: scoreText(s.pct, isLedger) }}>
                     {s.score}/{s.max} ({s.pct.toFixed(1)}%)
                   </span>
                 </div>
-                <Bar value={s.pct} color={s.pct >= 80 ? '#7C9070' : s.pct >= 60 ? '#A8842C' : '#A93B2B'} />
+                <Bar value={s.pct} color={scoreFill(s.pct, isLedger)} />
               </div>
             ))}
           </div>
@@ -287,6 +295,7 @@ function Overview({ subjects, grades, todos }) {
 }
 
 export default function MarksPage({ onNavigate }) {
+  const { isLedger } = useTheme();
   const [subjects, setSubjects] = useState([]);
   const [grades, setGrades] = useState([]);
   const [todos, setTodos] = useState([]);
@@ -331,7 +340,7 @@ export default function MarksPage({ onNavigate }) {
                 const score = subGrades.reduce((s, g) => s + g.score, 0);
                 const max = subGrades.reduce((s, g) => s + g.maxScore, 0);
                 const pct = max > 0 ? (score / max) * 100 : 0;
-                return <p className="text-sm text-ink-muted mt-0.5 tabular-nums">{score}/{max} marks <span className="font-medium ml-1" style={{ color: pct >= 80 ? '#4A5A40' : pct >= 60 ? '#A8842C' : '#A93B2B' }}>({pct.toFixed(1)}%)</span></p>;
+                return <p className="text-sm text-ink-muted mt-0.5 tabular-nums">{score}/{max} marks <span className="font-medium ml-1" style={{ color: scoreText(pct, isLedger) }}>({pct.toFixed(1)}%)</span></p>;
               })()}
             </div>
             <GoalCalc subject={sub} grades={subGrades} />

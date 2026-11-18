@@ -325,7 +325,7 @@ export default function ClassCountPage() {
             { label: 'Pending', value: totals.pending, color: totals.pending > 0 ? 'text-caution' : 'text-sage-dark' },
           ].map(({ label, value, color }) => (
             <div key={label} className="bg-parchment border border-sand rounded-xl p-3 text-center shadow-sm">
-              <p className={`text-xl font-display font-semibold ${color}`}>{value}</p>
+              <p className={`text-xl font-display font-semibold ${color}`}><span className={label === 'Pending' ? 'hl' : undefined}>{value}</span></p>
               <p className="text-[11px] font-medium text-ink-muted mt-0.5">{label}</p>
             </div>
           ))}

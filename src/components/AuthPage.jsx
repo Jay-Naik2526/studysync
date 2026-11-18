@@ -3,8 +3,48 @@ import { Mail, Lock, User, ArrowRight, AlertCircle, Shield, Building2, BadgeChec
 import { authAPI } from '../api';
 import ContourBackdrop from './ContourBackdrop';
 import ContourMark from './ContourMark';
+import { ThemeToggle, useTheme } from '../theme.jsx';
+import { ContourGauge } from './ContourGauge';
+
+// Ledger sign-in: a quiet product preview beside the form (sample figures)
+function AuthPreview() {
+  const rows = [['Days present', '335'], ['Absences', '70'], ['Classes you can still skip', '4']];
+  return (
+    <aside className="hidden lg:flex relative z-10 flex-col justify-between bg-map border-r border-sand p-12 xl:p-16">
+      <div className="flex items-center gap-2 text-ink">
+        <ContourMark size={28} className="text-ember" />
+        <span className="font-display text-lg font-semibold">StudySync</span>
+      </div>
+
+      <div className="max-w-md">
+        <h2 className="text-4xl xl:text-5xl font-display font-semibold text-ink leading-[1.1] tracking-tight">
+          Your semester, kept like a <span className="hl">register</span>
+        </h2>
+        <p className="text-base text-ink-muted mt-4">Attendance synced from your SAP portal, marks, notes and a study planner in one place</p>
+      </div>
+
+      <div className="bg-parchment border border-sand rounded-2xl p-5 max-w-md">
+        <div className="flex items-center gap-5">
+          <ContourGauge pct={83} size={132}>
+            <p className="text-2xl font-display font-semibold text-ink tabular-nums leading-none">83%</p>
+          </ContourGauge>
+          <dl className="flex-1">
+            {rows.map(([k, v]) => (
+              <div key={k} className="flex items-baseline justify-between gap-3 py-2 border-t border-sand first:border-t-0">
+                <dt className="text-xs text-ink-muted">{k}</dt>
+                <dd className="text-base font-display font-semibold text-ink tabular-nums">{v}</dd>
+              </div>
+            ))}
+          </dl>
+        </div>
+        <p className="text-[11px] text-ink-faint mt-3">Sample data</p>
+      </div>
+    </aside>
+  );
+}
 
 export default function AuthPage({ onLogin }) {
+  const { isLedger } = useTheme();
   const [isLogin, setIsLogin] = useState(true);
   const [isMentor, setIsMentor] = useState(false);
   const [name, setName] = useState('');
@@ -58,9 +98,12 @@ export default function AuthPage({ onLogin }) {
   const inputClass = "w-full bg-white border border-sand text-ink placeholder-ink-faint rounded-xl pl-10 pr-4 py-3 text-sm focus:outline-none focus:border-ember transition-colors";
 
   return (
-    <div className="min-h-screen min-h-dvh bg-paper font-sans flex items-center justify-center p-4 relative overflow-hidden">
+    <div className={`min-h-screen min-h-dvh bg-paper font-sans relative overflow-hidden ${isLedger ? 'lg:grid lg:grid-cols-[1.15fr_1fr]' : 'flex items-center justify-center p-4'}`}>
       <ContourBackdrop />
+      <ThemeToggle showLabel className="absolute top-4 right-4 z-20 px-3 py-2 rounded-xl border border-sand bg-parchment" />
 
+      {isLedger && <AuthPreview />}
+      <div className={isLedger ? 'relative z-10 flex items-center justify-center p-4 min-h-screen min-h-dvh' : 'contents'}>
       <div className="relative z-10 w-full max-w-sm">
         {/* Logo */}
         <div className="flex flex-col items-center mb-8">
@@ -178,6 +221,7 @@ export default function AuthPage({ onLogin }) {
             {isLogin ? 'Sign up' : 'Sign in'}
           </button>
         </p>
+      </div>
       </div>
     </div>
   );

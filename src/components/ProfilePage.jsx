@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { profileAPI } from '../api';
 import { InstallCard } from './InstallApp';
+import { useTheme } from '../theme.jsx';
 
 function Field({ label, icon: Icon, value, onChange, placeholder, disabled }) {
   return (
@@ -307,6 +308,41 @@ function JoinMentorCard({ profile, onRefresh }) {
 }
 
 // ─── Main ProfilePage ───────────────────────────────────────
+// ── Appearance: Atlas (default) or Ledger ──
+function AppearanceCard() {
+  const { theme, setTheme } = useTheme();
+  const options = [
+    { id: 'atlas', name: 'Atlas', note: 'Warm paper with contour lines', swatch: ['#F4EEE0', '#2B2B26', '#BF4F2B'] },
+    { id: 'ledger', name: 'Ledger', note: 'Register paper, ink and highlighter', swatch: ['#F8F7F2', '#1F2433', '#F7DC4F'] },
+  ];
+  return (
+    <div className="bg-parchment border border-sand rounded-2xl p-4 sm:p-5 mb-5 shadow-sm">
+      <p className="text-sm font-display font-semibold text-ink mb-1">Appearance</p>
+      <p className="text-xs text-ink-muted mb-4">Pick how StudySync looks on this device</p>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3" role="radiogroup" aria-label="Theme">
+        {options.map(o => {
+          const on = theme === o.id;
+          return (
+            <button
+              key={o.id} type="button" role="radio" aria-checked={on}
+              onClick={() => setTheme(o.id)}
+              className={`flex items-center gap-3 text-left rounded-xl border p-3 transition-colors ${on ? 'border-ember bg-ember-pale' : 'border-sand bg-white hover:border-sand-dark'}`}
+            >
+              <span className="flex flex-shrink-0 overflow-hidden rounded-lg border border-black/10" aria-hidden="true">
+                {o.swatch.map(c => <span key={c} className="h-10 w-5" style={{ background: c }} />)}
+              </span>
+              <span className="min-w-0">
+                <span className="block text-sm font-medium text-ink">{o.name}</span>
+                <span className="block text-xs text-ink-muted">{o.note}</span>
+              </span>
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 export default function ProfilePage() {
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -407,6 +443,7 @@ export default function ProfilePage() {
           </>
         )}
 
+        <AppearanceCard />
         <InstallCard />
       </div>
     </div>
