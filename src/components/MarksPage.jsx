@@ -172,7 +172,7 @@ function Todos({ subject, todos, onAdd, onUpdate, onDelete }) {
 
 /* ── Mobile subject picker (horizontal scroll chips) ── */
 function MobileSubjectPicker({ subjects, grades, selected, onSelect, onNavigate }) {
-  const { isLedger } = useTheme();
+  const { isStructured } = useTheme();
   return (
     <div className="flex gap-2 overflow-x-auto pb-2 mb-4 -mx-4 px-4 custom-scrollbar" style={{ scrollbarHeight: 'none' }}>
       <button
@@ -189,7 +189,7 @@ function MobileSubjectPicker({ subjects, grades, selected, onSelect, onNavigate 
         return (
           <button key={s._id} onClick={() => onSelect(s.name)}
             className={`flex-shrink-0 flex items-center gap-2 px-3 py-2 rounded-full text-xs font-medium transition-colors ${active ? 'bg-ember-pale text-ember-dark border border-ember/40' : 'bg-parchment text-ink-muted border border-sand hover:text-ink'}`}>
-            <div className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: pct > 0 ? scoreFill(pct, isLedger) : 'rgb(var(--c-sand-dark))' }} />
+            <div className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: pct > 0 ? scoreFill(pct, isStructured) : 'rgb(var(--c-sand-dark))' }} />
             {s.name}
           </button>
         );
@@ -204,7 +204,7 @@ function MobileSubjectPicker({ subjects, grades, selected, onSelect, onNavigate 
 
 /* ── Desktop subject sidebar ── */
 function DesktopSidebar({ subjects, grades, selected, onSelect, onNavigate }) {
-  const { isLedger } = useTheme();
+  const { isStructured } = useTheme();
   return (
     <div className="space-y-0.5">
       <button onClick={() => onSelect('overview')}
@@ -222,7 +222,7 @@ function DesktopSidebar({ subjects, grades, selected, onSelect, onNavigate }) {
           <button key={s._id} onClick={() => onSelect(s.name)}
             className={`w-full flex items-center justify-between px-3 py-3 rounded-xl text-sm transition-colors ${active ? 'bg-ember-pale text-ember-dark' : 'text-ink-muted hover:text-ink hover:bg-ink/[0.04]'}`}>
             <div className="flex items-center gap-2 min-w-0">
-              <div className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: pct > 0 ? scoreFill(pct, isLedger) : 'rgb(var(--c-sand-dark))' }} />
+              <div className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: pct > 0 ? scoreFill(pct, isStructured) : 'rgb(var(--c-sand-dark))' }} />
               <span className="truncate text-sm font-medium">{s.name}</span>
             </div>
             <div className="flex items-center gap-1 flex-shrink-0 ml-2">
@@ -241,7 +241,7 @@ function DesktopSidebar({ subjects, grades, selected, onSelect, onNavigate }) {
 }
 
 function Overview({ subjects, grades, todos }) {
-  const { isLedger } = useTheme();
+  const { isStructured } = useTheme();
   const { pct, done, pending } = useMemo(() => {
     const score = grades.reduce((s, g) => s + g.score, 0);
     const max = grades.reduce((s, g) => s + g.maxScore, 0);
@@ -281,11 +281,11 @@ function Overview({ subjects, grades, todos }) {
               <div key={s.name}>
                 <div className="flex items-center justify-between mb-2 gap-2">
                   <span className="text-sm text-ink truncate">{s.name}</span>
-                  <span className="text-xs font-medium flex-shrink-0 tabular-nums" style={{ color: scoreText(s.pct, isLedger) }}>
+                  <span className="text-xs font-medium flex-shrink-0 tabular-nums" style={{ color: scoreText(s.pct, isStructured) }}>
                     {s.score}/{s.max} ({s.pct.toFixed(1)}%)
                   </span>
                 </div>
-                <Bar value={s.pct} color={scoreFill(s.pct, isLedger)} />
+                <Bar value={s.pct} color={scoreFill(s.pct, isStructured)} />
               </div>
             ))}
           </div>
@@ -296,7 +296,7 @@ function Overview({ subjects, grades, todos }) {
 }
 
 export default function MarksPage({ onNavigate }) {
-  const { isLedger } = useTheme();
+  const { isStructured } = useTheme();
   const [subjects, setSubjects] = useState([]);
   const [grades, setGrades] = useState([]);
   const [todos, setTodos] = useState([]);
@@ -341,7 +341,7 @@ export default function MarksPage({ onNavigate }) {
                 const score = subGrades.reduce((s, g) => s + g.score, 0);
                 const max = subGrades.reduce((s, g) => s + g.maxScore, 0);
                 const pct = max > 0 ? (score / max) * 100 : 0;
-                return <p className="text-sm text-ink-muted mt-0.5 tabular-nums">{score}/{max} marks <span className="font-medium ml-1" style={{ color: scoreText(pct, isLedger) }}>({pct.toFixed(1)}%)</span></p>;
+                return <p className="text-sm text-ink-muted mt-0.5 tabular-nums">{score}/{max} marks <span className="font-medium ml-1" style={{ color: scoreText(pct, isStructured) }}>({pct.toFixed(1)}%)</span></p>;
               })()}
             </div>
             <GoalCalc subject={sub} grades={subGrades} />

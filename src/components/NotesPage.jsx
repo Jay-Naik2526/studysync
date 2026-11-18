@@ -15,6 +15,7 @@ import { SkeletonNotes } from './SkeletonLoader';
 
 import { COLORS, useTheme } from '../theme.jsx';
 import { ContourArt } from './ContourGauge';
+import { MissionBanner } from './NeonHud';
 /* ─────────────────────────── helpers ─────────────────────────── */
 
 const typeOptions = [
@@ -221,6 +222,7 @@ function FlashcardView({ cards }) {
 /* ─────────────────────────── Quiz ─────────────────────────── */
 
 function QuizView({ questions }) {
+  const { isNeon } = useTheme();
   const [index, setIndex] = useState(0);
   const [selected, setSelected] = useState(null); // selected option text
   const [answers, setAnswers] = useState([]); // { correct: bool } per question
@@ -265,8 +267,10 @@ function QuizView({ questions }) {
         <div className="w-20 h-20 rounded-2xl bg-parchment border border-sand flex items-center justify-center mb-5 shadow-sm">
           <grade.Icon size={32} style={{ color: grade.color }} />
         </div>
-        <h3 className="text-2xl font-display font-semibold text-ink mb-1">Quiz complete</h3>
-        <p className="text-ink-muted text-sm mb-7">Here's how you did</p>
+        {isNeon
+          ? <MissionBanner kind={pct >= 50 ? 'passed' : 'wasted'} sub={pct >= 50 ? `Respect + ${score}` : 'Better luck next time'} />
+          : <><h3 className="text-2xl font-display font-semibold text-ink mb-1">Quiz complete</h3>
+              <p className="text-ink-muted text-sm mb-7">Here's how you did</p></>}
 
         {/* Score ring */}
         <div className="relative mb-7">
@@ -386,7 +390,7 @@ function QuizView({ questions }) {
 /* ─────────────────────────── Main page ─────────────────────────── */
 
 export default function NotesPage() {
-  const { isLedger } = useTheme();
+  const { isStructured } = useTheme();
   const [subjects, setSubjects] = useState([]);
   const [selectedSub, setSelectedSub] = useState('');
   const [noteType, setNoteType] = useState('detailed');
@@ -608,7 +612,7 @@ export default function NotesPage() {
           </div>
         ) : (
           <div className="flex flex-col items-center justify-center h-full text-center py-16">
-            {isLedger ? <ContourArt className="mb-4" /> : (
+            {isStructured ? <ContourArt className="mb-4" /> : (
               <div className="w-14 h-14 rounded-2xl bg-map border border-sand flex items-center justify-center mb-4">
                 <Compass size={20} className="text-ink-faint" />
               </div>

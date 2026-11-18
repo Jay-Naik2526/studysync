@@ -1,5 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { loopPath } from './ContourGauge';
+import { useTheme } from '../theme.jsx';
+import { NeonSky, WantedStars } from './NeonHud';
 
 const L = i => ({ '--i': i });
 const EMBER = { stroke: 'rgb(var(--c-ember))' };
@@ -198,6 +200,24 @@ const META = {
 };
 const ORDER = Object.keys(META);
 
+// Loading-screen tips shown in the Neon Coast theme
+const TIPS = {
+  dashboard: 'Keep every subject above 80% and your wanted level stays at zero',
+  attendance: 'Attendance below 80% in a subject lights a star. Sync from SAP to see the true picture',
+  calendar: 'Tap a day to see each class, or switch to the skip planner before you bunk',
+  classcount: 'Labs that run back to back count as one lab session',
+  marks: 'The goal calculator tells you the score you still need to hit a target',
+  subjects: 'Add every subject once and the other pages fill themselves in',
+  notes: 'Pick a subject and a topic, then generate notes, flashcards or a quiz',
+  planner: 'Upload your syllabus and the planner charts a route that fits your weekly hours',
+  applications: 'Attach proof when you apply for leave and the mentor can approve faster',
+  profile: 'Join your mentor with their code so they can see how you are doing',
+  'mentor-dashboard': 'Students under 80% are flagged first so you know who to call',
+  mentees: 'Open any student to see their attendance, grades and applications',
+  'mentee-detail': 'Everything about this student in one place',
+  'mentor-applications': 'Review requests here. Approving takes one tap',
+};
+
 /**
  * Full-screen loader. Mounts hidden content behind it (so data is already loading), plays for
  * `duration` ms, then irises out. Click or Esc skips. Sits under the nav, so you can always leave.
@@ -205,6 +225,7 @@ const ORDER = Object.keys(META);
 export default function PageLoader({ view, duration = 1700, onDone }) {
   const meta = META[view] || META.dashboard;
   const Scene = SCENES[meta.scene];
+  const { isNeon } = useTheme();
   const reduced = useMemo(() => window.matchMedia?.('(prefers-reduced-motion: reduce)').matches, []);
   const total = reduced ? 350 : duration;
   const [p, setP] = useState(0);
@@ -241,7 +262,8 @@ export default function PageLoader({ view, duration = 1700, onDone }) {
   const sheet = String(Math.max(ORDER.indexOf(view), 0) + 1).padStart(2, '0');
 
   return (
-    <div className="ld-root" data-phase={phase} onClick={leave} role="status" aria-live="polite" aria-label={`Loading ${meta.title}`}>
+    <div className="ld-root" data-phase={phase} data-neon={isNeon} onClick={leave} role="status" aria-live="polite" aria-label={`Loading ${meta.title}`}>
+      {isNeon && !reduced && <NeonSky />}
       {!reduced && (
         <>
           <div className="ld-grid" aria-hidden="true" />
@@ -252,9 +274,13 @@ export default function PageLoader({ view, duration = 1700, onDone }) {
         </>
       )}
 
-      <div className="ld-hud ld-hud-tl" aria-hidden="true"><b>StudySync</b><span>Sheet {sheet} / {String(ORDER.length).padStart(2, '0')}</span></div>
-      <div className="ld-hud ld-hud-tr" aria-hidden="true"><span className="ld-dot" />Loading</div>
-      <div className="ld-hud ld-hud-bl" aria-hidden="true">Click or press Esc to skip</div>
+      <div className="ld-hud ld-hud-tl" aria-hidden="true"><b>StudySync</b><span>{isNeon ? 'Mission' : 'Sheet'} {sheet} / {String(ORDER.length).padStart(2, '0')}</span></div>
+      {isNeon
+        ? <div className="ld-hud ld-hud-tr" aria-hidden="true"><WantedStars level={Math.floor(p / 20)} /></div>
+        : <div className="ld-hud ld-hud-tr" aria-hidden="true"><span className="ld-dot" />Loading</div>}
+      {isNeon
+        ? <div className="ld-tip" aria-hidden="true"><b>Tip</b><span>{TIPS[view] || TIPS.dashboard}</span><em>Click or press Esc to skip</em></div>
+        : <div className="ld-hud ld-hud-bl" aria-hidden="true">Click or press Esc to skip</div>}
 
       <div className="ld-center">
         {!reduced && (

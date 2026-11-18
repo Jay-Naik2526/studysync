@@ -25,7 +25,7 @@ function MarkdownRenderer({ content, isPrint = false }) {
 }
 
 export default function PlannerPage() {
-  const { isLedger } = useTheme();
+  const { isStructured } = useTheme();
   const [subjects, setSubjects] = useState([]);
   const [selectedSub, setSelectedSub] = useState('');
   const [weakTopics, setWeakTopics] = useState('');
@@ -387,7 +387,7 @@ export default function PlannerPage() {
                 </div>
               ) : (
                 <div className="flex flex-col items-center justify-center h-full text-center py-16">
-                  {isLedger ? <ContourArt className="mb-4" /> : (
+                  {isStructured ? <ContourArt className="mb-4" /> : (
                     <div className="w-14 h-14 rounded-2xl bg-map border border-sand flex items-center justify-center mb-4">
                       <Calendar size={20} className="text-ink-faint" />
                     </div>

@@ -1,11 +1,14 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Search, CornerDownLeft } from 'lucide-react';
+import { useTheme } from '../theme.jsx';
+import { PhoneStatus } from './NeonHud';
 
 /**
  * Jump-anywhere palette (Ctrl/Cmd+K). Keyboard-initiated and used many times a day, so it
  * opens and closes instantly with no animation. Items: { id, label, note, icon, keys, group, run }.
  */
 export default function CommandPalette({ open, onClose, items, currentView }) {
+  const { isNeon } = useTheme();
   const [q, setQ] = useState('');
   const [idx, setIdx] = useState(0);
   const inputRef = useRef(null);
@@ -35,7 +38,8 @@ export default function CommandPalette({ open, onClose, items, currentView }) {
   return (
     <div className="fixed inset-0 z-[70] flex items-start justify-center px-4 pt-[14vh]" role="dialog" aria-modal="true" aria-label="Go to page">
       <button aria-label="Close" onClick={onClose} className="absolute inset-0 w-full h-full bg-ink/40 backdrop-blur-[2px] cursor-default" tabIndex={-1} />
-      <div className="relative w-full max-w-lg bg-parchment border border-sand rounded-2xl shadow-lg overflow-hidden" onKeyDown={onKey}>
+      <div className={`relative w-full overflow-hidden ${isNeon ? 'max-w-sm phone' : 'max-w-lg bg-parchment border border-sand rounded-2xl shadow-lg'}`} onKeyDown={onKey}>
+        {isNeon && (<><PhoneStatus /><p className="phone-title">Contacts</p></>)}
         <div className="flex items-center gap-3 px-4 border-b border-sand">
           <Search size={16} className="text-ink-faint flex-shrink-0" />
           <input

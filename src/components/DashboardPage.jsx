@@ -6,6 +6,7 @@ import { ATTENDANCE_THRESHOLD } from '../constants';
 import { COLORS, useTheme } from '../theme.jsx';
 import WeeklyTrend from './WeeklyTrend';
 import { ContourGauge, SyncDot } from './ContourGauge';
+import { Radar, WantedStars, HudBar, Ticker, MissionBanner } from './NeonHud';
 // Eases a number from its last value to the new one; instant when the user prefers reduced motion.
 function useCountUp(target, duration = 700) {
   const [value, setValue] = useState(0);
@@ -95,12 +96,12 @@ function BarChart({ data, color, valueKey = 'value', nameKey = 'name', unitSuffi
 }
 
 // ── Ledger: small, different-in-kind data views ──
-function RegisterRow({ label, value, suffix = '' }) {
+function RegisterRow({ label, value, suffix = '', cash = false }) {
   const n = useCountUp(value);
   return (
     <div className="flex items-baseline justify-between gap-4 py-3 border-t border-sand first:border-t-0">
       <dt className="text-sm text-ink-muted">{label}</dt>
-      <dd className="text-xl font-display font-semibold text-ink tabular-nums">{n}{suffix}</dd>
+      <dd className={`${cash ? 'neon-cash text-2xl' : 'text-xl font-display font-semibold text-ink'} tabular-nums`}>{n}{suffix}</dd>
     </div>
   );
 }
@@ -216,7 +217,7 @@ function CalendarModal({ onClose, onSaved }) {
 }
 
 export default function DashboardPage({ onNavigate }) {
-  const { isLedger } = useTheme();
+  const { isStructured, isNeon } = useTheme();
   const [dayRecords, setDayRecords] = useState([]);
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -269,9 +270,9 @@ export default function DashboardPage({ onNavigate }) {
 
   // Ledger shows a weekly trend as its main chart, which needs the day-by-day records
   useEffect(() => {
-    if (!isLedger) return;
+    if (!isStructured) return;
     sapAPI.getAttendanceDays().then(r => setDayRecords(r.data.records || [])).catch(() => {});
-  }, [isLedger]);
+  }, [isStructured]);
 
   useEffect(() => {
     dashboardAPI.getDashboard()
@@ -303,11 +304,22 @@ export default function DashboardPage({ onNavigate }) {
   const skippableData = (charts.skippableClassesData || []).map(d => ({ value: d.remaining, name: d.name }));
   const marksData = (charts.marksBySubject || []).map(d => ({ value: Math.round(d.percentage), name: d.subject }));
 
-  if (isLedger) {
+  if (isStructured) {
     const skipMax = Math.max(...skippableData.map(d => d.value), 1);
     const skipLead = skippableData.length ? skippableData.reduce((m, d, i, arr) => (d.value < arr[m].value ? i : m), 0) : -1;
     const marksLead = marksData.length ? marksData.reduce((m, d, i, arr) => (d.value > arr[m].value ? i : m), 0) : -1;
     const lastSync = sapStatus?.lastSync ? new Date(sapStatus.lastSync) : null;
+    const low = lowAttendanceSubjects || [];
+    const wanted = Math.min(5, low.length);
+    const radarBlips = (charts.skippableClassesData || []).map(d => ({ name: d.name, pct: low.find(l => l.name === d.name)?.percentage ?? 90 }));
+    const bestSkip = skippableData.length ? skippableData.reduce((m, d) => (d.value > m.value ? d : m), skippableData[0]) : null;
+    const tickerItems = [
+      `Attendance holding at ${stats.attendance}% across ${stats.subjects} subjects`,
+      low.length ? `Wanted level ${wanted}: ${low.map(l => l.name).join(', ')} below ${ATTENDANCE_THRESHOLD}%` : `Zero stars: every subject is above ${ATTENDANCE_THRESHOLD}%`,
+      `${stats.daysPresent} days present and ${stats.absences} absences on record`,
+      bestSkip && bestSkip.value > 0 ? `Most to spare: ${bestSkip.name} with ${bestSkip.value} skippable classes` : null,
+      `Average marks at ${Math.round(stats.averageMarks)}%`,
+    ].filter(Boolean);
     return (
       <div className="max-w-5xl mx-auto px-4 py-8 sm:px-6 md:px-8">
         <div className="flex items-end justify-between gap-3 mb-6">
@@ -323,8 +335,23 @@ export default function DashboardPage({ onNavigate }) {
           )}
         </div>
 
-        {/* The moment: attendance as a contour map, beside the register of figures */}
+        {isNeon && <div className="mb-4"><Ticker items={tickerItems} /></div>}
+
+        {/* The moment: attendance as a contour map (Neon Coast: a radar with health and armor), beside the register of figures */}
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-4 mb-4">
+          {isNeon ? (
+            <div className="lg:col-span-2 bg-parchment border border-sand rounded-2xl p-5 flex flex-col items-center gap-4">
+              <div className="flex items-center justify-between w-full">
+                <p className="text-sm font-display text-ink">Radar</p>
+                <div className="flex items-center gap-2"><span className="text-[11px] uppercase tracking-wider text-ink-muted">Wanted</span><WantedStars level={wanted} /></div>
+              </div>
+              <Radar size={216} blips={radarBlips} />
+              <div className="w-full space-y-3">
+                <HudBar label="Health · Attendance" value={stats.attendance} color="#22D3C5" />
+                <HudBar label="Armor · Average marks" value={stats.averageMarks} color="#7C8CFF" />
+              </div>
+            </div>
+          ) : (
           <div className="lg:col-span-2 bg-parchment border border-sand rounded-2xl p-5 flex flex-col items-center justify-center">
             <ContourGauge pct={stats.attendance}>
               <div className="text-center">
@@ -334,6 +361,7 @@ export default function DashboardPage({ onNavigate }) {
             </ContourGauge>
             <p className="text-xs text-ink-muted mt-2">{ATTENDANCE_THRESHOLD}% required</p>
           </div>
+          )}
           <div className="lg:col-span-3 bg-parchment border border-sand rounded-2xl p-5">
             <p className="text-sm font-display font-semibold text-ink mb-1">Register</p>
             <dl>
@@ -341,7 +369,7 @@ export default function DashboardPage({ onNavigate }) {
               <RegisterRow label="Absences" value={stats.absences} />
               <RegisterRow label="Subjects" value={stats.subjects} />
               <RegisterRow label="Average marks" value={Math.round(stats.averageMarks)} suffix="%" />
-              <RegisterRow label="Total marks" value={stats.totalMarks} />
+              <RegisterRow label="Total marks" value={stats.totalMarks} cash={isNeon} />
             </dl>
           </div>
         </div>
@@ -429,6 +457,12 @@ export default function DashboardPage({ onNavigate }) {
           </div>
         )}
       </div>
+
+        {isNeon && wanted === 0 && (
+          <div className="bg-parchment border border-sand rounded-2xl mb-4">
+            <MissionBanner kind="passed" sub={`All subjects above ${ATTENDANCE_THRESHOLD}%`} />
+          </div>
+        )}
 
         {/* Main chart + a smaller list of a different kind */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-4">

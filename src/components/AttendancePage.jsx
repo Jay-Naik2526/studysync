@@ -8,6 +8,7 @@ import { ATTENDANCE_THRESHOLD } from '../constants';
 import { COLORS, useTheme } from '../theme.jsx';
 import { SyncDot } from './ContourGauge';
 import { CountUp } from '../motion.jsx';
+import { WantedStars } from './NeonHud';
 function Ring({ pct, color, size = 52, stroke = 5 }) {
   const r = size / 2 - stroke / 2;
   const circ = 2 * Math.PI * r;
@@ -297,7 +298,7 @@ function SapModal({ onClose, onSaved }) {
 }
 
 export default function AttendancePage() {
-  const { isLedger } = useTheme();
+  const { isStructured, isNeon } = useTheme();
   const [subjects, setSubjects] = useState([]);
   const [newName, setNewName] = useState('');
   const [newTotal, setNewTotal] = useState('');
@@ -452,6 +453,15 @@ export default function AttendancePage() {
         <div>
           <p className="text-xs font-medium text-ink-muted mb-1">Trail log</p>
           <h1 className="text-2xl sm:text-3xl font-display font-semibold text-ink tracking-tight">Attendance</h1>
+          {isNeon && subjects.length > 0 && (() => {
+            const wanted = subjects.filter(s => (s.conductedClasses || 0) > 0 && (((s.conductedClasses - (s.absentClasses || 0)) / s.conductedClasses) * 100) < ATTENDANCE_THRESHOLD).length;
+            return (
+              <div className="mt-3 flex items-center gap-3">
+                <WantedStars level={Math.min(5, wanted)} />
+                <span className="text-xs text-ink-muted">{wanted === 0 ? 'Clean record' : `${wanted} subject${wanted > 1 ? 's' : ''} below ${ATTENDANCE_THRESHOLD}%`}</span>
+              </div>
+            );
+          })()}
         </div>
         {subjects.length > 0 && (
           <div className="flex gap-2 mt-1 flex-shrink-0">
@@ -482,7 +492,7 @@ export default function AttendancePage() {
               <p className="text-xs text-ink-muted mt-0.5">
                 {sapStatus?.connected ? (
                   <>
-                    {isLedger && <span className="inline-flex align-middle mr-2"><SyncDot label={syncing ? 'Sync running' : sapStatus.lastSyncStatus === 'failed' ? 'Last sync failed' : 'Up to date'} state={syncing ? 'running' : sapStatus.lastSyncStatus === 'failed' ? 'failed' : 'ok'} /></span>}
+                    {isStructured && <span className="inline-flex align-middle mr-2"><SyncDot label={syncing ? 'Sync running' : sapStatus.lastSyncStatus === 'failed' ? 'Last sync failed' : 'Up to date'} state={syncing ? 'running' : sapStatus.lastSyncStatus === 'failed' ? 'failed' : 'ok'} /></span>}
                     {sapStatus.lastSync ? `Last synced: ${new Date(sapStatus.lastSync).toLocaleString()}` : 'Never synced — hit Sync now'}
                     {sapStatus.lastAttendanceDate && (
                       <span className="block text-xs text-trail-dark font-medium mt-1">
@@ -734,7 +744,7 @@ export default function AttendancePage() {
           <p className="text-sm text-ink-muted">Add a subject to start tracking</p>
         </div>
       ) : (
-        isLedger
+        isStructured
           ? <LedgerTable subjects={subjects} onUpdate={handleUpdate} onDelete={handleDelete} />
           : (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

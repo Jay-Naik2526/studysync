@@ -6,8 +6,9 @@ import {
 import ContourBackdrop from './ContourBackdrop';
 import PageLoader from './PageLoader';
 import CommandPalette from './CommandPalette';
+import { NeonBackdrop, WeaponWheel } from './NeonHud';
 import { InstallBanner, OfflineBar } from './InstallApp';
-import { ThemeToggle, useTheme } from '../theme.jsx';
+import { ThemeToggle, useTheme, THEME_INFO } from '../theme.jsx';
 import { useLoaderMode } from '../prefs.js';
 
 // Everything a student can open. The first five are pinned to the nav; the rest live in "More"
@@ -45,7 +46,7 @@ export default function Layout({ currentView, onNavigate, onLogout, user, childr
   const MoreIcon = moreActive ? moreActive.icon : LayoutGrid;
   const moreLabel = moreActive ? moreActive.label : 'More';
 
-  const { isLedger, toggle } = useTheme();
+  const { next, toggle, isNeon } = useTheme();
   const [loaderMode] = useLoaderMode();
 
   const [sheetOpen, setSheetOpen] = useState(false);     // phone "More" sheet
@@ -138,16 +139,16 @@ export default function Layout({ currentView, onNavigate, onLogout, user, childr
 
   const paletteItems = useMemo(() => ([
     ...allItems.map(i => ({ ...i, group: 'Pages', run: () => onNavigate(i.id) })),
-    { id: 'cmd-theme', group: 'Commands', label: `Switch to ${isLedger ? 'Atlas' : 'Ledger'} theme`, note: 'Change how StudySync looks', icon: Palette, keys: 'appearance dark light', run: toggle },
+    { id: 'cmd-theme', group: 'Commands', label: `Switch to ${THEME_INFO[next].name} theme`, note: 'Change how StudySync looks', icon: Palette, keys: 'appearance dark light', run: toggle },
     { id: 'cmd-out', group: 'Commands', label: 'Sign out', note: 'End this session', icon: LogOut, keys: 'logout', run: onLogout },
-  ]), [allItems, isLedger, toggle, onLogout, onNavigate]);
+  ]), [allItems, next, toggle, onLogout, onNavigate]);
 
   const barItems = frontItems;
   const iconBtn = 'rounded-full p-2.5 text-ink-muted hover:text-ink hover:bg-ink/5';
 
   return (
     <div className="min-h-screen min-h-dvh bg-paper text-ink font-sans relative overflow-x-hidden">
-      <ContourBackdrop />
+      {isNeon ? <NeonBackdrop /> : <ContourBackdrop />}
       <OfflineBar />
 
       {/* Page content — bottom padding clears the fixed nav on every breakpoint */}
@@ -356,7 +357,11 @@ export default function Layout({ currentView, onNavigate, onLogout, user, childr
         )}
 
         {/* More popover: grows out of its button (origin-aware), lists everything not pinned */}
-        {moreOpen && (
+        {moreOpen && isNeon && (
+          <WeaponWheel items={moreItems} currentView={currentView} onPick={go} style={{ left: moreX - 154, bottom: 'calc(100% + 14px)' }} />
+        )}
+
+        {moreOpen && !isNeon && (
           <div
             data-more-menu role="menu" aria-label="More tools"
             className="anim-pop absolute bottom-full mb-4 w-[320px] p-2 rounded-2xl bg-parchment border border-sand shadow-lg"

@@ -5,10 +5,47 @@ import ContourBackdrop from './ContourBackdrop';
 import ContourMark from './ContourMark';
 import { ThemeToggle, useTheme } from '../theme.jsx';
 import { ContourGauge } from './ContourGauge';
+import { Radar, WantedStars, HudBar, NeonSky } from './NeonHud';
 
 // Ledger sign-in: a quiet product preview beside the form (sample figures)
 function AuthPreview() {
+  const { isNeon } = useTheme();
   const rows = [['Days present', '335'], ['Absences', '70'], ['Classes you can still skip', '4']];
+
+  if (isNeon) {
+    const blips = [['LTLS', 87], ['3DP', 83], ['SE', 85], ['CD', 78], ['IVP', 82], ['OS', 82], ['OR', 83]].map(([name, pct]) => ({ name, pct }));
+    return (
+      <aside className="hidden lg:flex relative z-10 flex-col justify-between border-r border-sand p-12 xl:p-16 overflow-hidden"
+        style={{ background: 'linear-gradient(180deg, #0B0716 0%, #1b0c3a 36%, #4a1458 62%, #b02356 84%, #ff7a3d 100%)' }}>
+        <NeonSky />
+        <div className="relative flex items-center gap-2 text-ink">
+          <ContourMark size={28} className="text-ember" />
+          <span className="font-display text-xl">StudySync</span>
+        </div>
+
+        <div className="relative max-w-md">
+          <p className="text-xs uppercase tracking-[0.3em] text-white/70 mb-3">New semester loading</p>
+          <h2 className="text-5xl xl:text-6xl font-display leading-[1.02]" style={{ color: '#fff', textShadow: '0 4px 0 rgb(0 0 0 / 0.45)' }}>
+            Keep your semester at <span className="hl">zero stars</span>
+          </h2>
+          <p className="text-base text-white/80 mt-4">Attendance synced from your SAP portal, marks, notes and a study planner in one HUD</p>
+        </div>
+
+        <div className="relative bg-parchment/90 border border-sand rounded-2xl p-5 max-w-md backdrop-blur">
+          <div className="flex items-center gap-5">
+            <Radar size={128} blips={blips} />
+            <div className="flex-1 space-y-3">
+              <WantedStars level={1} />
+              <HudBar label="Health · Attendance" value={83} />
+              <HudBar label="Armor · Marks" value={64} color="#7C8CFF" />
+            </div>
+          </div>
+          <p className="text-[11px] text-ink-faint mt-3">Sample data</p>
+        </div>
+      </aside>
+    );
+  }
+
   return (
     <aside className="hidden lg:flex relative z-10 flex-col justify-between bg-map border-r border-sand p-12 xl:p-16">
       <div className="flex items-center gap-2 text-ink">
@@ -44,7 +81,7 @@ function AuthPreview() {
 }
 
 export default function AuthPage({ onLogin }) {
-  const { isLedger } = useTheme();
+  const { isStructured } = useTheme();
   const [isLogin, setIsLogin] = useState(true);
   const [isMentor, setIsMentor] = useState(false);
   const [name, setName] = useState('');
@@ -98,12 +135,12 @@ export default function AuthPage({ onLogin }) {
   const inputClass = "w-full bg-white border border-sand text-ink placeholder-ink-faint rounded-xl pl-10 pr-4 py-3 text-sm focus:outline-none focus:border-ember transition-colors";
 
   return (
-    <div className={`min-h-screen min-h-dvh bg-paper font-sans relative overflow-hidden ${isLedger ? 'lg:grid lg:grid-cols-[1.15fr_1fr]' : 'flex items-center justify-center p-4'}`}>
+    <div className={`min-h-screen min-h-dvh bg-paper font-sans relative overflow-hidden ${isStructured ? 'lg:grid lg:grid-cols-[1.15fr_1fr]' : 'flex items-center justify-center p-4'}`}>
       <ContourBackdrop />
       <ThemeToggle showLabel className="absolute top-4 right-4 z-20 px-3 py-2 rounded-xl border border-sand bg-parchment" />
 
-      {isLedger && <AuthPreview />}
-      <div className={isLedger ? 'relative z-10 flex items-center justify-center p-4 min-h-screen min-h-dvh' : 'contents'}>
+      {isStructured && <AuthPreview />}
+      <div className={isStructured ? 'relative z-10 flex items-center justify-center p-4 min-h-screen min-h-dvh' : 'contents'}>
       <div className="stagger relative z-10 w-full max-w-sm">
         {/* Logo */}
         <div className="flex flex-col items-center mb-8">

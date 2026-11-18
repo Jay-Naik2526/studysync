@@ -319,14 +319,15 @@ function AppearanceCard() {
     { id: 'off', name: 'Off', note: 'No loading screen' },
   ];
   const options = [
-    { id: 'ledger', name: 'Ledger', note: 'Register paper, ink and highlighter (default)', swatch: ['#F8F7F2', '#1F2433', '#F7DC4F'] },
+    { id: 'neon', name: 'Neon Coast', note: 'Sunset HUD with wanted stars and radar (default)', swatch: ['#0B0716', '#FF2E88', '#FF8A3D'] },
+    { id: 'ledger', name: 'Ledger', note: 'Register paper, ink and highlighter', swatch: ['#F8F7F2', '#1F2433', '#F7DC4F'] },
     { id: 'atlas', name: 'Atlas', note: 'Warm paper with contour lines', swatch: ['#F4EEE0', '#2B2B26', '#BF4F2B'] },
   ];
   return (
     <div className="bg-parchment border border-sand rounded-2xl p-4 sm:p-5 mb-5 shadow-sm">
       <p className="text-sm font-display font-semibold text-ink mb-1">Appearance</p>
       <p className="text-xs text-ink-muted mb-4">Pick how StudySync looks on this device</p>
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3" role="radiogroup" aria-label="Theme">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3" role="radiogroup" aria-label="Theme">
         {options.map(o => {
           const on = theme === o.id;
           return (
