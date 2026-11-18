@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useLayoutEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useLayoutEffect, useRef, useMemo, useCallback } from 'react';
 import {
   LayoutDashboard, ClipboardCheck, CalendarDays, Calculator, BarChart2, BookOpen, FileText, Compass,
   LogOut, Users, Inbox, UserCircle, LayoutGrid, ChevronUp, Search, Palette, X,
@@ -6,10 +6,10 @@ import {
 import ContourBackdrop from './ContourBackdrop';
 import PageLoader from './PageLoader';
 import CommandPalette from './CommandPalette';
-import { NeonBackdrop, WeaponWheel } from './NeonHud';
+import { NeonWorld, WeaponWheel, MissionCard } from './NeonHud';
 import { InstallBanner, OfflineBar } from './InstallApp';
 import { ThemeToggle, useTheme, THEME_INFO } from '../theme.jsx';
-import { useLoaderMode } from '../prefs.js';
+import { useLoaderMode, useFxMode } from '../prefs.js';
 
 // Everything a student can open. The first five are pinned to the nav; the rest live in "More"
 // (and in the Ctrl/Cmd+K palette), so the bar stays short without hiding anything.
@@ -48,6 +48,10 @@ export default function Layout({ currentView, onNavigate, onLogout, user, childr
 
   const { next, toggle, isNeon } = useTheme();
   const [loaderMode] = useLoaderMode();
+  const [fxMode] = useFxMode();
+  const fx = fxMode === 'on';
+  const [card, setCard] = useState(null);   // Neon Coast mission title card
+  const endCard = useCallback(() => setCard(null), []);
 
   const [sheetOpen, setSheetOpen] = useState(false);     // phone "More" sheet
   const [moreOpen, setMoreOpen] = useState(false);       // desktop "More" popover
@@ -64,7 +68,8 @@ export default function Layout({ currentView, onNavigate, onLogout, user, childr
   // ── Page loader: starts before paint so the page never flashes, plays on top of the mounting page
   useLayoutEffect(() => {
     window.scrollTo(0, 0);
-    if (loaderMode === 'off') { setLoading(null); return; }
+    setCard(null);
+    if (loaderMode === 'off') { setLoading(null); setCard({ view: currentView, key: `${currentView}-${Date.now()}` }); return; }
     const first = !seen.current.has(currentView);
     seen.current.add(currentView);
     const duration = loaderMode === 'quick' ? 450 : first ? 1800 : 750;
@@ -148,7 +153,7 @@ export default function Layout({ currentView, onNavigate, onLogout, user, childr
 
   return (
     <div className="min-h-screen min-h-dvh bg-paper text-ink font-sans relative overflow-x-hidden">
-      {isNeon ? <NeonBackdrop /> : <ContourBackdrop />}
+      {isNeon ? <NeonWorld variant="app" fx={fx} /> : <ContourBackdrop />}
       <OfflineBar />
 
       {/* Page content — bottom padding clears the fixed nav on every breakpoint */}
@@ -163,9 +168,11 @@ export default function Layout({ currentView, onNavigate, onLogout, user, childr
           key={loading.key}
           view={loading.view}
           duration={loading.duration}
-          onDone={() => setLoading(l => (l && l.key === loading.key ? null : l))}
+          onDone={() => { setLoading(l => (l && l.key === loading.key ? null : l)); setCard({ view: loading.view, key: loading.key }); }}
         />
       )}
+
+      {isNeon && fx && card && <MissionCard key={card.key} view={card.view} onEnd={endCard} />}
 
       <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} items={paletteItems} currentView={currentView} />
 

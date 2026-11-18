@@ -1,8 +1,13 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Star, Signal, Wifi, BatteryFull } from 'lucide-react';
 import { loopPath } from './ContourGauge';
+import { META, ORDER } from '../pageMeta.js';
 
-/* ───────────── scenery ───────────── */
+/* ───────────── scenery: a living coastline ───────────── */
+
+const rng = seed => { let s = seed; return () => (s = (s * 16807) % 2147483647) / 2147483647; };
+const todOf = d => { const h = d.getHours() + d.getMinutes() / 60; return h >= 5 && h < 8 ? 'dawn' : h >= 8 && h < 16.5 ? 'day' : h >= 16.5 && h < 19.5 ? 'dusk' : 'night'; };
+
 function Palm({ className }) {
   const fronds = [-170, -140, -110, -80, -50, -20, 10];
   return (
@@ -15,43 +20,155 @@ function Palm({ className }) {
   );
 }
 
-function Sun({ className }) {
+function Sun() {
   return (
-    <svg viewBox="0 0 200 200" className={className} aria-hidden="true">
+    <svg viewBox="0 0 200 200" className="nw-sun" aria-hidden="true">
       <defs>
-        <linearGradient id="neonSunG" x1="0" y1="0" x2="0" y2="1">
+        <linearGradient id="nwSunG" x1="0" y1="0" x2="0" y2="1">
           <stop offset="0" stopColor="#FFD65A" /><stop offset="0.5" stopColor="#FF6B4A" /><stop offset="1" stopColor="#FF2E88" />
         </linearGradient>
-        <mask id="neonSunM">
+        <mask id="nwSunM">
           <rect width="200" height="200" fill="#fff" />
           {[112, 128, 142, 154, 164, 173].map((y, i) => <rect key={y} x="0" y={y} width="200" height={2 + i * 1.6} fill="#000" />)}
         </mask>
       </defs>
-      <circle cx="100" cy="100" r="96" fill="url(#neonSunG)" mask="url(#neonSunM)" />
+      <circle cx="100" cy="100" r="96" fill="url(#nwSunG)" mask="url(#nwSunM)" />
     </svg>
   );
 }
 
-/** Golden-hour sky, striped sun, swaying palms. Decorative and kept dim so content stays readable. */
-export function NeonBackdrop() {
-  const stars = useMemo(() => Array.from({ length: 34 }, (_, i) => ({ i, l: (i * 37.3) % 100, t: ((i * 53.7) % 100) * 0.42 })), []);
+function Moon() {
   return (
-    <div className="neon-backdrop" aria-hidden="true">
-      <div className="neon-stars">{stars.map(s => <span key={s.i} style={{ '--i': s.i, left: `${s.l}%`, top: `${s.t}%` }} />)}</div>
-      <Sun className="neon-sun" />
-      <Palm className="neon-palm l" />
-      <Palm className="neon-palm r" />
+    <svg viewBox="0 0 100 100" className="nw-moon" aria-hidden="true">
+      <defs><mask id="nwMoonM"><rect width="100" height="100" fill="#fff" /><circle cx="64" cy="42" r="38" fill="#000" /></mask></defs>
+      <circle cx="46" cy="52" r="38" fill="#FDEBD0" mask="url(#nwMoonM)" />
+    </svg>
+  );
+}
+
+function Cloud({ i }) {
+  return (
+    <svg viewBox="0 0 220 60" className="nw-cloud" style={{ '--i': i }} aria-hidden="true">
+      <g fill="currentColor"><ellipse cx="70" cy="40" rx="62" ry="16" /><ellipse cx="118" cy="30" rx="46" ry="20" /><ellipse cx="156" cy="42" rx="52" ry="14" /><ellipse cx="96" cy="24" rx="30" ry="14" /></g>
+    </svg>
+  );
+}
+
+function Bird({ i }) {
+  return (
+    <svg viewBox="0 0 30 14" className="nw-bird" style={{ '--i': i }} aria-hidden="true">
+      <g className="nw-wing" fill="none" stroke="#05030B" strokeWidth="1.8" strokeLinecap="round"><path d="M2 8 Q8 0 15 8 Q22 0 28 8" /></g>
+    </svg>
+  );
+}
+
+function Skyline() {
+  const { buildings, windows } = useMemo(() => {
+    const r = rng(11);
+    const bs = []; let x = -10;
+    while (x < 1620) { const w = 38 + r() * 64; const h = 46 + r() * 150; bs.push({ x, w, h, step: r() > 0.62, ant: r() > 0.82 }); x += w + r() * 5; }
+    const ws = []; let n = 0;
+    bs.forEach(b => {
+      for (let cx = b.x + 8; cx < b.x + b.w - 8; cx += 13) for (let cy = 220 - b.h + 12; cy < 214; cy += 17) {
+        if (r() < 0.2) { n++; ws.push({ x: cx, y: cy, flick: n % 7 === 0, hue: r() > 0.9 ? 'p' : 'w', n }); }
+      }
+    });
+    return { buildings: bs, windows: ws };
+  }, []);
+  return (
+    <svg viewBox="0 0 1600 220" preserveAspectRatio="xMidYMax slice" className="nw-skyline" aria-hidden="true">
+      <g fill="#07040F">
+        {buildings.map((b, i) => (
+          <g key={i}>
+            <rect x={b.x} y={220 - b.h} width={b.w} height={b.h} />
+            {b.step && <rect x={b.x + b.w * 0.2} y={220 - b.h - 16} width={b.w * 0.6} height="16" />}
+            {b.ant && <rect x={b.x + b.w / 2 - 1} y={220 - b.h - 38} width="2" height="38" />}
+          </g>
+        ))}
+      </g>
+      <g className="nw-windows">
+        {windows.map(w => <rect key={w.n} x={w.x} y={w.y} width="5" height="8" rx="1" className={w.flick ? 'nw-flick' : ''} style={{ '--i': w.n, fill: w.hue === 'p' ? '#FF2E88' : '#FFD98A' }} />)}
+      </g>
+      <text x="1010" y="104" className="nw-sign" fontSize="22">NEON COAST</text>
+    </svg>
+  );
+}
+
+function Car({ color, dir, dur, delay, lane }) {
+  return (
+    <div className={`nw-car ${dir === 'l' ? 'rtl' : ''}`} style={{ '--dur': `${dur}s`, '--delay': `${delay}s`, '--lane': `${lane}px` }}>
+      <svg viewBox="0 0 170 50" aria-hidden="true">
+        <polygon points="150,30 170,24 170,38 150,36" fill="rgb(255 244 210 / 0.22)" />
+        <ellipse cx="82" cy="46" rx="76" ry="4" fill={color} opacity="0.55" />
+        <path d="M8 34 C8 26 18 22 32 20 L52 9 C57 6 63 5 72 5 L98 5 C106 5 112 8 118 13 L130 21 C142 23 150 27 150 34 L150 38 L8 38 Z" fill="#06030C" stroke={color} strokeOpacity="0.5" strokeWidth="1" />
+        <path d="M58 12 L72 8 L96 8 L112 16 L112 21 L50 21 Z" fill="#1c1236" />
+        <circle cx="38" cy="38" r="9" fill="#000" stroke="#2c2248" strokeWidth="2" /><circle cx="122" cy="38" r="9" fill="#000" stroke="#2c2248" strokeWidth="2" />
+        <rect x="146" y="28" width="6" height="4" rx="1" fill="#FFF4D2" /><rect x="6" y="28" width="5" height="4" rx="1" fill="#FF3B4E" />
+      </svg>
     </div>
   );
 }
 
-/** Larger version for the loading screen. */
-export function NeonSky() {
+/**
+ * The world behind the app. The sky follows the real time of day, windows flicker, cars drive past,
+ * and layers drift with the pointer. `variant`: 'app' (fixed, full screen) or 'panel' (fills its parent).
+ */
+export function NeonWorld({ variant = 'app', fx = true, tod: forced }) {
+  const ref = useRef(null);
+  const [tod, setTod] = useState(() => forced || todOf(new Date()));
+  useEffect(() => {
+    if (forced) { setTod(forced); return; }
+    const id = setInterval(() => setTod(todOf(new Date())), 60000);
+    return () => clearInterval(id);
+  }, [forced]);
+
+  // Pointer parallax (fine pointers only, effects on, app variant)
+  useEffect(() => {
+    if (variant !== 'app' || !fx || !window.matchMedia?.('(pointer: fine)').matches) return;
+    const el = ref.current; if (!el) return;
+    let raf = 0, x = 0, y = 0;
+    const apply = () => { raf = 0; el.style.setProperty('--mx', x.toFixed(3)); el.style.setProperty('--my', y.toFixed(3)); };
+    const move = e => { x = (e.clientX / window.innerWidth - 0.5) * 2; y = (e.clientY / window.innerHeight - 0.5) * 2; if (!raf) raf = requestAnimationFrame(apply); };
+    window.addEventListener('pointermove', move, { passive: true });
+    return () => { window.removeEventListener('pointermove', move); cancelAnimationFrame(raf); };
+  }, [variant, fx]);
+
+  const stars = useMemo(() => Array.from({ length: 46 }, (_, i) => ({ i, l: (i * 37.3) % 100, t: ((i * 53.7) % 100) * 0.5 })), []);
   return (
-    <div className="absolute inset-0 pointer-events-none" aria-hidden="true">
-      <Sun className="neon-sun" />
-      <Palm className="neon-palm l" />
-      <Palm className="neon-palm r" />
+    <div ref={ref} className="neon-world" data-variant={variant} data-tod={tod} data-fx={fx ? 'on' : 'off'} aria-hidden="true">
+      <div className="nw-sky" />
+      <div className="nw-stars">{stars.map(s => <span key={s.i} style={{ '--i': s.i, left: `${s.l}%`, top: `${s.t}%` }} />)}</div>
+      <div className="nw-layer nw-far"><Moon /><Sun />{[0, 1, 2, 3].map(i => <Cloud key={i} i={i} />)}{[0, 1, 2, 3].map(i => <Bird key={i} i={i} />)}</div>
+      <div className="nw-layer nw-mid"><Skyline /></div>
+      <div className="nw-water"><div className="nw-reflect">{Array.from({ length: 9 }, (_, i) => <i key={i} style={{ '--i': i }} />)}</div></div>
+      <div className="nw-layer nw-near"><Palm className="nw-palm l" /><Palm className="nw-palm r" /></div>
+      <div className="nw-road">
+        <Car color="#FF2E88" dir="r" dur={17} delay={-4} lane={22} />
+        <Car color="#22D3C5" dir="l" dur={23} delay={-13} lane={6} />
+        <Car color="#FF8A3D" dir="r" dur={29} delay={-21} lane={14} />
+      </div>
+      <div className="nw-dim" />
+      <div className="nw-film" />
+    </div>
+  );
+}
+
+// Kept for the loading screen and sign-in panel: golden hour, filling its parent
+export function NeonSky() { return <NeonWorld variant="panel" tod="dusk" />; }
+export function NeonBackdrop(props) { return <NeonWorld variant="app" {...props} />; }
+
+/** GTA-style mission title card: slides in at the lower left, holds, slides out. */
+export function MissionCard({ view, onEnd }) {
+  const meta = META[view] || META.dashboard;
+  const n = String(Math.max(ORDER.indexOf(view), 0) + 1).padStart(2, '0');
+  useEffect(() => { const id = setTimeout(onEnd, 2500); return () => clearTimeout(id); }, [onEnd]);
+  return (
+    <div className="mission-card" aria-hidden="true">
+      <div className="mc-inner">
+        <span className="mc-kicker">Mission {n} / {String(ORDER.length).padStart(2, '0')}</span>
+        <span className="mc-title">{meta.title}</span>
+        <span className="mc-sub">{meta.words[0]}</span>
+      </div>
     </div>
   );
 }
@@ -93,6 +210,7 @@ export function Radar({ blips = [], size = 224 }) {
     <div className="relative" style={{ width: size, height: size }} role="img" aria-label="Radar: one blip per subject">
       <div className="absolute inset-0 rounded-full overflow-hidden"
         style={{ background: 'radial-gradient(circle at 50% 45%, #1d1238 0%, #0b0716 100%)', boxShadow: '0 0 0 3px #05030B, 0 0 0 5px rgb(255 46 136 / 0.85), 0 22px 44px -18px #000' }}>
+        {[0, 1].map(i => <span key={i} className="radar-ping" style={{ '--i': i }} />)}
         <div className="absolute inset-0 rounded-full" style={{ background: 'conic-gradient(from 0deg, rgb(255 46 136 / 0) 0deg, rgb(255 46 136 / 0) 270deg, rgb(255 46 136 / 0.3) 360deg)', animation: 'ld-spin-kf 3.2s linear infinite' }} />
         <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} fill="none" className="absolute inset-0">
           {[0.3, 0.6, 0.9].map(k => <circle key={k} cx={c} cy={c} r={c * k} style={{ stroke: 'rgb(255 255 255 / 0.07)', strokeWidth: 1 }} />)}

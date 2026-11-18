@@ -7,7 +7,7 @@ import {
 import { profileAPI } from '../api';
 import { InstallCard } from './InstallApp';
 import { useTheme } from '../theme.jsx';
-import { useLoaderMode } from '../prefs.js';
+import { useLoaderMode, useFxMode } from '../prefs.js';
 
 function Field({ label, icon: Icon, value, onChange, placeholder, disabled }) {
   return (
@@ -313,6 +313,7 @@ function JoinMentorCard({ profile, onRefresh }) {
 function AppearanceCard() {
   const { theme, setTheme } = useTheme();
   const [loaderMode, setLoaderMode] = useLoaderMode();
+  const [fxMode, setFxMode] = useFxMode();
   const loaderOptions = [
     { id: 'full', name: 'Full', note: 'Cinematic on first visit' },
     { id: 'quick', name: 'Quick', note: 'Short and snappy' },
@@ -358,6 +359,21 @@ function AppearanceCard() {
               key={o.id} type="button" role="radio" aria-checked={on} onClick={() => setLoaderMode(o.id)}
               className={`rounded-xl border px-3 py-2.5 text-left transition-colors ${on ? 'border-ember bg-ember-pale' : 'border-sand bg-white hover:border-sand-dark'}`}
             >
+              <span className="block text-sm font-medium text-ink">{o.name}</span>
+              <span className="block text-[11px] text-ink-muted">{o.note}</span>
+            </button>
+          );
+        })}
+      </div>
+
+      <p className="text-sm font-display font-semibold text-ink mt-5 mb-1">Scene effects</p>
+      <p className="text-xs text-ink-muted mb-3">Neon Coast: the moving sky, skyline, cars, film look and mission title cards. Turn off to save battery</p>
+      <div className="grid grid-cols-2 gap-2" role="radiogroup" aria-label="Scene effects">
+        {[{ id: 'on', name: 'On', note: 'Full living world' }, { id: 'off', name: 'Off', note: 'Still picture' }].map(o => {
+          const on = fxMode === o.id;
+          return (
+            <button key={o.id} type="button" role="radio" aria-checked={on} onClick={() => setFxMode(o.id)}
+              className={`rounded-xl border px-3 py-2.5 text-left transition-colors ${on ? 'border-ember bg-ember-pale' : 'border-sand bg-white hover:border-sand-dark'}`}>
               <span className="block text-sm font-medium text-ink">{o.name}</span>
               <span className="block text-[11px] text-ink-muted">{o.note}</span>
             </button>
